@@ -67,7 +67,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | `cd client && ./gradlew check :android:assembleDebug :desktop:jar` | ✅ |
 | APK en emulador Android 17 (API 37) | ✅ [captura](docs/evidence/h0/android-hello.png) |
 | App de escritorio en Linux (Xvfb) | ✅ [captura](docs/evidence/h0/desktop-hello.png) |
-| CI en GitHub | ver sección "CI" abajo |
+| CI en GitHub (servidor + cliente) | ✅ [run 43083387805](https://github.com/roberbarras/racha/actions/runs/43083387805) |
 
 **Pendiente / notas**
 - Lint Android: `MissingApplicationIcon` (llega con el sistema de diseño, H4) y `ObsoleteLintCustomCheck` (de una dependencia AndroidX, no nuestro).
