@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /client
+    schedule: { interval: weekly }
+    groups:
+      client: { patterns: ["*"] }
+  - package-ecosystem: gradle
+    directory: /server
+    schedule: { interval: weekly }
+    groups:
+      server: { patterns: ["*"] }
+  - package-ecosystem: docker
+    directory: /server
+    schedule: { interval: weekly }
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
