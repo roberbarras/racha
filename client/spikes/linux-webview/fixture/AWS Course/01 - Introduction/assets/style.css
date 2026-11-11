@@ -1,0 +1,5 @@
+body { font-family: sans-serif; margin: 32px; background: #fafaf7; color: #1d1f23; }
+h1 { color: rgb(232, 93, 4); }
+.option { padding: 8px 12px; border: 1px solid #ccc; margin: 6px 0; border-radius: 6px; cursor: pointer; }
+.option.correct { background: #d8f3dc; border-color: #2d6a4f; }
+#results { white-space: pre; font-family: monospace; background: #eee; padding: 12px; margin-top: 24px; }

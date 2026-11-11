@@ -25,3 +25,10 @@ compose.desktop {
         jvmArgs += listOf("--enable-native-access=ALL-UNNAMED")
     }
 }
+
+// Lets the safe runner start the JVM directly (one killable process, no Gradle-forked child).
+tasks.register("printRuntimeClasspath") {
+    val classpath = sourceSets.main.get().runtimeClasspath
+    inputs.files(classpath)
+    doLast { println(classpath.asPath) }
+}

@@ -7,7 +7,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | Hito | Objetivo | Estado |
 |---|---|---|
 | H0 | Fundaciones y walking skeleton | ✅ Cerrado |
-| H1 | Spike Linux: libmpv (render GL vía FFM), JavaFX WebView, metadatos/frames | Pendiente |
+| H1 | Spike Linux: presentación de vídeo con libmpv, JavaFX WebView, metadatos/frames | ✅ Cerrado |
 | H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | Pendiente |
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | Pendiente |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | Pendiente |
@@ -46,6 +46,41 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+
+---
+
+## H1 · Spike Linux — ✅ cerrado
+
+Informe completo con cifras: [docs/spikes/h1-linux.md](docs/spikes/h1-linux.md).
+
+**Hecho**
+- Bindings FFM de libmpv (API cliente y de render), sin JNA ni JNI.
+- Medidas en hardware real (1080p30 H.264, % de un núcleo): ventana nativa de mpv 11,5 %; textura GL dentro de Compose ~45 %; render software ~118 %; **salida nativa incrustada + UI en ventana superpuesta 17,6 % con 0 frames perdidos** (elegida).
+- Visor HTML: JavaFX WebView + servidor local limitado al curso; 9/9 comprobaciones (funcionales y de bloqueo de salida del curso), reproducibles con un fixture en el repo.
+- Metadatos y miniatura WebP con libmpv sin ventana.
+- `client/spikes/safe-run.sh`: lanzador con límites para cualquier prueba gráfica.
+
+**Decisiones**
+- [ADR-0011](docs/adr/0011-presentacion-video-linux.md) sustituye la parte Linux de ADR-0002: mpv presenta en ventana hija (`wid`), UI Compose en ventana transparente superpuesta; decodificación por hardware desactivada por defecto en Linux (opción experimental en Ajustes).
+- ADR-0003 y ADR-0008 validados.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Vía elegida en escritorio real (15 s medidos) | ✅ 17,6 % CPU, 0 frames perdidos, 0 retrasados; transparencia y alineación confirmadas visualmente por el usuario |
+| Visor HTML en Xvfb vía `safe-run.sh` | ✅ 9/9 |
+| Metadatos + miniatura (3 ejecuciones) | ✅ |
+| CI de la rama | ver commit de cierre |
+
+**Incidente**: una batería de pruebas GPU bloqueó el escritorio del usuario (decodificación VA-API con interop GL). Causa probable documentada en el informe; medidas: `safe-run.sh`, pruebas en escritorio real solo con permiso y una a una, VA-API desactivado por defecto.
+
+**Pendiente / pasa a otros hitos**
+- H3: reutilizar instancia de libmpv para metadatos (hoy ~320 ms/fichero) o usar `ffprobe` si existe.
+- H6: sincronizar la capa de UI en pantalla completa, PiP y multimonitor; test automático de alineación; alternativa JAWT/FFM al uso de internos `sun.awt`.
+- H7: inicializar JavaFX en segundo plano (primer arranque 5,7 s); vigilar `BufferOverflowException` transitorias de `JFXPanel`.
+- Criterios §12: ninguno se cierra en este hito (es un spike de riesgos); desbloquea 3 (Linux) y 6.
+
+**Bloqueos**: ninguno.
 
 ---
 

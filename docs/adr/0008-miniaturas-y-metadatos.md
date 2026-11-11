@@ -1,6 +1,6 @@
 # ADR-0008 · Miniaturas y metadatos
 
-**Estado**: aceptada; la vía Linux se valida en el Hito 1.
+**Estado**: aceptada; vía Linux validada en el [spike H1](../spikes/h1-linux.md). Pendiente para H3: reutilizar la instancia de libmpv (hoy ~320 ms/fichero en metadatos frente a 30 ms de `ffprobe`); si no baja de ~100 ms, usar `ffprobe` cuando exista.
 
 **Decisión**
 - Orden: `poster.jpg`/`folder.jpg`/`cover.jpg` → frame al ~10 % → placeholder tipográfico generado con los tokens → (opcional) IA de imágenes configurable.

@@ -1,6 +1,6 @@
 # ADR-0003 · Carga segura de HTML local
 
-**Estado**: aceptada por el usuario (2026-11-11). Desviación del mecanismo literal de §5.
+**Estado**: aceptada por el usuario (2026-11-11); mecanismo Linux validado en el [spike H1](../spikes/h1-linux.md) (9/9 comprobaciones). Desviación del mecanismo literal de §5.
 
 **Contexto**: §5 propone `file://` con el sandbox desactivado (`allowFileAccessFromFileURLs`/`allowUniversalAccessFromFileURLs`). Con esas opciones, cualquier JavaScript de un HTML descargado de terceros puede leer cualquier fichero accesible por la app (con "acceso a todos los archivos": fotos, documentos…) y enviarlo a internet.
 

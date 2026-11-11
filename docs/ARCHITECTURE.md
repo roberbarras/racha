@@ -77,7 +77,7 @@ DDD **táctico donde hay reglas de negocio reales**; CRUD ligero donde no las ha
 
 ## 4. Principios de rendimiento y batería (prioridad del producto)
 
-1. **Decodificación y presentación por hardware**: Media3 + MediaCodec sobre `SurfaceView` (composición por overlay del hardware, más eficiente que `TextureView`); en Linux, libmpv con `hwdec` y render API OpenGL sin copias (ADR-0002).
+1. **Decodificación y presentación por hardware**: Media3 + MediaCodec sobre `SurfaceView` (composición por overlay del hardware, más eficiente que `TextureView`); en Linux, mpv presenta por GPU en su propia ventana hija y nuestra UI va en una capa superpuesta, sin pasar frames por Compose (ADR-0011). La decodificación VA-API queda opcional y desactivada por defecto en Linux por estabilidad; a 1080p H.264 el software resulta además más barato que la copia de `vaapi-copy`.
 2. **Nada de sondeo**: la UI de posición se refresca solo con los controles visibles; la sync usa WorkManager con restricción de red y disparos por evento (pausa/salida/fin), no temporizadores en segundo plano.
 3. **Trabajo pesado con restricciones**: `fileHash` (SHA-256 de ficheros grandes) y miniaturas en WorkManager, preferentemente cargando/inactivo; escaneo incremental por mtime.
 4. **Escrituras mínimas**: el progreso vive en memoria y se persiste en el intervalo configurado y en pausa/salida/fin.

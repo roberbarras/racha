@@ -1,6 +1,6 @@
 # ADR-0002 · Motor de vídeo
 
-**Estado**: aceptada; la vía de render en Linux se valida con medidas en el Hito 1.
+**Estado**: aceptada para Android. La parte Linux queda **sustituida por [ADR-0011](0011-presentacion-video-linux.md)** tras las medidas del spike H1.
 
 **Contexto**: máxima fluidez y mínimo consumo, con nuestra UI (controles, barra lateral, gestos) **encima** del vídeo (§4.2, §12.3, §12.12). VLC y mpv decodifican igual (FFmpeg + VA-API); la diferencia está en cómo llega el frame a pantalla.
 
