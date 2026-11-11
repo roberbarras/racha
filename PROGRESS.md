@@ -70,7 +70,7 @@ Informe completo con cifras: [docs/spikes/h1-linux.md](docs/spikes/h1-linux.md).
 | Vía elegida en escritorio real (15 s medidos) | ✅ 17,6 % CPU, 0 frames perdidos, 0 retrasados; transparencia y alineación confirmadas visualmente por el usuario |
 | Visor HTML en Xvfb vía `safe-run.sh` | ✅ 9/9 |
 | Metadatos + miniatura (3 ejecuciones) | ✅ |
-| CI de la rama | ver commit de cierre |
+| CI de la rama (servidor + cliente, incluidos los spikes) | ✅ [run 43108926634](https://github.com/roberbarras/racha/actions/runs/43108926634) |
 
 **Incidente**: una batería de pruebas GPU bloqueó el escritorio del usuario (decodificación VA-API con interop GL). Causa probable documentada en el informe; medidas: `safe-run.sh`, pruebas en escritorio real solo con permiso y una a una, VA-API desactivado por defecto.
 
