@@ -7,21 +7,19 @@ import java.util.Locale
  * Process CPU time (all threads: JVM, Compose, mpv decoder/render), peak RSS, optional package energy (RAPL,
  * includes the integrated GPU) and mpv playback counters over the measured window.
  */
-class Measurement(private val config: Config, private val stats: Stats, private val mpv: Mpv?) {
+class Measurement(private val config: Config, private val mpv: Mpv) {
     private var startWallNanos = 0L
     private var startCpuTicks = 0L
     private var startEnergyMicroJoules: Long? = null
-    private var startVideoFrames = 0L
-    private var startComposeDraws = 0L
     private var startDropped = 0L
+    private var startDelayed = 0L
 
     fun start() {
         startWallNanos = System.nanoTime()
         startCpuTicks = cpuTicks()
         startEnergyMicroJoules = energyMicroJoules()
-        startVideoFrames = stats.videoFrames.get()
-        startComposeDraws = stats.composeDraws.get()
-        startDropped = mpv?.getProperty("frame-drop-count")?.toLongOrNull() ?: 0
+        startDropped = mpv.getProperty("frame-drop-count")?.toLongOrNull() ?: 0
+        startDelayed = mpv.getProperty("vo-delayed-frame-count")?.toLongOrNull() ?: 0
     }
 
     fun finish(): String {
@@ -35,13 +33,14 @@ class Measurement(private val config: Config, private val stats: Stats, private 
             "cpuPercentOneCore" to "%.1f".format(Locale.ROOT, cpuPercentOfOneCore),
             "packageWatts" to watts?.let { "%.2f".format(Locale.ROOT, it) },
             "rssMiB" to rssKiB() / 1024,
-            "videoFps" to "%.1f".format(Locale.ROOT, (stats.videoFrames.get() - startVideoFrames) / seconds),
-            "composeDrawsPerSecond" to "%.1f".format(Locale.ROOT, (stats.composeDraws.get() - startComposeDraws) / seconds),
-            "droppedFrames" to mpv?.getProperty("frame-drop-count")?.toLongOrNull()?.minus(startDropped),
+            "droppedFrames" to mpv.getProperty("frame-drop-count")?.toLongOrNull()?.minus(startDropped),
+            "delayedFrames" to mpv.getProperty("vo-delayed-frame-count")?.toLongOrNull()?.minus(startDelayed),
+            "vo" to mpv.getProperty("current-vo"),
             "hwdecRequested" to config.hwdec,
-            "hwdec" to mpv?.getProperty("hwdec-current"),
-            "videoCodec" to mpv?.getProperty("video-codec"),
-            "estimatedVfFps" to mpv?.getProperty("estimated-vf-fps"),
+            "hwdec" to mpv.getProperty("hwdec-current"),
+            "videoCodec" to mpv.getProperty("video-codec"),
+            "estimatedVfFps" to mpv.getProperty("estimated-vf-fps"),
+            "displayFps" to mpv.getProperty("display-fps"),
         )
         return fields.entries.joinToString(prefix = "{", postfix = "}") { (k, v) ->
             "\"$k\":" + if (v is Number || v == null) "$v" else "\"$v\""

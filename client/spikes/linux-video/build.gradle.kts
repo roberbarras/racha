@@ -16,6 +16,17 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "io.github.roberbarras.racha.spike.video.MainKt"
-        jvmArgs += listOf("--enable-native-access=ALL-UNNAMED")
+        jvmArgs += listOf(
+            "--enable-native-access=ALL-UNNAMED",
+            "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED",
+        )
     }
+}
+
+// Lets the safe benchmark runner start the JVM directly (one killable process, no Gradle-forked child).
+tasks.register("printRuntimeClasspath") {
+    val classpath = sourceSets.main.get().runtimeClasspath
+    inputs.files(classpath)
+    doLast { println(classpath.asPath) }
 }
