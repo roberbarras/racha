@@ -1,0 +1,1 @@
+-- Baseline migration. The remote model (spec §6.2) is introduced by later migrations.
