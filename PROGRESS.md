@@ -67,7 +67,7 @@ Documento: [docs/MODELO-DATOS.md](docs/MODELO-DATOS.md) (tablas, diferencias con
 | Persistencia en SQLite real (esquema, FKs, ida y vuelta exacta, orden con overrides, "Continuar viendo" en tiempo real, cola de sync, migraciones) | ✅ 17 tests |
 | Escritorio: crear BD en primer arranque y conservar datos al reiniciar | ✅ 1 test |
 | Android: test instrumentado en emulador Android 17 sobre el SQLite del sistema | ✅ 1 test |
-| CI | ver commit de cierre |
+| CI (servidor + cliente) | ✅ [run 43284457086](https://github.com/roberbarras/racha/actions/runs/43284457086) |
 
 **Criterios §12**: ninguno se cierra todavía; queda la base de 4 (offline: todo el estado vive en la BD local) y 7 (IDs estables y `fileHash`; la revinculación y el archivado se demuestran con el escaneo en H3).
 
