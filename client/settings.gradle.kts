@@ -22,6 +22,7 @@ rootProject.name = "racha-client"
 
 include(":shared:domain")
 include(":shared:application")
+include(":shared:data")
 include(":shared:ui")
 include(":android")
 include(":desktop")

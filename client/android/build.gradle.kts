@@ -13,6 +13,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "0.0.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -30,5 +31,12 @@ kotlin {
 
 dependencies {
     implementation(project(":shared:ui"))
+    implementation(project(":shared:data"))
+    implementation(libs.sqldelight.android.driver)
     implementation(libs.androidx.activity.compose)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

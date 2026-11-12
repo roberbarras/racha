@@ -1,0 +1,62 @@
+-- Timestamps are epoch milliseconds (UTC). Lists are newline-separated.
+CREATE TABLE category (
+    key TEXT NOT NULL PRIMARY KEY,
+    name TEXT,
+    icon TEXT NOT NULL,
+    color TEXT NOT NULL,
+    is_primary INTEGER AS kotlin.Boolean NOT NULL,
+    sort_order INTEGER NOT NULL,
+    visible_in_study INTEGER AS kotlin.Boolean NOT NULL,
+    visible_in_leisure INTEGER AS kotlin.Boolean NOT NULL,
+    exclude_patterns TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- At most one primary category (spec §2.2).
+CREATE UNIQUE INDEX category_single_primary ON category(is_primary) WHERE is_primary = 1;
+
+CREATE TABLE category_root (
+    key TEXT NOT NULL PRIMARY KEY,
+    category_key TEXT NOT NULL REFERENCES category(key) ON DELETE CASCADE,
+    location TEXT NOT NULL,
+    sort_order INTEGER NOT NULL
+);
+
+CREATE INDEX category_root_category ON category_root(category_key);
+
+selectAll:
+SELECT * FROM category ORDER BY sort_order, key;
+
+selectByKey:
+SELECT * FROM category WHERE key = ?;
+
+insertOrIgnore:
+INSERT OR IGNORE INTO category VALUES ?;
+
+update:
+UPDATE category SET name = :name, icon = :icon, color = :color, is_primary = :is_primary, sort_order = :sort_order,
+    visible_in_study = :visible_in_study, visible_in_leisure = :visible_in_leisure,
+    exclude_patterns = :exclude_patterns, created_at = :created_at, updated_at = :updated_at
+WHERE key = :key;
+
+clearPrimary:
+UPDATE category SET is_primary = 0, updated_at = :updated_at WHERE is_primary = 1 AND key != :key;
+
+markPrimary:
+UPDATE category SET is_primary = 1, updated_at = :updated_at WHERE key = :key;
+
+delete:
+DELETE FROM category WHERE key = ?;
+
+selectRoots:
+SELECT * FROM category_root WHERE category_key = ? ORDER BY sort_order, key;
+
+insertOrIgnoreRoot:
+INSERT OR IGNORE INTO category_root VALUES ?;
+
+updateRoot:
+UPDATE category_root SET category_key = :category_key, location = :location, sort_order = :sort_order WHERE key = :key;
+
+deleteRoot:
+DELETE FROM category_root WHERE key = ?;

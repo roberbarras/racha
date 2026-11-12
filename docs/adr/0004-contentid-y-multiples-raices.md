@@ -12,3 +12,5 @@
 - Mover un curso entre raíces cambia el `contentId`; el progreso se conserva por coincidencia de `fileHash` (§12.7).
 
 **Descartado**: solo `relPath` (colisiones entre raíces, p. ej. "Sueltos"); ruta absoluta (distinta en cada dispositivo); id local autoincremental de la raíz (distinto en cada dispositivo).
+
+**Precisión (H2, 2026-11-12)**: las carpetas (cursos/series y secciones) se identifican con la ruta terminada en `/`, de modo que la carpeta `001 Intro` y el vídeo `001 Intro.mp4` a su lado no comparten `contentId`; los grupos sin carpeta propia (p. ej. por fecha) usan `SHA-256(<contentId del padre> "#" <clave del grupo>)`. Vectores de referencia en `ContentIdTest` (calculados de forma independiente).

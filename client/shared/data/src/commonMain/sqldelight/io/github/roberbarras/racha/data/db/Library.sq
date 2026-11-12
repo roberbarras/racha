@@ -1,0 +1,139 @@
+-- No foreign key to category_root: synced items may belong to roots that are not configured on this device.
+CREATE TABLE library_item (
+    id TEXT NOT NULL PRIMARY KEY,
+    category_key TEXT NOT NULL REFERENCES category(key) ON DELETE CASCADE,
+    root_key TEXT NOT NULL,
+    relative_path TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    title_override TEXT,
+    description TEXT,
+    poster_path TEXT,
+    sort_order INTEGER NOT NULL,
+    order_override INTEGER,
+    total_items INTEGER NOT NULL,
+    total_duration_sec INTEGER NOT NULL,
+    progress_pct REAL NOT NULL,
+    archived INTEGER AS kotlin.Boolean NOT NULL,
+    first_seen_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX library_item_category ON library_item(category_key, archived);
+
+CREATE TABLE section (
+    id TEXT NOT NULL PRIMARY KEY,
+    library_item_id TEXT NOT NULL REFERENCES library_item(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    title_override TEXT,
+    sort_order INTEGER NOT NULL,
+    order_override INTEGER,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX section_item ON section(library_item_id);
+
+CREATE TABLE playable_element (
+    id TEXT NOT NULL PRIMARY KEY,
+    library_item_id TEXT NOT NULL REFERENCES library_item(id) ON DELETE CASCADE,
+    section_id TEXT NOT NULL REFERENCES section(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL,
+    resource_type TEXT,
+    title TEXT NOT NULL,
+    title_override TEXT,
+    relative_path TEXT NOT NULL,
+    duration_sec INTEGER,
+    width INTEGER,
+    height INTEGER,
+    video_codec TEXT,
+    fps REAL,
+    bitrate_kbps INTEGER,
+    sort_order INTEGER NOT NULL,
+    order_override INTEGER,
+    archived INTEGER AS kotlin.Boolean NOT NULL,
+    file_size INTEGER NOT NULL,
+    file_modified_at INTEGER NOT NULL,
+    file_hash TEXT,
+    first_seen_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX playable_element_item ON playable_element(library_item_id);
+CREATE INDEX playable_element_hash ON playable_element(file_hash) WHERE file_hash IS NOT NULL;
+CREATE INDEX playable_element_first_seen ON playable_element(first_seen_at);
+
+CREATE TABLE subtitle (
+    id TEXT NOT NULL PRIMARY KEY,
+    element_id TEXT NOT NULL REFERENCES playable_element(id) ON DELETE CASCADE,
+    language TEXT NOT NULL,
+    relative_path TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX subtitle_element ON subtitle(element_id);
+
+selectItemsByCategory:
+SELECT * FROM library_item WHERE category_key = ? ORDER BY coalesce(order_override, sort_order), title;
+
+selectItem:
+SELECT * FROM library_item WHERE id = ?;
+
+insertOrIgnoreItem:
+INSERT OR IGNORE INTO library_item VALUES ?;
+
+updateItem:
+UPDATE library_item SET category_key = :category_key, root_key = :root_key, relative_path = :relative_path,
+    kind = :kind, title = :title, title_override = :title_override, description = :description,
+    poster_path = :poster_path, sort_order = :sort_order, order_override = :order_override,
+    total_items = :total_items, total_duration_sec = :total_duration_sec, progress_pct = :progress_pct,
+    archived = :archived, first_seen_at = :first_seen_at, updated_at = :updated_at
+WHERE id = :id;
+
+selectSections:
+SELECT * FROM section WHERE library_item_id = ? ORDER BY coalesce(order_override, sort_order), title;
+
+insertOrIgnoreSection:
+INSERT OR IGNORE INTO section VALUES ?;
+
+updateSection:
+UPDATE section SET library_item_id = :library_item_id, kind = :kind, title = :title, title_override = :title_override,
+    sort_order = :sort_order, order_override = :order_override, updated_at = :updated_at
+WHERE id = :id;
+
+selectElementsByItem:
+SELECT e.* FROM playable_element e
+JOIN section s ON s.id = e.section_id
+WHERE e.library_item_id = ?
+ORDER BY coalesce(s.order_override, s.sort_order), coalesce(e.order_override, e.sort_order), e.title;
+
+selectElement:
+SELECT * FROM playable_element WHERE id = ?;
+
+selectElementsByHash:
+SELECT * FROM playable_element WHERE file_hash = ?;
+
+insertOrIgnoreElement:
+INSERT OR IGNORE INTO playable_element VALUES ?;
+
+updateElement:
+UPDATE playable_element SET library_item_id = :library_item_id, section_id = :section_id, kind = :kind,
+    resource_type = :resource_type, title = :title, title_override = :title_override, relative_path = :relative_path,
+    duration_sec = :duration_sec, width = :width, height = :height, video_codec = :video_codec, fps = :fps,
+    bitrate_kbps = :bitrate_kbps, sort_order = :sort_order, order_override = :order_override, archived = :archived,
+    file_size = :file_size, file_modified_at = :file_modified_at, file_hash = :file_hash,
+    first_seen_at = :first_seen_at, updated_at = :updated_at
+WHERE id = :id;
+
+selectSubtitles:
+SELECT * FROM subtitle WHERE element_id = ? ORDER BY language;
+
+insertOrIgnoreSubtitle:
+INSERT OR IGNORE INTO subtitle VALUES ?;
+
+updateSubtitle:
+UPDATE subtitle SET element_id = :element_id, language = :language, relative_path = :relative_path, updated_at = :updated_at
+WHERE id = :id;
+
+deleteSubtitle:
+DELETE FROM subtitle WHERE id = ?;

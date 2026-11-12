@@ -8,7 +8,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 |---|---|---|
 | H0 | Fundaciones y walking skeleton | ✅ Cerrado |
 | H1 | Spike Linux: presentación de vídeo con libmpv, JavaFX WebView, metadatos/frames | ✅ Cerrado |
-| H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | Pendiente |
+| H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | ✅ Cerrado |
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | Pendiente |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | Pendiente |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | Pendiente |
@@ -46,6 +46,36 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+
+---
+
+## H2 · Modelo de datos local — ✅ cerrado
+
+Documento: [docs/MODELO-DATOS.md](docs/MODELO-DATOS.md) (tablas, diferencias con §6.1 y su motivo, valores por defecto elegidos).
+
+**Hecho**
+- Dominio puro (sin frameworks): `ContentId`/`RelativePath` según ADR-0004, entidades de §6.1 + `Section`, reglas de `Progress` (máximo alcanzado, marcado manual visto/no visto), catálogo tipado de los ajustes de §9 con valores por defecto, validación y codificación.
+- Aplicación: puertos por bounded context, servicio `Preferences` tipado, caso de uso `EnsureBuiltInCategories`, modelo de lectura "Continuar viendo" como `Flow`.
+- Persistencia (`shared:data`): SQLDelight validado contra SQLite 3.18 (Android 8), claves foráneas, índices parciales, WAL; instantánea de esquema v1 y verificación de migraciones en `check`.
+- Ambas apps abren la base de datos real (Android: `AndroidSqliteDriver`; escritorio: `~/.local/share/racha/racha.db`).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio (`ContentIdTest` con vectores dorados, rutas, progreso, ajustes, categorías) | ✅ 28 tests |
+| Aplicación (`Preferences`, `EnsureBuiltInCategories`) | ✅ 9 tests |
+| Persistencia en SQLite real (esquema, FKs, ida y vuelta exacta, orden con overrides, "Continuar viendo" en tiempo real, cola de sync, migraciones) | ✅ 17 tests |
+| Escritorio: crear BD en primer arranque y conservar datos al reiniciar | ✅ 1 test |
+| Android: test instrumentado en emulador Android 17 sobre el SQLite del sistema | ✅ 1 test |
+| CI | ver commit de cierre |
+
+**Criterios §12**: ninguno se cierra todavía; queda la base de 4 (offline: todo el estado vive en la BD local) y 7 (IDs estables y `fileHash`; la revinculación y el archivado se demuestran con el escaneo en H3).
+
+**Pendiente / notas**
+- El test instrumentado de Android no corre en CI (necesita emulador); se ejecuta localmente con `./gradlew :android:connectedDebugAndroidTest`. Se añadirá un job con emulador cuando haya pruebas de reproductor (H5).
+- Valores por defecto que la spec no fija: ver tabla en MODELO-DATOS.md (pendientes de tu visto bueno).
+
+**Bloqueos**: ninguno.
 
 ---
 

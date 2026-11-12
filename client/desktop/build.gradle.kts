@@ -12,7 +12,13 @@ kotlin {
 
 dependencies {
     implementation(project(":shared:ui"))
+    implementation(project(":shared:data"))
+    implementation(libs.sqldelight.sqlite.driver)
+    implementation(libs.sqlite.jdbc)
     implementation(compose.desktop.currentOs)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 compose.desktop {
@@ -24,4 +30,8 @@ compose.desktop {
             packageVersion = "0.0.1"
         }
     }
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgs("--enable-native-access=ALL-UNNAMED") // sqlite-jdbc loads its native library
 }

@@ -1,0 +1,115 @@
+-- No foreign keys to playable_element: progress, bookmarks and history synced from another device may arrive before
+-- (or without) the element being indexed here, and must survive files disappearing (spec §3.4).
+CREATE TABLE progress (
+    element_id TEXT NOT NULL PRIMARY KEY,
+    position_sec INTEGER NOT NULL,
+    duration_sec INTEGER,
+    completed INTEGER AS kotlin.Boolean NOT NULL,
+    max_position_sec INTEGER NOT NULL,
+    last_watched_at INTEGER,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX progress_continue ON progress(completed, last_watched_at);
+
+CREATE TABLE bookmark (
+    id TEXT NOT NULL PRIMARY KEY,
+    element_id TEXT NOT NULL,
+    timestamp_sec INTEGER NOT NULL,
+    note TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX bookmark_element ON bookmark(element_id, timestamp_sec);
+
+CREATE TABLE history_entry (
+    id TEXT NOT NULL PRIMARY KEY,
+    element_id TEXT NOT NULL,
+    watched_at INTEGER NOT NULL,
+    position_at_end_sec INTEGER NOT NULL
+);
+
+CREATE INDEX history_entry_watched ON history_entry(watched_at);
+
+CREATE TABLE favorite (
+    target_type TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (target_type, target_id)
+);
+
+CREATE TABLE local_stat (
+    metric TEXT NOT NULL,
+    period TEXT NOT NULL,
+    value REAL NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (metric, period)
+);
+
+selectProgress:
+SELECT * FROM progress WHERE element_id = ?;
+
+insertOrIgnoreProgress:
+INSERT OR IGNORE INTO progress VALUES ?;
+
+updateProgress:
+UPDATE progress SET position_sec = :position_sec, duration_sec = :duration_sec, completed = :completed,
+    max_position_sec = :max_position_sec, last_watched_at = :last_watched_at, updated_at = :updated_at
+WHERE element_id = :element_id;
+
+selectProgressByItem:
+SELECT p.* FROM progress p JOIN playable_element e ON e.id = p.element_id WHERE e.library_item_id = ?;
+
+-- "Continue watching": unfinished, still present on disk, most recent first.
+selectContinueWatchingIds:
+SELECT p.element_id FROM progress p
+JOIN playable_element e ON e.id = p.element_id
+JOIN library_item i ON i.id = e.library_item_id
+WHERE p.completed = 0 AND p.last_watched_at IS NOT NULL AND e.archived = 0
+ORDER BY p.last_watched_at DESC
+LIMIT :limit;
+
+selectBookmarks:
+SELECT * FROM bookmark WHERE element_id = ? ORDER BY timestamp_sec;
+
+insertOrIgnoreBookmark:
+INSERT OR IGNORE INTO bookmark VALUES ?;
+
+updateBookmark:
+UPDATE bookmark SET element_id = :element_id, timestamp_sec = :timestamp_sec, note = :note,
+    created_at = :created_at, updated_at = :updated_at
+WHERE id = :id;
+
+deleteBookmark:
+DELETE FROM bookmark WHERE id = ?;
+
+insertHistory:
+INSERT OR IGNORE INTO history_entry VALUES ?;
+
+selectRecentHistory:
+SELECT * FROM history_entry ORDER BY watched_at DESC LIMIT :limit;
+
+clearHistory:
+DELETE FROM history_entry;
+
+selectFavorites:
+SELECT * FROM favorite ORDER BY created_at DESC;
+
+insertFavorite:
+INSERT OR IGNORE INTO favorite VALUES ?;
+
+deleteFavorite:
+DELETE FROM favorite WHERE target_type = ? AND target_id = ?;
+
+selectStat:
+SELECT * FROM local_stat WHERE metric = ? AND period = ?;
+
+selectStatsByMetric:
+SELECT * FROM local_stat WHERE metric = ? ORDER BY period;
+
+insertOrIgnoreStat:
+INSERT OR IGNORE INTO local_stat VALUES ?;
+
+updateStat:
+UPDATE local_stat SET value = :value, updated_at = :updated_at WHERE metric = :metric AND period = :period;

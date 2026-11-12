@@ -1,0 +1,90 @@
+CREATE TABLE app_setting (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE sync_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    payload TEXT,
+    retries INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX sync_queue_created ON sync_queue(created_at);
+
+CREATE TABLE device (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    last_seen_at INTEGER NOT NULL,
+    is_current INTEGER AS kotlin.Boolean NOT NULL
+);
+
+CREATE UNIQUE INDEX device_single_current ON device(is_current) WHERE is_current = 1;
+
+-- Single-row mirror of the signed-in account. Tokens never live here.
+CREATE TABLE account (
+    id TEXT NOT NULL PRIMARY KEY,
+    email TEXT NOT NULL,
+    display_name TEXT
+);
+
+selectSetting:
+SELECT value FROM app_setting WHERE key = ?;
+
+selectAllSettings:
+SELECT key, value FROM app_setting;
+
+insertOrIgnoreSetting:
+INSERT OR IGNORE INTO app_setting VALUES ?;
+
+updateSetting:
+UPDATE app_setting SET value = :value, updated_at = :updated_at WHERE key = :key;
+
+deleteSetting:
+DELETE FROM app_setting WHERE key = ?;
+
+enqueue:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+VALUES (?, ?, ?, ?, 0, NULL, ?);
+
+selectPending:
+SELECT * FROM sync_queue ORDER BY created_at, id LIMIT :limit;
+
+markFailed:
+UPDATE sync_queue SET retries = retries + 1, last_error = :error WHERE id = :id;
+
+deleteQueued:
+DELETE FROM sync_queue WHERE id IN ?;
+
+countQueued:
+SELECT count(*) FROM sync_queue;
+
+selectCurrentDevice:
+SELECT * FROM device WHERE is_current = 1;
+
+selectDevices:
+SELECT * FROM device ORDER BY last_seen_at DESC;
+
+clearCurrentDevice:
+UPDATE device SET is_current = 0 WHERE is_current = 1 AND id != :id;
+
+insertOrIgnoreDevice:
+INSERT OR IGNORE INTO device VALUES ?;
+
+updateDevice:
+UPDATE device SET name = :name, platform = :platform, last_seen_at = :last_seen_at, is_current = :is_current WHERE id = :id;
+
+selectAccount:
+SELECT * FROM account LIMIT 1;
+
+deleteAccounts:
+DELETE FROM account;
+
+insertAccount:
+INSERT INTO account VALUES ?;
