@@ -2,6 +2,8 @@ package io.github.roberbarras.racha.data
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
+import io.github.roberbarras.racha.application.library.ElementInItem
 import io.github.roberbarras.racha.application.library.CategoryRepository
 import io.github.roberbarras.racha.application.library.LibraryRepository
 import io.github.roberbarras.racha.data.db.Playable_element
@@ -72,6 +74,34 @@ class SqlLibraryRepository(private val db: RachaDatabase, private val io: Corout
 
     override fun observeItems(category: CategoryKey): Flow<List<LibraryItem>> =
         q.selectItemsByCategory(category.value).asFlow().mapToList(io).map { rows -> rows.map { it.toDomain() } }
+
+    override suspend fun items(category: CategoryKey): List<LibraryItem> =
+        withContext(io) { q.selectItemsByCategory(category.value).executeAsList().map { it.toDomain() } }
+
+    override fun observeItem(id: ContentId): Flow<LibraryItem?> =
+        q.selectItem(id.value).asFlow().mapToOneOrNull(io).map { it?.toDomain() }
+
+    override fun observeItemCounts(): Flow<Map<CategoryKey, Int>> =
+        q.selectItemCounts().asFlow().mapToList(io).map { rows -> rows.associate { CategoryKey(it.category_key) to it.total.toInt() } }
+
+    override fun observeNewElements(since: Instant, limit: Int): Flow<List<ElementInItem>> =
+        q.selectNewElementIds(since.millis(), limit.toLong()).asFlow().mapToList(io).map { ids -> withContext(io) { resolve(ids) } }
+
+    override suspend fun searchItems(text: String, limit: Int): List<LibraryItem> =
+        withContext(io) { q.searchItems(likePattern(text), limit.toLong()).executeAsList().map { it.toDomain() } }
+
+    override suspend fun searchElements(text: String, limit: Int): List<ElementInItem> =
+        withContext(io) { resolve(q.searchElementIds(likePattern(text), limit.toLong()).executeAsList()) }
+
+    private fun resolve(ids: List<String>): List<ElementInItem> = ids.mapNotNull { id ->
+        val element = q.selectElement(id).executeAsOneOrNull()?.toDomain() ?: return@mapNotNull null
+        val item = q.selectItem(element.libraryItemId.value).executeAsOneOrNull()?.toDomain() ?: return@mapNotNull null
+        ElementInItem(element, item)
+    }
+
+    /** `%text%` with LIKE wildcards in the user's text escaped. */
+    private fun likePattern(text: String) =
+        "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 
     override suspend fun item(id: ContentId): LibraryItem? =
         withContext(io) { q.selectItem(id.value).executeAsOneOrNull()?.toDomain() }

@@ -39,6 +39,9 @@ class SqlProgressRepository(private val db: RachaDatabase, private val io: Corou
     override suspend fun forItem(item: ContentId): List<Progress> =
         withContext(io) { q.selectProgressByItem(item.value).executeAsList().map { it.toDomain() } }
 
+    override fun observeForItem(item: ContentId): Flow<List<Progress>> =
+        q.selectProgressByItem(item.value).asFlow().mapToList(io).map { rows -> rows.map { it.toDomain() } }
+
     /** Re-queried whenever progress, elements or items change (SQLDelight table notifications). */
     override fun observeContinueWatching(limit: Int): Flow<List<ContinueWatchingEntry>> =
         q.selectContinueWatchingIds(limit.toLong()).asFlow().mapToList(io).map { ids ->

@@ -35,9 +35,27 @@ interface CategoryRepository {
     suspend fun deleteRoot(key: RootKey)
 }
 
+/** An element with the course/series it belongs to, for rows that mix several items. */
+data class ElementInItem(val element: PlayableElement, val item: LibraryItem)
+
 /** Outbound port: the indexed library (items, sections, elements, subtitles). */
 interface LibraryRepository {
     fun observeItems(category: CategoryKey): Flow<List<LibraryItem>>
+
+    suspend fun items(category: CategoryKey): List<LibraryItem>
+
+    fun observeItem(id: ContentId): Flow<LibraryItem?>
+
+    /** Present (non-archived) items per category, for navigation badges. */
+    fun observeItemCounts(): Flow<Map<CategoryKey, Int>>
+
+    /** Present elements first seen after [since], newest first ("Novedades detectadas", spec §2.2). */
+    fun observeNewElements(since: Instant, limit: Int): Flow<List<ElementInItem>>
+
+    /** Case-insensitive title match on items and elements (user title overrides included). */
+    suspend fun searchItems(text: String, limit: Int): List<LibraryItem>
+
+    suspend fun searchElements(text: String, limit: Int): List<ElementInItem>
 
     suspend fun item(id: ContentId): LibraryItem?
 

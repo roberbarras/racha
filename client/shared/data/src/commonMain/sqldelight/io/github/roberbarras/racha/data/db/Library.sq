@@ -181,3 +181,22 @@ DELETE FROM favorite WHERE target_type = 'element' AND target_id = ?;
 
 deleteElement:
 DELETE FROM playable_element WHERE id = ?;
+
+selectItemCounts:
+SELECT category_key, count(*) AS total FROM library_item WHERE archived = 0 GROUP BY category_key;
+
+-- "Novedades detectadas": newest present elements.
+selectNewElementIds:
+SELECT id FROM playable_element WHERE archived = 0 AND first_seen_at > :since ORDER BY first_seen_at DESC, id LIMIT :limit;
+
+searchItems:
+SELECT * FROM library_item
+WHERE coalesce(title_override, title) LIKE :pattern ESCAPE '\'
+ORDER BY archived, coalesce(title_override, title)
+LIMIT :limit;
+
+searchElementIds:
+SELECT id FROM playable_element
+WHERE coalesce(title_override, title) LIKE :pattern ESCAPE '\'
+ORDER BY archived, coalesce(title_override, title)
+LIMIT :limit;

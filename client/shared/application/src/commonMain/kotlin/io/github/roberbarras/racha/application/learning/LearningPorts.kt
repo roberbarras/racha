@@ -21,6 +21,8 @@ interface ProgressRepository {
 
     suspend fun forItem(item: ContentId): List<Progress>
 
+    fun observeForItem(item: ContentId): Flow<List<Progress>>
+
     /** Emits again whenever progress changes, so the row updates in real time (spec §4.3). */
     fun observeContinueWatching(limit: Int): Flow<List<ContinueWatchingEntry>>
 }
