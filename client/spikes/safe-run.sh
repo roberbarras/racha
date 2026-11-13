@@ -7,17 +7,32 @@
 #
 # usage: spikes/safe-run.sh <virtual|real> <limitSeconds> <module> <args...>
 #   e.g. spikes/safe-run.sh virtual 60 linux-video embed "/path/video.mp4" 30 1280 720 no x11
+#        spikes/safe-run.sh virtual 120 desktop-player   (end-to-end player harness, throwaway home directory)
 set -u
 target=$1; limit=$2; module=$3; shift 3
 client_dir=$(cd "$(dirname "$0")/.." && pwd)
+home_args=()
 case $module in
-  linux-video) main=io.github.roberbarras.racha.spike.video.MainKt ;;
-  linux-webview) main=io.github.roberbarras.racha.spike.webview.MainKt ;;
+  linux-video) main=io.github.roberbarras.racha.spike.video.MainKt; task=":spikes:$module:printRuntimeClasspath" ;;
+  linux-webview) main=io.github.roberbarras.racha.spike.webview.MainKt; task=":spikes:$module:printRuntimeClasspath" ;;
+  desktop-player)
+    main=io.github.roberbarras.racha.desktop.player.PlayerHarnessKt; task=":desktop:printTestRuntimeClasspath"
+    # The app writes its database, thumbnails and screenshots under the home directory: use a throwaway one.
+    fake_home=$(mktemp -d /tmp/racha-harness.XXXXXX)
+    home_args=("-Duser.home=$fake_home" "-Dracha.mpv.ao=null" "-Dracha.debug.x11=${RACHA_DEBUG_X11:-false}") # the test clips carry a 440 Hz tone: never play it
+    ;;
   *) echo "unknown module $module" >&2; exit 2 ;;
 esac
-classpath=$("$client_dir/gradlew" -q --console=plain -p "$client_dir" ":spikes:$module:printRuntimeClasspath" | tail -1)
+classpath=$("$client_dir/gradlew" -q --console=plain -p "$client_dir" "$task" | tail -1)
+if [ -n "${fake_home:-}" ]; then
+  export HOME=$fake_home
+  unset XDG_DATA_HOME XDG_CACHE_HOME XDG_CONFIG_HOME
+fi
 
 if [ "$target" = virtual ]; then
+  if [ -e /tmp/.X11-unix/X97 ] || pgrep -f "Xvfb :97" >/dev/null; then
+    echo "display :97 is already in use (a leftover Xvfb?): stop it first" >&2; exit 3
+  fi
   Xvfb :97 -screen 0 1600x900x24 >/dev/null 2>&1 &
   xvfb=$!
   sleep 1
@@ -33,7 +48,7 @@ systemd-run --user --scope --quiet -p MemoryMax=1536M -p MemorySwapMax=0 -p CPUQ
   timeout -s TERM -k 5 "$limit" \
   java -Xmx512m --enable-native-access=ALL-UNNAMED \
     --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED \
-    -cp "$classpath" "$main" "$@"
+    "${home_args[@]}" -cp "$classpath" "$main" "$@"
 status=$?
 [ "$target" = virtual ] && kill "$xvfb" 2>/dev/null
 

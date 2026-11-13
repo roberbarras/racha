@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.Dimension
 
 fun main() {
@@ -26,6 +28,8 @@ fun main() {
     application {
         Window(
             onCloseRequest = {
+                // Closing mid-playback: save the position before the process ends (bounded, never hangs the exit).
+                runBlocking { withTimeoutOrNull(3_000) { graph.playerHooks.finishOpenSession() } }
                 background.cancel()
                 graph.close()
                 exitApplication()
@@ -35,6 +39,7 @@ fun main() {
             icon = rememberVectorPainter(RachaLogo),
         ) {
             window.minimumSize = Dimension(480, 600)
+            graph.playerHooks.attach(window)
             RachaApp(graph.dependencies)
         }
     }

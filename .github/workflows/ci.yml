@@ -43,9 +43,21 @@ jobs:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@v6
-      - name: libmpv for desktop metadata/thumbnail tests
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmpv2
+      - name: libmpv (desktop player, metadata, thumbnails), Xvfb + Mesa (player harness), a decimal-comma locale
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales
+          sudo locale-gen es_ES.UTF-8
       - run: ./gradlew check :android:assembleDebug :desktop:jar --console=plain
+      - name: Linux player end to end (real window in Xvfb, no audio)
+        run: |
+          cp=$(./gradlew -q --console=plain :desktop:printTestRuntimeClasspath | tail -1)
+          home=$(mktemp -d)
+          HOME=$home timeout -k 5 180 xvfb-run -a -s "-screen 0 1600x900x24" \
+            java -Xmx512m --enable-native-access=ALL-UNNAMED \
+              --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED \
+              -Duser.home=$home -Dracha.mpv.ao=null \
+              -cp "$cp" io.github.roberbarras.racha.desktop.player.PlayerHarnessKt
       - uses: actions/upload-artifact@v7
         with:
           name: racha-android-debug-apk

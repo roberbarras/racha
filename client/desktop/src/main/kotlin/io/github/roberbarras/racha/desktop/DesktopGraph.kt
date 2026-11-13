@@ -5,6 +5,10 @@ import io.github.roberbarras.racha.application.playback.PlaybackController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import io.github.roberbarras.racha.desktop.player.DesktopPlayerHooks
+import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.application.browse.ManageRoots
 import io.github.roberbarras.racha.application.browse.MarkProgress
 import io.github.roberbarras.racha.application.browse.ObserveCategory
@@ -34,10 +38,22 @@ import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 
 /** Desktop composition root: wires adapters into use cases by hand (no reflection, no DI container). */
-class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platform: PlatformHooks = DesktopPlatform()) : AutoCloseable {
+class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platformOverride: PlatformHooks? = null) : AutoCloseable {
     val clock = Clock.SYSTEM
     private val localDates = SystemLocalDates()
     val preferences = Preferences(database.settings, clock)
+    private val graphScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** Read synchronously when a player is created; kept current from the stored setting. */
+    @Volatile private var hardwareDecoding = false
+
+    /** The player of this app (mpv); also needs the main window, given by [Main]. */
+    val playerHooks = DesktopPlayerHooks { hardwareDecoding }
+    private val platform: PlatformHooks = platformOverride ?: DesktopPlatform(playerHooks)
+
+    init {
+        graphScope.launch { preferences.observe(Settings.HardwareDecoding).collect { hardwareDecoding = it } }
+    }
     private val probe = MpvMediaProbe()
     private val hasher = Sha256FileHasher()
 
@@ -84,5 +100,8 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         appScope = appScope,
     )
 
-    override fun close() = probe.close()
+    override fun close() {
+        graphScope.cancel()
+        probe.close()
+    }
 }

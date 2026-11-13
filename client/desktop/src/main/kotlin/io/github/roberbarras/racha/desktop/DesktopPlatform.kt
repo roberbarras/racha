@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.desktop
 
+import io.github.roberbarras.racha.desktop.player.DesktopPlayerHooks
 import io.github.roberbarras.racha.files.NioLibrarySource
 import io.github.roberbarras.racha.ui.app.PlatformHooks
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,7 @@ import javax.swing.JFileChooser
 import javax.swing.SwingUtilities
 
 /** Desktop capabilities: the native folder dialog of the session (KDE/GNOME), Swing as a fallback. */
-class DesktopPlatform : PlatformHooks {
+class DesktopPlatform(override val player: DesktopPlayerHooks? = null) : PlatformHooks {
     override suspend fun pickFolder(): String? = withContext(Dispatchers.IO) {
         val home = System.getProperty("user.home")
         val chosen = native("kdialog", "--getexistingdirectory", home)
