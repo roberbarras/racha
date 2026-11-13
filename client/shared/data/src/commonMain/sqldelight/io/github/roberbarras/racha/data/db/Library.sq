@@ -56,7 +56,9 @@ CREATE TABLE playable_element (
     file_modified_at INTEGER NOT NULL,
     file_hash TEXT,
     first_seen_at INTEGER NOT NULL,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    skip_intro_sec INTEGER,
+    skip_outro_sec INTEGER
 );
 
 CREATE INDEX playable_element_item ON playable_element(library_item_id);
@@ -124,7 +126,8 @@ UPDATE playable_element SET library_item_id = :library_item_id, section_id = :se
     duration_sec = :duration_sec, width = :width, height = :height, video_codec = :video_codec, fps = :fps,
     bitrate_kbps = :bitrate_kbps, sort_order = :sort_order, order_override = :order_override, archived = :archived,
     file_size = :file_size, file_modified_at = :file_modified_at, file_hash = :file_hash,
-    first_seen_at = :first_seen_at, updated_at = :updated_at
+    first_seen_at = :first_seen_at, updated_at = :updated_at,
+    skip_intro_sec = :skip_intro_sec, skip_outro_sec = :skip_outro_sec
 WHERE id = :id;
 
 selectSubtitles:

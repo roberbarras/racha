@@ -176,6 +176,8 @@ class ScanLibrary(
             fileModifiedAt = found.modifiedAt,
             fileHash = hash,
             firstSeenAt = old?.firstSeenAt ?: now,
+            skipIntroSec = old?.skipIntroSec,
+            skipOutroSec = old?.skipOutroSec,
             updatedAt = if (old != null && unchanged && !old.archived && old.sectionId == sectionId && old.order == found.order && old.title == found.title) old.updatedAt else now,
         )
         return element to report

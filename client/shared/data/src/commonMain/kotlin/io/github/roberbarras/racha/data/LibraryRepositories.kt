@@ -145,7 +145,8 @@ class SqlLibraryRepository(private val db: RachaDatabase, private val io: Corout
             q.updateElement(
                 r.library_item_id, r.section_id, r.kind, r.resource_type, r.title, r.title_override, r.relative_path,
                 r.duration_sec, r.width, r.height, r.video_codec, r.fps, r.bitrate_kbps, r.sort_order, r.order_override,
-                r.archived, r.file_size, r.file_modified_at, r.file_hash, r.first_seen_at, r.updated_at, r.id,
+                r.archived, r.file_size, r.file_modified_at, r.file_hash, r.first_seen_at, r.updated_at,
+                r.skip_intro_sec, r.skip_outro_sec, r.id,
             )
         }
     }

@@ -151,6 +151,8 @@ internal fun ElementRow.toDomain() = PlayableElement(
     fileHash = file_hash,
     firstSeenAt = first_seen_at.instant(),
     updatedAt = updated_at.instant(),
+    skipIntroSec = skip_intro_sec?.toInt(),
+    skipOutroSec = skip_outro_sec?.toInt(),
 )
 
 internal fun PlayableElement.toRow() = ElementRow(
@@ -176,6 +178,8 @@ internal fun PlayableElement.toRow() = ElementRow(
     file_hash = fileHash,
     first_seen_at = firstSeenAt.millis(),
     updated_at = updatedAt.millis(),
+    skip_intro_sec = skipIntroSec?.toLong(),
+    skip_outro_sec = skipOutroSec?.toLong(),
 )
 
 internal fun SubtitleRow.toDomain() =

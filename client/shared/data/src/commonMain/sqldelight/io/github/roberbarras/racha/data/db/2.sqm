@@ -1,0 +1,3 @@
+-- v2 -> v3 (H5): per-element skip intro/outro (spec §4.2), null = use the global setting.
+ALTER TABLE playable_element ADD COLUMN skip_intro_sec INTEGER;
+ALTER TABLE playable_element ADD COLUMN skip_outro_sec INTEGER;

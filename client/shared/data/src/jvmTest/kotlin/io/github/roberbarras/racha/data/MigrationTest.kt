@@ -40,14 +40,24 @@ class MigrationTest {
         }
     }
 
-    private fun schemaOf(driver: SqlDriver): List<String> = driver.executeQuery(
-        null,
-        "SELECT type || ' ' || name || ': ' || coalesce(sql, '') FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
-        { cursor ->
-            val rows = mutableListOf<String>()
-            while (cursor.next().value) rows += cursor.getString(0)!!.replace(Regex("\\s+"), " ")
-            QueryResult.Value(rows)
-        },
-        0,
-    ).value
+    /**
+     * Structural description (columns, types, nullability, defaults, keys, foreign keys, index definitions). The raw
+     * CREATE TABLE text is not compared: ALTER TABLE ADD COLUMN stores equivalent SQL with different formatting.
+     */
+    private fun schemaOf(driver: SqlDriver): List<String> {
+        fun rows(sql: String): List<List<String?>> = driver.executeQuery(null, sql, { cursor ->
+            val out = mutableListOf<List<String?>>()
+            while (cursor.next().value) out += (0 until 8).map { i -> runCatching { cursor.getString(i) }.getOrNull() }
+            QueryResult.Value(out)
+        }, 0).value
+        val tables = rows("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").map { it[0]!! }
+        val description = mutableListOf<String>()
+        tables.forEach { table ->
+            rows("PRAGMA table_info('$table')").forEach { c -> description += "$table.column ${c[1]} ${c[2]} notnull=${c[3]} default=${c[4]} pk=${c[5]}" }
+            rows("PRAGMA foreign_key_list('$table')").forEach { f -> description += "$table.fk ${f[3]} -> ${f[2]}.${f[4]} on delete ${f[6]}" }
+        }
+        rows("SELECT name, sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL ORDER BY name")
+            .forEach { i -> description += "index ${i[0]}: ${i[1]!!.replace(Regex("\\s+"), " ")}" }
+        return description.sorted()
+    }
 }

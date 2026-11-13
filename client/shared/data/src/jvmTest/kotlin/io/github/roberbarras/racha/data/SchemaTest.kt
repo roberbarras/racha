@@ -32,7 +32,7 @@ class SchemaTest {
         }, 0).value
 
         assertEquals(expectedTables, tables)
-        assertEquals(2, RachaDatabase.Schema.version) // v2 (H3): re-link index
+        assertEquals(3, RachaDatabase.Schema.version) // v3 (H5): per-element skip intro/outro
     }
 
     @Test

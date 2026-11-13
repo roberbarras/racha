@@ -37,6 +37,7 @@ data class MediaInfo(
 /**
  * Something the user plays or views: a video or a resource. [fileSize] and [fileModifiedAt] drive incremental
  * scanning; [fileHash] (optional, computed in background) re-links progress when a file moves (spec §3.4).
+ * [skipIntroSec]/[skipOutroSec] override the global "skip intro/outro" settings for this element (spec §4.2).
  */
 data class PlayableElement(
     val id: ContentId,
@@ -56,9 +57,13 @@ data class PlayableElement(
     val fileHash: String?,
     val firstSeenAt: Instant,
     val updatedAt: Instant,
+    val skipIntroSec: Int? = null,
+    val skipOutroSec: Int? = null,
 ) {
     init {
         require((kind == ElementKind.RESOURCE) == (resourceType != null)) { "resourceType is set iff kind is RESOURCE" }
+        require(skipIntroSec == null || skipIntroSec >= 0) { "skipIntroSec must be >= 0" }
+        require(skipOutroSec == null || skipOutroSec >= 0) { "skipOutroSec must be >= 0" }
         require(fileHash == null || Regex("[0-9a-f]{64}").matches(fileHash)) { "fileHash must be SHA-256 hex" }
     }
 
