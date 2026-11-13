@@ -70,7 +70,7 @@ Documento: [docs/DISENO.md](docs/DISENO.md). Capturas: [docs/evidence/h4](docs/e
 | UI (Compose, sin pantalla): **criterio 2** (último elemento con `12:34 / 45:10`, pestaña principal abierta), **criterio 11** (Ocio muestra solo lo suyo), **criterio 10** (interfaz en español) | ✅ 3 tests |
 | Capturas de escritorio: Home es/en, claro/oscuro, detalle, tableta y teléfono | ✅ 6 capturas |
 | **App Android real** en emulador (carpeta indexada, miniatura real, Home): teléfono y tableta | ✅ 2 capturas |
-| CI | ver commit de cierre |
+| CI (servidor + cliente) | ✅ [run 43401082518](https://github.com/roberbarras/racha/actions/runs/43401082518) |
 
 **Criterios §12**: ✅ **2**, ✅ **11**; 🟡 **10** (falta subtítulos por idioma, H5); 🟡 **12** (falta el reproductor, H5/H6).
 
