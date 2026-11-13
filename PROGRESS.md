@@ -74,7 +74,7 @@ Reglas implementadas: [docs/ESCANEO.md](docs/ESCANEO.md).
 | **Android 17 (emulador)**: criterio 1 con MediaExtractor, criterio 7, portada WebP, FileObserver | ✅ 3 tests |
 | App de escritorio arrancada (Xvfb): crea BD v2 en WAL con las 3 categorías | ✅ |
 | Coste de metadatos con libmpv reutilizado (vídeo real 1080p) | 28 ms mediana, p90 35 ms |
-| CI | ver commit de cierre |
+| CI (servidor + cliente, con libmpv en Ubuntu) | ✅ [run 43392334028](https://github.com/roberbarras/racha/actions/runs/43392334028) |
 
 **Criterios §12**: ✅ **1** y ✅ **7**.
 
