@@ -11,7 +11,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | ✅ Cerrado |
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | ✅ Cerrado |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | ✅ Cerrado |
-| H5 | Reproductor Android (Media3) + UI de reproductor compartida | Pendiente |
+| H5 | Reproductor Android (Media3) + UI de reproductor compartida | ✅ Cerrado |
 | H6 | Reproductor Linux (libmpv) | Pendiente |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | Pendiente |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | Pendiente |
@@ -26,16 +26,16 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 |---|---|---|---|
 | 1 | Escaneo de la estructura de ejemplo | H3 | ✅ H3 (dominio, SQLite, Linux real, Android) |
 | 2 | Home con "Continuar viendo" y pestaña principal | H4 | ✅ H4 (caso de uso + UI) |
-| 3 | Reproductor Android y Linux completo | H5, H6 | ⬜ |
-| 4 | Offline al 100 % | H5, H9 | ⬜ |
+| 3 | Reproductor Android y Linux completo | H5, H6 | 🟡 Android ✅ (H5); Linux → H6 |
+| 4 | Offline al 100 % | H5, H9 | 🟡 Reproducción y progreso 100 % locales ✅ (H5); sync que no bloquea → H9 |
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
 | 6 | Recurso HTML como elemento del curso | H7 | ⬜ |
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
-| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | 🟡 UI es/en ✅ (H4); subtítulos por idioma → H5 |
+| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
-| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle en Android y Linux ✅ (H4); player → H5/H6; pulido → H12 |
+| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4) y reproductor Android (H5) ✅; reproductor Linux → H6; pulido → H12 |
 
 ## Alcance añadido o ajustado por el usuario (2026-11-11)
 
@@ -46,6 +46,38 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+
+---
+
+## H5 · Reproductor Android — ✅ cerrado
+
+Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md). Capturas: [docs/evidence/h5](docs/evidence/h5).
+
+**Hecho**
+- Reglas de reproducción en el dominio y `PlaybackController` compartido (Android y, en H6, Linux): reanudar o preguntar, guardado cada N s y al pausar/salir/terminar, completado + autoplay (desactivable), cola del curso con recursos, A-B, marcadores con nota, intro/outro por elemento, velocidad y "mantener para 2x", historial y segundos vistos.
+- UI compartida del reproductor: controles que se ocultan, gestos (bordes, doble toque, arrastres de seek/brillo/volumen, pellizco, mantener), paneles (lista con progreso, velocidad, subtítulos, audio, marcadores, intro/outro), pantalla completa que se mantiene con el autoplay, aviso "Reanudar desde / Empezar de nuevo", tarjeta de fin de curso, atajos de teclado. En teléfono la barra superior usa dos filas.
+- Android: ExoPlayer (Media3 1.11.1) sobre SurfaceView, MediaSession, foco de audio, PiP (botón y automático al salir mientras reproduce), modo inmersivo, brillo de ventana, volumen, captura real a `Pictures/Racha`, pantalla encendida solo mientras reproduce, nada en segundo plano.
+- Navegación: Home/panel reanudan, "Empezar de nuevo" empieza de cero, la fila del detalle pregunta. El reproductor ocupa toda la pantalla (sin barra de navegación). Los recursos abren un visor provisional (H7).
+- CI: nuevo job con emulador (API 37) que ejecuta todos los tests instrumentados.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Reglas + controlador (JVM, motor falso + SQLite): reanudar/preguntar, guardado, fin → completado + siguiente, recurso siguiente, autoplay off, intro/outro, A-B, marcadores, velocidad, subtítulos | ✅ 7 tests (8/8 repeticiones sin fallos) |
+| `Media3EngineTest` en dispositivo: **MP4, MKV, WebM, MOV, AVI y HLS** hasta el final; subtítulos apagados al inicio y ES/EN por selección; velocidad y seek | ✅ 8 tests |
+| `PlayerUiTest` en dispositivo (app real): reanudar en 0:12 desde "Continuar viendo", subtítulo ES visible, 1.5x, bucle A-B, captura en la galería, posición guardada al salir, PiP sin cortar la reproducción | ✅ 2 tests |
+| Suite completa: `check` (JVM, escritorio, lint) + 13 tests instrumentados | ✅ |
+| Capturas: controles, panel de subtítulos, PiP | ✅ 3 capturas |
+
+**Criterios §12**: ✅ **10**; 🟡 **3** (falta Linux, H6); 🟡 **4** (falta sync, H9); 🟡 **12** (falta reproductor Linux y pulido).
+
+**Pendiente / notas**
+- El emulador sin GPU necesita `-feature -HardwareDecoder` (sus decodificadores `c2.goldfish.*` fallan sin GPU del host); en dispositivos reales se usa el decodificador por hardware. El motor activa además el *fallback* de decodificador.
+- Cast (opcional en la spec) no se incluye: depende de servicios de Google.
+- Visor de recursos: H7. Ajustes del reproductor en la pantalla de Ajustes (paso de seek, gestos, velocidades, intervalo de guardado): H11; hoy se leen de los ajustes con sus valores por defecto.
+- §3.2.2 "partes de un mismo vídeo": sigue pendiente de que concretes el caso.
+
+**Bloqueos**: ninguno.
 
 ---
 
@@ -145,7 +177,7 @@ Documento: [docs/MODELO-DATOS.md](docs/MODELO-DATOS.md) (tablas, diferencias con
 **Criterios §12**: ninguno se cierra todavía; queda la base de 4 (offline: todo el estado vive en la BD local) y 7 (IDs estables y `fileHash`; la revinculación y el archivado se demuestran con el escaneo en H3).
 
 **Pendiente / notas**
-- El test instrumentado de Android no corre en CI (necesita emulador); se ejecuta localmente con `./gradlew :android:connectedDebugAndroidTest`. Se añadirá un job con emulador cuando haya pruebas de reproductor (H5).
+- El test instrumentado de Android se ejecuta localmente con `./gradlew :android:connectedDebugAndroidTest`; desde H5 también en CI (job con emulador).
 - Valores por defecto que la spec no fija: ver tabla en MODELO-DATOS.md (pendientes de tu visto bueno).
 
 **Bloqueos**: ninguno.
