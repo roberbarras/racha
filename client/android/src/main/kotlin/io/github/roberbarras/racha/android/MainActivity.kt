@@ -19,8 +19,10 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        val graph = (application as RachaApplication).graph
-        platform = AndroidPlatform(this)
+        val app = application as RachaApplication
+        val graph = app.graph
+        app.playerHooks.attach(this)
+        platform = AndroidPlatform(this, app.playerHooks)
         // Scanning and file watching run only while the app is visible: nothing stays awake in the background.
         lifecycleScope.launch {
             graph.ensureBuiltInCategories()
@@ -29,6 +31,11 @@ class MainActivity : ComponentActivity() {
         val dependencies = graph.dependencies(platform)
         val coldStart = savedInstanceState == null
         setContent { RachaApp(dependencies, launchAnimation = coldStart) }
+    }
+
+    override fun onDestroy() {
+        (application as RachaApplication).playerHooks.detach(this)
+        super.onDestroy()
     }
 
     override fun onResume() {

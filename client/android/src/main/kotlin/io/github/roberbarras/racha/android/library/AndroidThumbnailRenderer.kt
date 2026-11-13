@@ -3,6 +3,7 @@ package io.github.roberbarras.racha.android.library
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.os.Build
+import androidx.core.graphics.scale
 import io.github.roberbarras.racha.application.library.scan.ThumbnailRenderer
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.files.NioLibrarySource
@@ -26,7 +27,7 @@ class AndroidThumbnailRenderer(private val cacheDir: File) : ThumbnailRenderer {
                 val frame = retriever.getFrameAtTime((durationMs * fraction * 1000).toLong(), MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                     ?: return@withContext null
                 val scaled = if (frame.width > WIDTH) {
-                    Bitmap.createScaledBitmap(frame, WIDTH, frame.height * WIDTH / frame.width, true).also { frame.recycle() }
+                    frame.scale(WIDTH, frame.height * WIDTH / frame.width).also { frame.recycle() }
                 } else {
                     frame
                 }

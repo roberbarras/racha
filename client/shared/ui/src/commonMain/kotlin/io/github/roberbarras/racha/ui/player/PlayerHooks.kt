@@ -39,4 +39,7 @@ interface PlayerHooks {
 
     /** Two-letter UI language, used to pick subtitles. */
     fun language(): String
+
+    /** The player closed: undo window changes it made (brightness override…). */
+    fun onClosed() = Unit
 }

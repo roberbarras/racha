@@ -105,6 +105,7 @@ class PlayerViewModel(
     override fun onCleared() {
         hooks.setFullscreen(false)
         hooks.onPlayingChanged(false, 0, 0)
+        hooks.onClosed()
         // The view model scope is gone: finish the final save, history entry and release on the app scope.
         deps.appScope.launch { controller.close() }
     }

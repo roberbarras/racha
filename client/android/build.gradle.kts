@@ -38,10 +38,16 @@ dependencies {
     implementation(libs.sqldelight.android.driver)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.session)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.kotlin.test)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    // Compose testing pulls Espresso 3.5, which reflects on InputManager.getInstance (gone in recent Android).
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
