@@ -22,6 +22,8 @@ data class EngineSnapshot(
     val selectedSubtitle: String? = null,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
+    /** Current subtitle text when the app draws subtitles itself (Android); null when the engine renders them. */
+    val subtitleText: String? = null,
     val error: String? = null,
 )
 

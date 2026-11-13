@@ -94,4 +94,34 @@
         <item>July</item><item>August</item><item>September</item><item>October</item><item>November</item><item>December</item>
     </string-array>
     <string name="date_long">%1$s, %2$s %3$d, %4$d</string>
+    <string name="course_finished">You finished this course</string>
+    <string name="loop_a_set">A at %1$s · set B</string>
+    <string name="loop_label">Loop %1$s – %2$s</string>
+    <string name="player_unavailable">This file is not on this device. Your progress is kept.</string>
+    <string name="screenshot_saved">Screenshot saved to %1$s</string>
+    <string name="ab_loop">A-B loop</string>
+    <string name="audio_track">Audio track</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="elements">Lessons</string>
+    <string name="fullscreen">Fullscreen</string>
+    <string name="next_element">Next</string>
+    <string name="pause">Pause</string>
+    <string name="picture_in_picture">Picture in picture</string>
+    <string name="play">Play</string>
+    <string name="player_settings">Player settings</string>
+    <string name="previous_element">Previous</string>
+    <string name="screenshot">Screenshot</string>
+    <string name="seek_back">Back %1$d s</string>
+    <string name="seek_forward">Forward %1$d s</string>
+    <string name="speed">Speed</string>
+    <string name="subtitles">Subtitles</string>
+    <string name="add_bookmark">Add bookmark here</string>
+    <string name="bookmark_note">Note (optional)</string>
+    <string name="no_bookmarks">No bookmarks yet</string>
+    <string name="skip_intro">Skip intro for this lesson</string>
+    <string name="skip_outro">Skip outro for this lesson</string>
+    <string name="skip_seconds">%1$d s</string>
+    <string name="subtitles_off">Off</string>
+    <string name="track_default">Track %1$d</string>
+    <string name="delete_bookmark">Delete bookmark</string>
 </resources>

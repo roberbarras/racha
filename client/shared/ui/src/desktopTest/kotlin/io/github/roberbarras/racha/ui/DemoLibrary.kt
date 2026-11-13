@@ -97,6 +97,13 @@ object DemoLibrary {
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = null
             },
+            playbackController = { engine, scope ->
+                io.github.roberbarras.racha.application.playback.PlaybackController(
+                    engine, scope, db.library, db.categories, emptySource, db.progress, db.bookmarks, db.history, db.stats,
+                    preferences, update, clock, utc,
+                ) { "en" }
+            },
+            appScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default),
         )
     }
 

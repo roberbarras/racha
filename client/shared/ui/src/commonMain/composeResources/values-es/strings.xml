@@ -94,4 +94,34 @@
         <item>julio</item><item>agosto</item><item>septiembre</item><item>octubre</item><item>noviembre</item><item>diciembre</item>
     </string-array>
     <string name="date_long">%1$s, %3$d de %2$s de %4$d</string>
+    <string name="course_finished">Has terminado este curso</string>
+    <string name="loop_a_set">A en %1$s · marca B</string>
+    <string name="loop_label">Bucle %1$s – %2$s</string>
+    <string name="player_unavailable">Este fichero no está en este dispositivo. Tu progreso se conserva.</string>
+    <string name="screenshot_saved">Captura guardada en %1$s</string>
+    <string name="ab_loop">Bucle A-B</string>
+    <string name="audio_track">Pista de audio</string>
+    <string name="bookmarks">Marcadores</string>
+    <string name="elements">Lecciones</string>
+    <string name="fullscreen">Pantalla completa</string>
+    <string name="next_element">Siguiente</string>
+    <string name="pause">Pausa</string>
+    <string name="picture_in_picture">Imagen en imagen</string>
+    <string name="play">Reproducir</string>
+    <string name="player_settings">Ajustes del reproductor</string>
+    <string name="previous_element">Anterior</string>
+    <string name="screenshot">Captura</string>
+    <string name="seek_back">Retroceder %1$d s</string>
+    <string name="seek_forward">Avanzar %1$d s</string>
+    <string name="speed">Velocidad</string>
+    <string name="subtitles">Subtítulos</string>
+    <string name="add_bookmark">Añadir marcador aquí</string>
+    <string name="bookmark_note">Nota (opcional)</string>
+    <string name="no_bookmarks">Aún no hay marcadores</string>
+    <string name="skip_intro">Saltar intro de esta lección</string>
+    <string name="skip_outro">Saltar outro de esta lección</string>
+    <string name="skip_seconds">%1$d s</string>
+    <string name="subtitles_off">Desactivados</string>
+    <string name="track_default">Pista %1$d</string>
+    <string name="delete_bookmark">Borrar marcador</string>
 </resources>

@@ -5,6 +5,10 @@ import io.github.roberbarras.racha.android.library.AndroidMediaProbe
 import io.github.roberbarras.racha.android.library.AndroidThumbnailRenderer
 import io.github.roberbarras.racha.android.library.FileObserverLibraryWatcher
 import io.github.roberbarras.racha.application.browse.GetElement
+import io.github.roberbarras.racha.application.playback.PlaybackController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import io.github.roberbarras.racha.application.browse.ManageRoots
 import io.github.roberbarras.racha.application.browse.MarkProgress
 import io.github.roberbarras.racha.application.browse.ObserveCategory
@@ -53,6 +57,7 @@ class AndroidGraph(context: Context) {
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /** UI dependencies for one activity (the platform hooks are bound to it). */
     fun dependencies(platform: PlatformHooks) = RachaDependencies(
@@ -73,5 +78,12 @@ class AndroidGraph(context: Context) {
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
+        playbackController = { engine, scope ->
+        PlaybackController(
+            engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
+            database.history, database.stats, preferences, updateItemProgress, clock, localDates,
+        ) { platform.player?.language() ?: "en" }
+    },
+        appScope = appScope,
     )
 }

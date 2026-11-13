@@ -1,6 +1,10 @@
 package io.github.roberbarras.racha.desktop
 
 import io.github.roberbarras.racha.application.browse.GetElement
+import io.github.roberbarras.racha.application.playback.PlaybackController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import io.github.roberbarras.racha.application.browse.ManageRoots
 import io.github.roberbarras.racha.application.browse.MarkProgress
 import io.github.roberbarras.racha.application.browse.ObserveCategory
@@ -51,6 +55,7 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     val dependencies = RachaDependencies(
         clock = clock,
@@ -70,6 +75,13 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
+        playbackController = { engine, scope ->
+        PlaybackController(
+            engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
+            database.history, database.stats, preferences, updateItemProgress, clock, localDates,
+        ) { platform.player?.language() ?: "en" }
+    },
+        appScope = appScope,
     )
 
     override fun close() = probe.close()

@@ -16,6 +16,10 @@ import io.github.roberbarras.racha.application.library.scan.KeepLibraryUpToDate
 import io.github.roberbarras.racha.application.library.scan.LocalDates
 import io.github.roberbarras.racha.application.preferences.Preferences
 import io.github.roberbarras.racha.application.shared.Clock
+import io.github.roberbarras.racha.application.playback.PlaybackController
+import io.github.roberbarras.racha.application.playback.PlayerEngine
+import io.github.roberbarras.racha.ui.player.PlayerHooks
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -38,6 +42,10 @@ class RachaDependencies(
     val setMode: SetMode,
     val keepLibraryUpToDate: KeepLibraryUpToDate,
     val platform: PlatformHooks,
+    /** Builds the shared playback controller around a platform engine (player screen). */
+    val playbackController: (PlayerEngine, CoroutineScope) -> PlaybackController,
+    /** Outlives screens: finishes saves when a player closes. */
+    val appScope: CoroutineScope,
 )
 
 /** Platform capabilities the shared UI needs. */
@@ -50,4 +58,7 @@ interface PlatformHooks {
 
     /** Opens the system screen that grants storage access. */
     fun requestStorageAccess() {}
+
+    /** Video playback capabilities; null where the player is not available yet. */
+    val player: PlayerHooks? get() = null
 }
