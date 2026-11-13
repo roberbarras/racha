@@ -37,6 +37,7 @@ dependencies {
     implementation(project(":shared:files"))
     implementation(libs.sqldelight.android.driver)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.splashscreen)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)

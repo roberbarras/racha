@@ -118,3 +118,27 @@ class ScreenshotTest {
     @Test fun phoneHomeEs() = shoot("phone-home-es", 412, 915, "es", dark = false)
     @Test fun phoneDetailDarkEs() = shoot("phone-detail-dark-es", 412, 915, "es", dark = true, openCourse = true)
 }
+
+/** Frames of the cold-start animation, rendered with a manually advanced clock. */
+@OptIn(ExperimentalTestApi::class)
+class LaunchAnimationTest {
+    private val out = File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
+
+    @Test
+    fun framesAndCompletion() = runDesktopComposeUiTest(412, 915) {
+        var finished = false
+        mainClock.autoAdvance = false
+        setContent {
+            io.github.roberbarras.racha.ui.design.RachaTheme(dark = false, reduceMotion = false) {
+                io.github.roberbarras.racha.ui.app.LaunchAnimation(contentReady = true, onFinished = { finished = true })
+            }
+        }
+        listOf(0L, 600L, 1200L).forEach { ms ->
+            mainClock.advanceTimeBy(if (ms == 0L) 16 else 600)
+            ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", File(out, "launch-${ms}ms.png"))
+        }
+        mainClock.advanceTimeBy(1_500)
+        waitForIdle()
+        check(finished) { "the overlay leaves after about 2 s when content is ready" }
+    }
+}

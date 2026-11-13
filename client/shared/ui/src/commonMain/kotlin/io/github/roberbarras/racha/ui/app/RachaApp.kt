@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -37,7 +40,7 @@ import io.github.roberbarras.racha.ui.category.CategoryScreen
 
 /** Root of the shared UI: theme from settings, adaptive shell, navigation and keyboard shortcuts. */
 @Composable
-fun RachaApp(deps: RachaDependencies, navController: NavHostController = rememberNavController()) {
+fun RachaApp(deps: RachaDependencies, navController: NavHostController = rememberNavController(), launchAnimation: Boolean = false) {
     val app = viewModel { AppViewModel(deps) }
     val appearance by app.appearance.collectAsStateWithLifecycle()
     val dark = when (appearance.theme) {
@@ -48,6 +51,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
     val accent = appearance.accent.takeIf { it != Settings.AccentColor.default }?.let(::parseColor)
     RachaTheme(dark = dark, accent = accent, fontScale = appearance.fontScale.toFloat()) {
         val home by app.home.collectAsStateWithLifecycle()
+        var showLaunch by rememberSaveable { mutableStateOf(launchAnimation) }
         val scan by app.scan.collectAsStateWithLifecycle()
         val entry by navController.currentBackStackEntryAsState()
         val destination = entry?.destination
@@ -109,6 +113,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                     }
                 }
             }
+            if (showLaunch) LaunchAnimation(contentReady = home != null, onFinished = { showLaunch = false })
         }
     }
 }

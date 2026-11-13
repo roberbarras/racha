@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.app
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import io.github.roberbarras.racha.ui.design.RachaLogo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -102,9 +105,7 @@ fun RachaShell(
 @Composable
 private fun Wordmark(onDark: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.s)) {
-        Box(Modifier.size(32.dp).clip(RoundedCornerShape(Racha.radius.s)).background(Racha.colors.accent), contentAlignment = Alignment.Center) {
-            RText("R", style = Racha.type.heading, color = Racha.colors.onAccent)
-        }
+        Image(rememberVectorPainter(RachaLogo), contentDescription = null, modifier = Modifier.size(36.dp))
         RText(stringResource(Res.string.app_name), style = Racha.type.title, color = if (onDark) Racha.colors.onRail else Racha.colors.ink)
     }
 }
@@ -197,9 +198,7 @@ private fun Rail(current: Destination?, onNavigate: (Destination) -> Unit, strea
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Racha.space.s),
     ) {
-        Box(Modifier.size(40.dp).clip(RoundedCornerShape(Racha.radius.m)).background(colors.accent), contentAlignment = Alignment.Center) {
-            RText("R", style = Racha.type.title, color = colors.onAccent)
-        }
+        Image(rememberVectorPainter(RachaLogo), contentDescription = stringResource(Res.string.app_name), modifier = Modifier.size(48.dp))
         Box(Modifier.height(Racha.space.l))
         Destination.entries.forEach { d ->
             val selected = current == d

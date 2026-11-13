@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -14,6 +15,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var platform: AndroidPlatform
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The system splash covers the first frame; LaunchAnimation continues it while data loads in background.
+        installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val graph = (application as RachaApplication).graph
@@ -24,7 +27,8 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) { graph.keepLibraryUpToDate.run() }
         }
         val dependencies = graph.dependencies(platform)
-        setContent { RachaApp(dependencies) }
+        val coldStart = savedInstanceState == null
+        setContent { RachaApp(dependencies, launchAnimation = coldStart) }
     }
 
     override fun onResume() {

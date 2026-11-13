@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand background of the Racha icon (design/brand) and paper background of the app (design/tokens.json). -->
+    <color name="racha_navy">#212A41</color>
+    <color name="racha_paper">#F6F1E9</color>
+</resources>

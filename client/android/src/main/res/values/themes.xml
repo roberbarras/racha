@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown by the system from the very first frame (no blank window), then hands over to LaunchAnimation. -->
+    <style name="Theme.Racha.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/racha_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Racha</item>
+    </style>
+
+    <style name="Theme.Racha" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/racha_navy</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>
