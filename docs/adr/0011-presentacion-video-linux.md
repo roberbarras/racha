@@ -16,3 +16,5 @@
 - *VA-API por defecto*: inestable en el equipo de pruebas; `vaapi-copy` además gasta más que decodificar por software a 1080p.
 
 **Consecuencias**: hay que gestionar dos ventanas (posición, pantalla completa, PiP, multimonitor) en H6. `wid` depende de X11 (AWT corre en XWayland). Android no cambia: Media3 + MediaCodec + `SurfaceView`.
+
+**Aprendido en H6 (2026-11-13)**: tener libmpv y AWT en el mismo proceso exige dos salvaguardas, ambas con test: reafirmar `LC_NUMERIC=C` antes de cada llamada a mpv (AWT lo cambia) y restaurar el manejador de errores de Xlib de AWT bajo su cerrojo cada vez que la salida de vídeo de mpv arranca o se cierra (mpv deja el manejador por defecto, que termina el proceso). Si apareciera otro problema de convivencia, la alternativa es ejecutar mpv en un proceso aparte (`--wid` + IPC JSON), que además aislaría un cuelgue de GPU.

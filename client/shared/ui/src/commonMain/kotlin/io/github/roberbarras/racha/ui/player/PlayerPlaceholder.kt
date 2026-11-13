@@ -25,7 +25,7 @@ import io.github.roberbarras.racha.ui.resources.player_coming
 import io.github.roberbarras.racha.ui.resources.resource_coming
 import org.jetbrains.compose.resources.stringResource
 
-/** Where a platform has no player yet (Linux until H6). */
+/** Where the platform cannot play (desktop without libmpv). */
 @Composable
 fun PlayerPlaceholder(deps: RachaDependencies, element: ContentId, mode: StartMode, onBack: () -> Unit) {
     Placeholder(deps, element, onBack) { c ->

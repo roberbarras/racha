@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import io.github.roberbarras.racha.desktop.mpv.LibMpv
 import io.github.roberbarras.racha.desktop.player.DesktopPlayerHooks
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.application.browse.ManageRoots
@@ -49,7 +50,8 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
 
     /** The player of this app (mpv); also needs the main window, given by [Main]. */
     val playerHooks = DesktopPlayerHooks { hardwareDecoding }
-    private val platform: PlatformHooks = platformOverride ?: DesktopPlatform(playerHooks)
+    // Without libmpv (not installed) videos open a screen that says so instead of crashing.
+    private val platform: PlatformHooks = platformOverride ?: DesktopPlatform(playerHooks.takeIf { LibMpv.isAvailable() })
 
     init {
         graphScope.launch { preferences.observe(Settings.HardwareDecoding).collect { hardwareDecoding = it } }

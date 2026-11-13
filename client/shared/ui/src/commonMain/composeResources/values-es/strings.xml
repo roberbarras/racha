@@ -76,7 +76,7 @@
     <string name="permission_title">Racha necesita acceso a tus carpetas</string>
     <string name="permission_message">Para leer cursos en cualquier carpeta del dispositivo, permite el «Acceso a todos los archivos». Racha solo lee; nada sale del dispositivo.</string>
     <string name="permission_action">Permitir acceso</string>
-    <string name="player_coming">El reproductor llega en el siguiente hito. Este elemento empezará en %1$s.</string>
+    <string name="player_coming">El reproductor no puede arrancar en este equipo: falta libmpv (instala el paquete mpv). Este elemento empezaría en %1$s.</string>
     <string name="resource_coming">El visor de recursos llega en un hito posterior.</string>
     <string name="sections">Secciones</string>
     <string name="kind_video">Vídeo</string>

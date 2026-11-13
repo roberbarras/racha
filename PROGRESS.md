@@ -12,7 +12,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | ✅ Cerrado |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | ✅ Cerrado |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | ✅ Cerrado |
-| H6 | Reproductor Linux (libmpv) | Pendiente |
+| H6 | Reproductor Linux (libmpv) | 🟡 En verificación (falta la comprobación visual en escritorio real) |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | Pendiente |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | Pendiente |
 | H9 | Sync extremo a extremo y conflictos | Pendiente |
@@ -47,6 +47,37 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H6 · Reproductor Linux — 🟡 en verificación
+
+Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md) (sección Linux), [ADR-0011](docs/adr/0011-presentacion-video-linux.md).
+
+**Hecho**
+- `MpvEngine` (libmpv por FFM): presenta en una ventana X11 nativa, eventos por observación de propiedades (sin sondeo), subtítulos SRT externos apagados por defecto, pistas de audio, velocidad, seek, escalado nativo, brillo y volumen del vídeo, captura de fotograma. Decodificación por software salvo que se active la de hardware en Ajustes.
+- Capa de controles en ventana transparente sobre el vídeo con la misma UI compartida que Android; pantalla completa (se mantiene con el autoplay), PiP propio (ventana pequeña siempre encima), gestos de ratón aprobados, cursor oculto con los controles, atajos de teclado. Cerrar la ventana guarda la posición.
+- Sin libmpv instalado, abrir un vídeo muestra un aviso en lugar de fallar.
+- Arreglos de fondo encontrados al probar: el shell ya no recrea la pantalla al cambiar de ancho (afectaba también a la rotación en Android); `close()` del reproductor guarda siempre y una sola vez; locale numérico y manejador de errores de Xlib (ver ADR-0011).
+- §3.2.2 "partes de un mismo vídeo": fuera de alcance por decisión tuya.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| `MpvEngineTest` (JVM, libmpv sin vídeo ni audio): MP4, MKV, WebM, MOV, AVI, HLS; rutas con espacios/símbolos; subtítulos ES/EN; inicio en posición; velocidad; seek; carga antes de tener ventana; locale con coma decimal | ✅ 11 tests (3/3 repeticiones) |
+| Arnés de extremo a extremo en Xvfb (app real, ventana X11, sin audio): reanuda en 0:12, capa alineada en ventana/pantalla completa/PiP, PiP encima, captura, guardado al salir y al cerrar la ventana | ✅ 10/10 ejecuciones; también en CI |
+| Android tras los cambios compartidos (emulador) | ✅ 15 tests instrumentados |
+| `check` completo del cliente | ✅ |
+| CI (servidor + cliente + arnés Linux + emulador) | ✅ [run 43450568343](https://github.com/roberbarras/racha/actions/runs/43450568343) |
+| Escritorio real (KDE Wayland/XWayland): transparencia de la capa, alineación, pantalla completa y PiP con gestor de ventanas | ⬜ pendiente de tu permiso |
+
+**Criterios §12**: 🟡 **3** (Linux funcional en Xvfb; falta la comprobación visual en escritorio real).
+
+**Pendiente / notas**
+- En Xvfb no hay compositor: la capa transparente se ve negra en las capturas; por eso la comprobación visual necesita tu escritorio.
+- Multimonitor: el PiP va a la pantalla donde está la ventana; sin probar con dos monitores.
+
+**Bloqueos**: ninguno.
 
 ---
 
