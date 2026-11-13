@@ -68,6 +68,7 @@ Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md). Capturas: [docs/evidence/
 | `PlayerUiTest` en dispositivo (app real): reanudar en 0:12 desde "Continuar viendo", subtítulo ES visible, 1.5x, bucle A-B, captura en la galería, posición guardada al salir, PiP sin cortar la reproducción | ✅ 2 tests |
 | Suite completa: `check` (JVM, escritorio, lint) + 13 tests instrumentados | ✅ |
 | Capturas: controles, panel de subtítulos, PiP | ✅ 3 capturas |
+| CI (servidor + cliente + emulador con los tests instrumentados) | ✅ [run 43437025676](https://github.com/roberbarras/racha/actions/runs/43437025676) |
 
 **Criterios §12**: ✅ **10**; 🟡 **3** (falta Linux, H6); 🟡 **4** (falta sync, H9); 🟡 **12** (falta reproductor Linux y pulido).
 
