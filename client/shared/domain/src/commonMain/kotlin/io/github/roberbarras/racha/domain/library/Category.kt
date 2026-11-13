@@ -38,7 +38,7 @@ data class Category(
 
         /** Built-in categories created on first run. Courses is primary (spec §2.2 opens the primary tab). */
         fun builtIns(now: Instant): List<Category> = listOf(
-            builtIn(CategoryKey.COURSES, "school", "#E85D04", order = 0, primary = true, study = true, leisure = false, now),
+            builtIn(CategoryKey.COURSES, "school", "#E8812A", order = 0, primary = true, study = true, leisure = false, now),
             builtIn(CategoryKey.SERIES, "tv", "#3A86FF", order = 1, primary = false, study = false, leisure = true, now),
             builtIn(CategoryKey.LIVE, "broadcast", "#2D6A4F", order = 2, primary = false, study = true, leisure = true, now),
         )

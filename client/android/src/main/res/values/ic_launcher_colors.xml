@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- design/tokens.json: color.light.accent / color.light.ink -->
+    <color name="racha_accent">#E8812A</color>
+    <color name="racha_ink">#172033</color>
+</resources>

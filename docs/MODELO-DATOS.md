@@ -53,7 +53,7 @@ la fila y arrastraría en cascada sus hijos (hay un test que lo protege).
 | Recordatorio diario | Desactivado, 19:00 |
 | Notificar contenido nuevo / sync fallido | Sí / Sí |
 | Escala de vídeo | Ajustar (`FIT`) |
-| Color de acento | `#E85D04` (provisional hasta los design tokens de H4) |
+| Color de acento | `#E8812A` (el acento de `design/tokens.json`) |
 | Decodificación por hardware en escritorio | Desactivada (ADR-0011) |
 
 Los valores fijados por la spec (10 s por gesto, guardado cada 60 s, subtítulos desactivados, autoplay activado, sync cada 5 min, conflicto de configuración = preguntar, pasos de velocidad 0,25–4) están cubiertos por `SettingsTest`.

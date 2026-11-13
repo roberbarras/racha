@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Racha</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_my_list">My list</string>
+    <string name="nav_history">History</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_folders">Folders</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_main">Main</string>
+    <string name="back">Back</string>
+    <string name="mode_study">Study</string>
+    <string name="mode_leisure">Leisure</string>
+    <string name="category_courses">Courses</string>
+    <string name="category_series">Series</string>
+    <string name="category_live">Live</string>
+    <string name="loose_files">Loose files</string>
+    <string name="greeting">Welcome back</string>
+    <string name="greeting_named">Welcome back, %1$s</string>
+    <string name="streak_days">%1$d-day streak</string>
+    <string name="streak_none">Start a streak today</string>
+    <string name="continue_watching">Continue watching</string>
+    <string name="recommended_today">Recommended today</string>
+    <string name="newly_detected">Newly detected</string>
+    <string name="library">Library</string>
+    <string name="up_next">Up next</string>
+    <string name="next_lesson">Next lesson</string>
+    <string name="discover">Discover</string>
+    <string name="search_placeholder">Search courses, series, lessons…</string>
+    <string name="search_hint">Type at least two characters</string>
+    <string name="search_no_results">Nothing matches “%1$s”</string>
+    <string name="search_items">Courses and series</string>
+    <string name="search_elements">Lessons and episodes</string>
+    <string name="scan_now">Scan now</string>
+    <string name="scan_shortcut">Scan (Ctrl+R)</string>
+    <string name="scanning">Scanning your folders…</string>
+    <string name="library_up_to_date">Library up to date</string>
+    <string name="resume_from">Resume from %1$s</string>
+    <string name="start_over">Start over</string>
+    <string name="start">Start</string>
+    <string name="play_next">Play next</string>
+    <string name="watched_percent">%1$d% watched</string>
+    <string name="items_count">%1$d items</string>
+    <string name="elements_progress">%1$d of %2$d watched</string>
+    <string name="total_duration">%1$s in total</string>
+    <string name="in_my_list">In my list</string>
+    <string name="add_to_my_list">Add to my list</string>
+    <string name="mark_watched">Mark as watched</string>
+    <string name="mark_unwatched">Mark as unwatched</string>
+    <string name="mark_up_to_here">Watched up to here</string>
+    <string name="mark_all_watched">Mark all as watched</string>
+    <string name="mark_all_unwatched">Mark all as unwatched</string>
+    <string name="mark_section_watched">Mark section as watched</string>
+    <string name="unavailable">Not on disk</string>
+    <string name="unavailable_detail">The file is gone. Your progress is kept and comes back if you add it again.</string>
+    <string name="detected_minutes_ago">Detected %1$d min ago</string>
+    <string name="detected_hours_ago">Detected %1$d h ago</string>
+    <string name="detected_days_ago">Detected %1$d d ago</string>
+    <string name="watched_on">%1$s · stopped at %2$s</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="empty_library_title">Your library is empty</string>
+    <string name="empty_library_message">Add the folders where your courses, series or recordings live. Racha organizes them on its own and never uploads them anywhere.</string>
+    <string name="add_folder">Add folder</string>
+    <string name="empty_continue">Nothing in progress. Pick something from your library.</string>
+    <string name="empty_my_list_title">Your list is empty</string>
+    <string name="empty_my_list_message">Save courses, series or single lessons to find them here.</string>
+    <string name="empty_history_title">No history yet</string>
+    <string name="empty_history_message">What you watch appears here, day by day.</string>
+    <string name="empty_category">No content in this category yet. Add a folder to it.</string>
+    <string name="folders_title">Folders</string>
+    <string name="folders_message">Each category can read several folders. Content is only indexed, never moved or uploaded.</string>
+    <string name="remove_folder">Remove folder</string>
+    <string name="no_folders">No folders yet</string>
+    <string name="scan_report">Last scan: %1$d new, %2$d updated, %3$d archived</string>
+    <string name="permission_title">Racha needs access to your folders</string>
+    <string name="permission_message">To read courses anywhere on this device, allow “All files access”. Racha only reads; nothing leaves the device.</string>
+    <string name="permission_action">Allow access</string>
+    <string name="player_coming">The player arrives in the next milestone. This element will start at %1$s.</string>
+    <string name="sections">Sections</string>
+    <string name="kind_video">Video</string>
+    <string name="kind_html">Web page</string>
+    <string name="kind_url">Link</string>
+    <string name="kind_text">Text</string>
+    <string name="kind_pdf">PDF</string>
+    <string name="season_n">Season %1$d</string>
+    <string name="more_actions">More actions</string>
+    <string name="close">Close</string>
+    <string-array name="weekdays">
+        <item>Monday</item><item>Tuesday</item><item>Wednesday</item><item>Thursday</item><item>Friday</item><item>Saturday</item><item>Sunday</item>
+    </string-array>
+    <string-array name="months">
+        <item>January</item><item>February</item><item>March</item><item>April</item><item>May</item><item>June</item>
+        <item>July</item><item>August</item><item>September</item><item>October</item><item>November</item><item>December</item>
+    </string-array>
+    <string name="date_long">%1$s, %2$s %3$d, %4$d</string>
+</resources>

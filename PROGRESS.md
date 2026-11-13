@@ -10,7 +10,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H1 | Spike Linux: presentación de vídeo con libmpv, JavaFX WebView, metadatos/frames | ✅ Cerrado |
 | H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | ✅ Cerrado |
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | ✅ Cerrado |
-| H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | Pendiente |
+| H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | ✅ Cerrado |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | Pendiente |
 | H6 | Reproductor Linux (libmpv) | Pendiente |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | Pendiente |
@@ -25,7 +25,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | # | Criterio | Hito previsto | Estado |
 |---|---|---|---|
 | 1 | Escaneo de la estructura de ejemplo | H3 | ✅ H3 (dominio, SQLite, Linux real, Android) |
-| 2 | Home con "Continuar viendo" y pestaña principal | H4 | ⬜ |
+| 2 | Home con "Continuar viendo" y pestaña principal | H4 | ✅ H4 (caso de uso + UI) |
 | 3 | Reproductor Android y Linux completo | H5, H6 | ⬜ |
 | 4 | Offline al 100 % | H5, H9 | ⬜ |
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
@@ -33,9 +33,9 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
-| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ⬜ |
-| 11 | Modo Estudio/Ocio | H4 | ⬜ |
-| 12 | Diseño con identidad propia | H4, H12 | ⬜ |
+| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | 🟡 UI es/en ✅ (H4); subtítulos por idioma → H5 |
+| 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
+| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle en Android y Linux ✅ (H4); player → H5/H6; pulido → H12 |
 
 ## Alcance añadido o ajustado por el usuario (2026-11-11)
 
@@ -46,6 +46,41 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+
+---
+
+## H4 · Sistema de diseño y pantallas — ✅ cerrado
+
+Documento: [docs/DISENO.md](docs/DISENO.md). Capturas: [docs/evidence/h4](docs/evidence/h4).
+
+**Hecho**
+- `design/tokens.json` (paletas clara/oscura, tipografía, espaciado, radios, movimiento, layout) generado a Kotlin en cada build. Instrument Sans (OFL) con cifras tabulares; iconos Lucide (ISC) convertidos a vectores; reducir movimiento según Android/GNOME/KDE.
+- Componentes propios sobre `foundation` (sin Material): botones, selector, progreso, etiquetas, buscador, tarjetas, portadas con placeholder generado, estados vacío/carga/error, anillo de foco.
+- Shell adaptativo inspirado en tus referencias: barra lateral (escritorio), carril oscuro + panel de reanudar (tableta), barra inferior (teléfono). Atajos Ctrl+K (buscar) y Ctrl+R (escanear).
+- Pantallas: Home (continuar viendo, hoy toca, novedades, biblioteca por pestañas), Detalle (secciones, marcado visto/no visto por elemento, sección, curso y "hasta aquí", Mi lista), Categoría, Mi lista, Historial por días, Búsqueda, Carpetas (añadir/quitar raíces, escanear) y aviso de permiso en Android.
+- Casos de uso de navegación, recomendaciones "Hoy toca" (siguiente lección + descubrimiento estable por día) y racha en el dominio.
+- Selector de carpetas nativo: kdialog/zenity en Linux; selector del sistema en Android, convertido a ruta.
+- Textos completos en inglés y español.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: racha, recomendaciones, fechas | ✅ 4 tests |
+| Casos de uso sobre SQLite: criterio 2, primaria configurable, criterio 11, recomendaciones y racha, marcado manual, Mi lista, búsqueda | ✅ 7 tests |
+| UI (Compose, sin pantalla): **criterio 2** (último elemento con `12:34 / 45:10`, pestaña principal abierta), **criterio 11** (Ocio muestra solo lo suyo), **criterio 10** (interfaz en español) | ✅ 3 tests |
+| Capturas de escritorio: Home es/en, claro/oscuro, detalle, tableta y teléfono | ✅ 6 capturas |
+| **App Android real** en emulador (carpeta indexada, miniatura real, Home): teléfono y tableta | ✅ 2 capturas |
+| CI | ver commit de cierre |
+
+**Criterios §12**: ✅ **2**, ✅ **11**; 🟡 **10** (falta subtítulos por idioma, H5); 🟡 **12** (falta el reproductor, H5/H6).
+
+**Pendiente / notas**
+- Tocar un elemento abre una pantalla provisional del reproductor (llega en H5/H6).
+- El idioma de la app sigue al del sistema; el selector llega con Ajustes (H11). Ajustes completos, Estadísticas y Onboarding: H10/H11.
+- La búsqueda distingue mayúsculas en letras acentuadas (`LIKE` de SQLite); búsqueda sin acentos y en el contenido de recursos: H7/H11.
+- §3.2.2 "partes de un mismo vídeo": sigue pendiente de que concretes el caso.
+
+**Bloqueos**: ninguno.
 
 ---
 

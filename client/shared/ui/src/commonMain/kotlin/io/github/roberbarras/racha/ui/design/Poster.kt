@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +32,7 @@ import kotlinx.coroutines.withContext
  * the title (spec §3.3 "fallback: placeholder generado localmente"): tinted paper, diagonal rules and initials.
  */
 @Composable
-fun Poster(uri: String?, title: String, modifier: Modifier = Modifier, tint: Color = Racha.colors.accent, overlay: @Composable () -> Unit = {}) {
+fun Poster(uri: String?, title: String, modifier: Modifier = Modifier, tint: Color = posterTint(title), overlay: @Composable BoxScope.() -> Unit = {}) {
     val image = rememberLocalImage(uri, maxWidth = 640)
     Box(modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(Racha.radius.m))) {
         if (image != null) {
@@ -67,6 +68,19 @@ private fun PosterPlaceholder(title: String, tint: Color) {
         )
     }
 }
+
+/** Muted, distinct hue per title for placeholders (no gradients: one tone, rules and initials). */
+fun posterTint(title: String): Color = POSTER_TINTS[(title.hashCode() and Int.MAX_VALUE) % POSTER_TINTS.size]
+
+private val POSTER_TINTS = listOf(
+    Color(0xFFE8812A), // ember
+    Color(0xFF2E7D57), // pine
+    Color(0xFF2F6FB0), // harbour blue
+    Color(0xFFB9382A), // brick
+    Color(0xFFB7791F), // ochre
+    Color(0xFF1B8A7E), // teal
+    Color(0xFF5E6B7E), // slate
+)
 
 internal fun initials(title: String): String =
     title.split(' ', '-', '_', '.').filter { w -> w.firstOrNull()?.isLetterOrDigit() == true }

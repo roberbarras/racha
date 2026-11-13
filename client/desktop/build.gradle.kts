@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.sqldelight.sqlite.driver)
     implementation(libs.sqlite.jdbc)
     implementation(compose.desktop.currentOs)
+    implementation(libs.kotlinx.coroutines.swing)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlinx.coroutines.test)

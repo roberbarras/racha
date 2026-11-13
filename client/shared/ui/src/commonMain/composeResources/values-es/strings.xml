@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Racha</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_my_list">Mi lista</string>
+    <string name="nav_history">Historial</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_folders">Carpetas</string>
+    <string name="nav_categories">Categorías</string>
+    <string name="nav_main">Principal</string>
+    <string name="back">Volver</string>
+    <string name="mode_study">Estudio</string>
+    <string name="mode_leisure">Ocio</string>
+    <string name="category_courses">Cursos</string>
+    <string name="category_series">Series</string>
+    <string name="category_live">Directos</string>
+    <string name="loose_files">Sueltos</string>
+    <string name="greeting">Hola de nuevo</string>
+    <string name="greeting_named">Hola de nuevo, %1$s</string>
+    <string name="streak_days">Racha de %1$d días</string>
+    <string name="streak_none">Empieza tu racha hoy</string>
+    <string name="continue_watching">Continuar viendo</string>
+    <string name="recommended_today">Hoy toca</string>
+    <string name="newly_detected">Novedades detectadas</string>
+    <string name="library">Biblioteca</string>
+    <string name="up_next">A continuación</string>
+    <string name="next_lesson">Siguiente lección</string>
+    <string name="discover">Descubre</string>
+    <string name="search_placeholder">Buscar cursos, series, lecciones…</string>
+    <string name="search_hint">Escribe al menos dos caracteres</string>
+    <string name="search_no_results">Nada coincide con «%1$s»</string>
+    <string name="search_items">Cursos y series</string>
+    <string name="search_elements">Lecciones y episodios</string>
+    <string name="scan_now">Escanear ahora</string>
+    <string name="scan_shortcut">Escanear (Ctrl+R)</string>
+    <string name="scanning">Escaneando tus carpetas…</string>
+    <string name="library_up_to_date">Biblioteca al día</string>
+    <string name="resume_from">Reanudar desde %1$s</string>
+    <string name="start_over">Empezar de nuevo</string>
+    <string name="start">Empezar</string>
+    <string name="play_next">Ver siguiente</string>
+    <string name="watched_percent">%1$d % visto</string>
+    <string name="items_count">%1$d elementos</string>
+    <string name="elements_progress">%1$d de %2$d vistos</string>
+    <string name="total_duration">%1$s en total</string>
+    <string name="in_my_list">En mi lista</string>
+    <string name="add_to_my_list">Añadir a mi lista</string>
+    <string name="mark_watched">Marcar como visto</string>
+    <string name="mark_unwatched">Marcar como no visto</string>
+    <string name="mark_up_to_here">Visto hasta aquí</string>
+    <string name="mark_all_watched">Marcar todo como visto</string>
+    <string name="mark_all_unwatched">Marcar todo como no visto</string>
+    <string name="mark_section_watched">Marcar sección como vista</string>
+    <string name="unavailable">No está en disco</string>
+    <string name="unavailable_detail">El fichero ya no está. Tu progreso se conserva y vuelve si lo añades de nuevo.</string>
+    <string name="detected_minutes_ago">Detectado hace %1$d min</string>
+    <string name="detected_hours_ago">Detectado hace %1$d h</string>
+    <string name="detected_days_ago">Detectado hace %1$d d</string>
+    <string name="watched_on">%1$s · parado en %2$s</string>
+    <string name="today">Hoy</string>
+    <string name="yesterday">Ayer</string>
+    <string name="empty_library_title">Tu biblioteca está vacía</string>
+    <string name="empty_library_message">Añade las carpetas donde tienes tus cursos, series o grabaciones. Racha las organiza sola y nunca las sube a ningún sitio.</string>
+    <string name="add_folder">Añadir carpeta</string>
+    <string name="empty_continue">Nada a medias. Elige algo de tu biblioteca.</string>
+    <string name="empty_my_list_title">Tu lista está vacía</string>
+    <string name="empty_my_list_message">Guarda cursos, series o lecciones sueltas para encontrarlos aquí.</string>
+    <string name="empty_history_title">Aún no hay historial</string>
+    <string name="empty_history_message">Lo que veas aparecerá aquí, día a día.</string>
+    <string name="empty_category">Esta categoría aún no tiene contenido. Añádele una carpeta.</string>
+    <string name="folders_title">Carpetas</string>
+    <string name="folders_message">Cada categoría puede leer varias carpetas. El contenido solo se indexa: nunca se mueve ni se sube.</string>
+    <string name="remove_folder">Quitar carpeta</string>
+    <string name="no_folders">Sin carpetas todavía</string>
+    <string name="scan_report">Último escaneo: %1$d nuevos, %2$d actualizados, %3$d archivados</string>
+    <string name="permission_title">Racha necesita acceso a tus carpetas</string>
+    <string name="permission_message">Para leer cursos en cualquier carpeta del dispositivo, permite el «Acceso a todos los archivos». Racha solo lee; nada sale del dispositivo.</string>
+    <string name="permission_action">Permitir acceso</string>
+    <string name="player_coming">El reproductor llega en el siguiente hito. Este elemento empezará en %1$s.</string>
+    <string name="sections">Secciones</string>
+    <string name="kind_video">Vídeo</string>
+    <string name="kind_html">Página web</string>
+    <string name="kind_url">Enlace</string>
+    <string name="kind_text">Texto</string>
+    <string name="kind_pdf">PDF</string>
+    <string name="season_n">Temporada %1$d</string>
+    <string name="more_actions">Más acciones</string>
+    <string name="close">Cerrar</string>
+    <string-array name="weekdays">
+        <item>lunes</item><item>martes</item><item>miércoles</item><item>jueves</item><item>viernes</item><item>sábado</item><item>domingo</item>
+    </string-array>
+    <string-array name="months">
+        <item>enero</item><item>febrero</item><item>marzo</item><item>abril</item><item>mayo</item><item>junio</item>
+        <item>julio</item><item>agosto</item><item>septiembre</item><item>octubre</item><item>noviembre</item><item>diciembre</item>
+    </string-array>
+    <string name="date_long">%1$s, %3$d de %2$s de %4$d</string>
+</resources>

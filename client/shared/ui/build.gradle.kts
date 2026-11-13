@@ -6,58 +6,10 @@ plugins {
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val generatedTokens = layout.buildDirectory.dir("generated/tokens/commonMain/kotlin")
-
-kotlin {
-    jvmToolchain(25)
-    jvm("desktop")
-    android {
-        namespace = "io.github.roberbarras.racha.ui"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
-        androidResources { enable = true }
-    }
-
-    sourceSets.all {
-        languageSettings.optIn("kotlin.time.ExperimentalTime")
-        languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
-    }
-
-    sourceSets {
-        commonMain {
-            kotlin.srcDir(generatedTokens)
-            dependencies {
-                api(project(":shared:application"))
-                implementation(libs.compose.runtime)
-                implementation(libs.compose.foundation)
-                implementation(libs.compose.ui)
-                implementation(libs.compose.components.resources)
-                implementation(libs.compose.ui.backhandler)
-                implementation(libs.jb.navigation.compose)
-                implementation(libs.jb.lifecycle.viewmodel.compose)
-                implementation(libs.jb.lifecycle.runtime.compose)
-            }
-        }
-        val desktopTest by getting {
-            dependencies {
-                implementation(libs.kotlin.test)
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.compose.ui.test)
-                implementation(compose.desktop.currentOs)
-                implementation(project(":shared:data"))
-                implementation(libs.sqldelight.sqlite.driver)
-                implementation(libs.sqlite.jdbc)
-            }
-        }
-    }
-}
-
-compose.resources {
-    packageOfResClass = "io.github.roberbarras.racha.ui.resources"
-    publicResClass = false
-}
 
 /** design/tokens.json (single source of truth, spec §10.3) -> Kotlin constants. */
 val generateDesignTokens by tasks.registering {
@@ -118,8 +70,58 @@ val generateDesignTokens by tasks.registering {
     }
 }
 
-tasks.matching { it.name.startsWith("compileKotlin") || it.name.contains("SourcesJar") || it.name.startsWith("ksp") }
-    .configureEach { dependsOn(generateDesignTokens) }
+
+kotlin {
+    jvmToolchain(25)
+    jvm("desktop")
+    android {
+        namespace = "io.github.roberbarras.racha.ui"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources { enable = true }
+    }
+
+    sourceSets.all {
+        languageSettings.optIn("kotlin.time.ExperimentalTime")
+        languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
+    }
+
+    sourceSets {
+        commonMain {
+            // Registered from the task so every compilation (desktop, Android, sources jars) depends on it.
+            kotlin.srcDir(generateDesignTokens)
+            dependencies {
+                api(project(":shared:application"))
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.components.resources)
+                implementation(libs.compose.ui.backhandler)
+                implementation(libs.jb.navigation.compose)
+                implementation(libs.jb.lifecycle.viewmodel.compose)
+                implementation(libs.jb.lifecycle.runtime.compose)
+                implementation(libs.kotlinx.serialization.core)
+            }
+        }
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.compose.ui.test)
+                implementation(libs.kotlinx.coroutines.swing)
+                implementation(compose.desktop.currentOs)
+                implementation(project(":shared:data"))
+                implementation(libs.sqldelight.sqlite.driver)
+                implementation(libs.sqlite.jdbc)
+            }
+        }
+    }
+}
+
+compose.resources {
+    packageOfResClass = "io.github.roberbarras.racha.ui.resources"
+    publicResClass = false
+}
 
 tasks.withType<Test>().configureEach {
     jvmArgs("--enable-native-access=ALL-UNNAMED")

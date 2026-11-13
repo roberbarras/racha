@@ -7,6 +7,10 @@ import io.github.roberbarras.racha.domain.preferences.Settings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.emptyFlow
@@ -25,6 +29,9 @@ import kotlin.time.Duration.Companion.seconds
  * coalesced with [quietPeriod]. Background jobs (hashes, posters) follow each scan. Runs until cancelled; platforms
  * run it while the app is in use, so no watcher stays alive in the background.
  */
+/** Observable scan state for the UI ("Library up to date · Scan", spec §10.3 "sincronizando/cargando" states). */
+data class ScanStatus(val running: Boolean = false, val last: ScanReport? = null)
+
 class KeepLibraryUpToDate(
     private val categories: CategoryRepository,
     private val scan: ScanLibrary,
@@ -34,8 +41,20 @@ class KeepLibraryUpToDate(
     private val preferences: Preferences,
     private val quietPeriod: Duration = 3.seconds,
 ) {
+    private val mutableStatus = MutableStateFlow(ScanStatus())
+    val status: StateFlow<ScanStatus> = mutableStatus.asStateFlow()
+
+    private suspend fun <T : ScanReport> tracked(block: suspend () -> T): T {
+        mutableStatus.update { it.copy(running = true) }
+        try {
+            return block().also { report -> mutableStatus.update { ScanStatus(running = false, last = report) } }
+        } finally {
+            mutableStatus.update { it.copy(running = false) }
+        }
+    }
+
     /** Manual "Scan now" from settings (spec §3.3), regardless of the automatic setting. */
-    suspend fun scanNow(): ScanReport = scan.all().also { afterScan() }
+    suspend fun scanNow(): ScanReport = tracked { scan.all() }.also { afterScan() }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     suspend fun run() {
@@ -53,7 +72,7 @@ class KeepLibraryUpToDate(
             .debounce(quietPeriod)
             .collect {
                 val keys = lock.withLock { pending.toSet().also { pending.clear() } }
-                keys.forEach { scan.category(it) }
+                tracked { keys.fold(ScanReport()) { report, key -> report + scan.category(key) } }
                 afterScan()
             }
     }

@@ -25,7 +25,7 @@ object Settings {
     // General
     val Language = EnumSetting("general.language", USER, AppLanguage.SYSTEM, AppLanguage.entries)
     val Theme = EnumSetting("general.theme", USER, ThemeMode.SYSTEM, ThemeMode.entries)
-    val AccentColor = StringSetting("general.accentColor", USER, "#E85D04", Regex("#[0-9A-Fa-f]{6}"))
+    val AccentColor = StringSetting("general.accentColor", USER, "#E8812A", Regex("#[0-9A-Fa-f]{6}"))
     val FontScale = DoubleSetting("general.fontScale", USER, 1.0, 0.85..1.3)
 
     // Mode

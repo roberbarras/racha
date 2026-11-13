@@ -72,3 +72,14 @@ class ToggleFavorite(private val favorites: FavoriteRepository, private val cloc
         if (favorite) favorites.add(Favorite(target, clock.now())) else favorites.remove(target)
     }
 }
+
+data class PlayableContext(val element: PlayableElement, val item: io.github.roberbarras.racha.domain.library.LibraryItem, val progress: Progress?)
+
+/** Element, its course and its progress: what a player needs to open something (spec §4.2 resume). */
+class GetElement(private val library: LibraryRepository, private val progress: ProgressRepository) {
+    suspend operator fun invoke(id: ContentId): PlayableContext? {
+        val element = library.element(id) ?: return null
+        val item = library.item(element.libraryItemId) ?: return null
+        return PlayableContext(element, item, progress.get(id))
+    }
+}

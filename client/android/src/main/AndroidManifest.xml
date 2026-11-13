@@ -16,6 +16,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:name=".RachaApplication"
+        android:icon="@mipmap/ic_launcher"
         android:label="Racha"
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
