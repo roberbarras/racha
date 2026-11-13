@@ -16,6 +16,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    sourceSets["androidTest"].assets.directories += "../testdata/media"
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -32,6 +34,7 @@ kotlin {
 dependencies {
     implementation(project(":shared:ui"))
     implementation(project(":shared:data"))
+    implementation(project(":shared:files"))
     implementation(libs.sqldelight.android.driver)
     implementation(libs.androidx.activity.compose)
 

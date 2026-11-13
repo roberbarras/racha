@@ -9,7 +9,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H0 | Fundaciones y walking skeleton | ✅ Cerrado |
 | H1 | Spike Linux: presentación de vídeo con libmpv, JavaFX WebView, metadatos/frames | ✅ Cerrado |
 | H2 | Modelo local (SQLDelight), migraciones, `contentId`, ajustes tipados | ✅ Cerrado |
-| H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | Pendiente |
+| H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | ✅ Cerrado |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | Pendiente |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | Pendiente |
 | H6 | Reproductor Linux (libmpv) | Pendiente |
@@ -24,13 +24,13 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 | # | Criterio | Hito previsto | Estado |
 |---|---|---|---|
-| 1 | Escaneo de la estructura de ejemplo | H3 | ⬜ |
+| 1 | Escaneo de la estructura de ejemplo | H3 | ✅ H3 (dominio, SQLite, Linux real, Android) |
 | 2 | Home con "Continuar viendo" y pestaña principal | H4 | ⬜ |
 | 3 | Reproductor Android y Linux completo | H5, H6 | ⬜ |
 | 4 | Offline al 100 % | H5, H9 | ⬜ |
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
 | 6 | Recurso HTML como elemento del curso | H7 | ⬜ |
-| 7 | IDs estables, archivado | H3 | ⬜ |
+| 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ⬜ |
@@ -46,6 +46,44 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+
+---
+
+## H3 · Escaneo e indexación — ✅ cerrado
+
+Reglas implementadas: [docs/ESCANEO.md](docs/ESCANEO.md).
+
+**Hecho**
+- Detección pura (dominio) con la cascada de §3.2: `NN - sección`, `NNN elemento`, `_xx.srt`, fechas (3 formatos), temporadas/`SxxEyy`/`Capítulo`, orden natural y por fecha de modificación, "Sueltos", exclusiones estilo gitignore (`temp/` por defecto), segmentos HLS, portadas de carpeta. Detecta tanto "la raíz es un curso" (§3.1) como "la raíz contiene cursos".
+- `ScanLibrary` incremental: solo analiza lo nuevo o cambiado, conserva ediciones del usuario, archiva lo desaparecido, restaura lo que vuelve, revincula ficheros movidos por SHA-256 sin leer bibliotecas enteras.
+- Trabajos en segundo plano: hashes de elementos con datos del usuario y portadas (carpeta → fotograma al 10 %).
+- `KeepLibraryUpToDate`: escaneo al abrir, vigilancia de cambios con agrupación de ráfagas por categoría, "Escanear ahora"; conectado en ambas apps (en Android solo con la app visible).
+- Adaptadores: java.nio común (listado, SHA-256 en streaming, fechas locales); Linux: libmpv vía FFM (metadatos, miniaturas WebP), inotify; Android: MediaExtractor/MediaMetadataRetriever, miniaturas WebP, FileObserver recursivo; permisos de almacenamiento declarados.
+- Esquema v2 (índice para revincular): primera migración real, verificada contra la instantánea v1.
+- Clips de prueba de 2 s (MP4/MKV/WebM, 37 KB) en `client/testdata/media`.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: árbol exacto de §3.1, series, directos, mtime, exclusiones, parser | ✅ 21 tests nuevos (49 en total) |
+| Escaneo sobre SQLite: §3.1 de extremo a extremo, incremental, ediciones, archivado/restaurado, fichero movido con progreso y marcadores, modo hash, `temp/`, progreso del curso, portadas | ✅ 10 tests |
+| Escaneo automático: inicial, ráfagas por categoría, ajustes | ✅ 2 tests |
+| Migración v1 → v2 | ✅ |
+| java.nio: listado, exclusiones, precisión de mtime, SHA-256 por bloques | ✅ 4 tests |
+| **Linux real** (ficheros en disco + libmpv + SQLite en fichero): criterio 1, criterio 7, portada WebP, inotify | ✅ 4 tests |
+| **Android 17 (emulador)**: criterio 1 con MediaExtractor, criterio 7, portada WebP, FileObserver | ✅ 3 tests |
+| App de escritorio arrancada (Xvfb): crea BD v2 en WAL con las 3 categorías | ✅ |
+| Coste de metadatos con libmpv reutilizado (vídeo real 1080p) | 28 ms mediana, p90 35 ms |
+| CI | ver commit de cierre |
+
+**Criterios §12**: ✅ **1** y ✅ **7**.
+
+**Pendiente / notas**
+- §3.2.2 "usar duración para detectar partes de un mismo vídeo": a la espera de que concretes el caso.
+- La pantalla que pide el permiso de "acceso a todos los archivos" en Android llega con el onboarding (H4); sin él, una raíz externa se lista vacía.
+- Si una raíz deja de estar disponible (disco desconectado), su contenido se archiva y se restaura al volver, como indica §3.4.
+
+**Bloqueos**: ninguno.
 
 ---
 

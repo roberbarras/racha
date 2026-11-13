@@ -43,6 +43,8 @@ jobs:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@v6
+      - name: libmpv for desktop metadata/thumbnail tests
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libmpv2
       - run: ./gradlew check :android:assembleDebug :desktop:jar --console=plain
       - uses: actions/upload-artifact@v7
         with:

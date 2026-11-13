@@ -12,11 +12,7 @@ import java.util.Properties
  */
 object DesktopDatabase {
     /** `$XDG_DATA_HOME/racha/racha.db`, defaulting to `~/.local/share/racha/racha.db`. */
-    fun defaultFile(): Path {
-        val dataHome = System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() }?.let(Path::of)
-            ?: Path.of(System.getProperty("user.home"), ".local", "share")
-        return dataHome.resolve("racha").resolve("racha.db")
-    }
+    fun defaultFile(): Path = DesktopPaths.data.resolve("racha.db")
 
     fun open(file: Path = defaultFile()): LocalDatabase {
         Files.createDirectories(file.parent)

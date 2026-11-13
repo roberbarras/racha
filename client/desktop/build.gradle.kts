@@ -13,6 +13,7 @@ kotlin {
 dependencies {
     implementation(project(":shared:ui"))
     implementation(project(":shared:data"))
+    implementation(project(":shared:files"))
     implementation(libs.sqldelight.sqlite.driver)
     implementation(libs.sqlite.jdbc)
     implementation(compose.desktop.currentOs)
@@ -24,6 +25,7 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "io.github.roberbarras.racha.desktop.MainKt"
+        jvmArgs += listOf("--enable-native-access=ALL-UNNAMED")
         nativeDistributions {
             targetFormats(TargetFormat.AppImage)
             packageName = "racha"
