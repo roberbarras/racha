@@ -268,12 +268,16 @@ class PlaybackController(
         save()
     }
 
-    /** Player closed: final save, history entry, engine released. */
+    /** Player closed: final save, history entry, engine released. Safe to call more than once. */
     suspend fun close() {
+        if (closed) return
+        closed = true
         engine.pause()
+        save()
         endSession()
         ticker?.cancel()
         bookmarksJob?.cancel()
+        released = true
         engine.release()
     }
 
@@ -330,6 +334,7 @@ class PlaybackController(
 
     /** Saves progress to the second and flushes watch time (spec §4.3). */
     private suspend fun save() {
+        if (released) return // a save queued by the final pause must not touch a released engine
         val s = mutableState.value
         val element = s.element ?: return
         if (element.kind != ElementKind.VIDEO || s.unavailable || s.resumeOffer != null) return
@@ -395,6 +400,9 @@ class PlaybackController(
         if ((now - start).inWholeSeconds < MIN_SESSION_SEC) return
         history.add(HistoryEntry(Uuid.random().toString(), element.id, start, positionAtEnd ?: (engine.positionMs() / 1000)))
     }
+
+    private var closed = false
+    private var released = false
 
     companion object {
         const val WATCH_SECONDS = "watchSeconds"

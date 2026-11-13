@@ -80,27 +80,27 @@ fun RachaShell(
     immersive: Boolean = false,
     content: @Composable (WindowClass) -> Unit,
 ) {
-    // Immersive screens (player, resource viewer) hide the navigation chrome and handle insets themselves. The tree
-    // keeps its shape so the NavHost below is not recreated when the chrome toggles.
-    val insets = if (immersive) Modifier else Modifier.statusBarsPadding().navigationBarsPadding()
+    // One tree for every width: only the chrome around the content changes, so resizing the window (or rotating a
+    // tablet, or a desktop player shrinking into picture-in-picture) never recreates the screen below. Immersive
+    // screens (player, resource viewer) hide the chrome and handle insets themselves.
     BoxWithConstraints(Modifier.fillMaxSize().background(Racha.colors.background)) {
         val windowClass = when {
             maxWidth < Racha.layout.compactMaxWidth -> WindowClass.Compact
             maxWidth < Racha.layout.expandedMinWidth -> WindowClass.Medium
             else -> WindowClass.Expanded
         }
-        when (windowClass) {
-            WindowClass.Expanded -> Row(Modifier.fillMaxSize()) {
-                if (!immersive) Sidebar(current, onNavigate, categories, onCategory, streakDays, scan, onScan)
-                Box(Modifier.weight(1f).fillMaxHeight().then(insets)) { content(windowClass) }
-            }
-            WindowClass.Medium -> Row(Modifier.fillMaxSize()) {
-                if (!immersive) Rail(current, onNavigate, streakDays)
-                Box(Modifier.weight(1f).fillMaxHeight().then(insets)) { content(windowClass) }
-            }
-            WindowClass.Compact -> Column(Modifier.fillMaxSize()) {
-                Box(Modifier.weight(1f).fillMaxWidth().then(if (immersive) Modifier else Modifier.statusBarsPadding())) { content(windowClass) }
-                if (!immersive) BottomBar(current, onNavigate)
+        val chrome = !immersive
+        Row(Modifier.fillMaxSize()) {
+            if (chrome && windowClass == WindowClass.Expanded) Sidebar(current, onNavigate, categories, onCategory, streakDays, scan, onScan)
+            if (chrome && windowClass == WindowClass.Medium) Rail(current, onNavigate, streakDays)
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                val insets = when {
+                    !chrome -> Modifier
+                    windowClass == WindowClass.Compact -> Modifier.statusBarsPadding()
+                    else -> Modifier.statusBarsPadding().navigationBarsPadding()
+                }
+                Box(Modifier.weight(1f).fillMaxWidth().then(insets)) { content(windowClass) }
+                if (chrome && windowClass == WindowClass.Compact) BottomBar(current, onNavigate)
             }
         }
     }

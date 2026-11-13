@@ -49,6 +49,8 @@ class PlayerViewModel(
     val preferences = MutableStateFlow(PlayerPreferences())
     val notice = MutableStateFlow<String?>(null)
 
+    private val endSession = hooks.onSessionStarted { controller.close() }
+
     init {
         viewModelScope.launch {
             val p = deps.preferences
@@ -106,6 +108,7 @@ class PlayerViewModel(
         hooks.setFullscreen(false)
         hooks.onPlayingChanged(false, 0, 0)
         hooks.onClosed()
+        endSession()
         // The view model scope is gone: finish the final save, history entry and release on the app scope.
         deps.appScope.launch { controller.close() }
     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.IntSize
@@ -25,9 +26,18 @@ sealed interface GestureAction {
     data class Volume(val delta: Float) : GestureAction
     data class HoldSpeed(val held: Boolean) : GestureAction
     data class Pinch(val zoomIn: Boolean) : GestureAction
+
+    /** The mouse moved over the player (desktop): show the controls. */
+    data object PointerMoved : GestureAction
 }
 
 private const val EDGE_FRACTION = 0.25f
+
+/** Volume change per wheel notch. */
+private const val WHEEL_VOLUME_STEP = 0.05f
+
+/** Hover reports are throttled: the controls only need to know the pointer is alive. */
+private const val HOVER_INTERVAL_MS = 250L
 
 /** Seconds per full-width horizontal swipe. */
 private const val SCRUB_SECONDS_PER_WIDTH = 90f
@@ -36,9 +46,10 @@ private const val SCRUB_SECONDS_PER_WIDTH = 90f
  * Player gestures (spec §4.2), each gated by its setting: edge taps and double taps seek ±N s, a centre tap toggles
  * the controls, long press holds the fast speed, horizontal swipe scrubs, vertical swipes adjust brightness (left)
  * and volume (right), pinch switches fit/fill. One pointer handler tells drags from pinches by pointer count, so a
- * two-finger pinch never seeks.
+ * two-finger pinch never seeks. With a mouse, the wheel changes the volume and moving the pointer shows the controls.
  */
 fun Modifier.playerGestures(prefs: PlayerPreferences, scope: CoroutineScope, onAction: (GestureAction) -> Unit): Modifier = this
+    .mouseGestures(prefs, onAction)
     .pointerInput(prefs) {
         detectTapGestures(
             onTap = { offset ->
@@ -103,6 +114,26 @@ fun Modifier.playerGestures(prefs: PlayerPreferences, scope: CoroutineScope, onA
             if (axis == 3 && abs(zoom - 1f) > 0.12f) onAction(GestureAction.Pinch(zoomIn = zoom > 1f))
         }
     }
+
+private fun Modifier.mouseGestures(prefs: PlayerPreferences, onAction: (GestureAction) -> Unit): Modifier = pointerInput(prefs) {
+    var lastHover = 0L
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            when (event.type) {
+                PointerEventType.Scroll -> if (prefs.swipeVolume) {
+                    val notches = event.changes.sumOf { it.scrollDelta.y.toDouble() }.toFloat()
+                    if (notches != 0f) onAction(GestureAction.Volume(-notches * WHEEL_VOLUME_STEP))
+                    event.changes.forEach { it.consume() }
+                }
+                PointerEventType.Move -> if (event.changes.none { it.pressed } && event.changes.first().uptimeMillis - lastHover > HOVER_INTERVAL_MS) {
+                    lastHover = event.changes.first().uptimeMillis
+                    onAction(GestureAction.PointerMoved)
+                }
+            }
+        }
+    }
+}
 
 private fun side(offset: Offset, size: IntSize): Int = when {
     offset.x < size.width * EDGE_FRACTION -> -1

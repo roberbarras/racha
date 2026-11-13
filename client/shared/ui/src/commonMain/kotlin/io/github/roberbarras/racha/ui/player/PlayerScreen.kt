@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.player
 
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -169,108 +170,134 @@ fun PlayerScreen(
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 
-    BoxWithConstraints(
-        Modifier.fillMaxSize().background(Color.Black)
-            .focusRequester(focus).focusable()
-            .onKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                touch()
-                when (event.key) {
-                    Key.Spacebar, Key.K -> vm.controller.togglePlay()
-                    Key.DirectionLeft, Key.J -> vm.controller.seekBy(-prefs.seekStep)
-                    Key.DirectionRight, Key.L -> vm.controller.seekBy(prefs.seekStep)
-                    Key.F -> vm.setFullscreen(!fullscreen)
-                    Key.N -> vm.next()
-                    Key.P -> vm.previous()
-                    Key.Escape -> if (fullscreen) vm.setFullscreen(false) else onBack()
-                    else -> return@onKeyEvent false
-                }
-                true
-            },
-    ) {
-        val container = this
-        VideoBox(vm, hooks, state, scale, container.maxWidth, container.maxHeight)
-        state.engine.subtitleText?.let { SubtitleText(it, Modifier.align(Alignment.BottomCenter).padding(bottom = if (controlsVisible && !inPip) 120.dp else 40.dp)) }
-        if (inPip) return@BoxWithConstraints
-
-        Box(
-            Modifier.fillMaxSize().playerGestures(prefs, scope) { action ->
-                when (action) {
-                    GestureAction.ToggleControls -> if (controlsVisible) controlsVisible = false else touch()
-                    is GestureAction.SeekBy -> {
-                        vm.controller.seekBy(action.seconds)
-                        feedback = (if (action.seconds > 0) "+" else "−") + "${kotlin.math.abs(action.seconds)} s"
-                    }
-                    is GestureAction.Scrub -> {
-                        val base = vm.engine.positionMs()
-                        val target = (base + action.seconds * 1000L).coerceAtLeast(0)
-                        if (action.finished) {
-                            vm.controller.seekTo(target)
-                            scrubTarget = null
-                        } else {
-                            scrubTarget = target
-                            feedback = timecode(target / 1000)
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        BoxWithConstraints(Modifier.fillMaxSize()) { VideoBox(vm, hooks, state, scale, maxWidth, maxHeight) }
+        hooks.ControlsLayer(
+            Modifier.fillMaxSize()
+                .focusRequester(focus).focusable()
+                .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    touch()
+                    when (event.key) {
+                        Key.Spacebar, Key.K -> vm.controller.togglePlay()
+                        Key.DirectionLeft, Key.J -> vm.controller.seekBy(-prefs.seekStep)
+                        Key.DirectionRight, Key.L -> vm.controller.seekBy(prefs.seekStep)
+                        Key.DirectionUp, Key.DirectionDown -> {
+                            volume = (volume + if (event.key == Key.DirectionUp) 0.05f else -0.05f).coerceIn(0f, 1f)
+                            hooks.setVolume(volume)
+                            feedback = "${(volume * 100).toInt()} %"
                         }
+                        Key.F -> vm.setFullscreen(!fullscreen)
+                        Key.N -> vm.next()
+                        Key.P -> vm.previous()
+                        Key.Escape -> when {
+                            inPip -> hooks.exitPictureInPicture()
+                            fullscreen -> vm.setFullscreen(false)
+                            else -> onBack()
+                        }
+                        else -> return@onKeyEvent false
                     }
-                    is GestureAction.Brightness -> {
-                        brightness = (brightness + action.delta).coerceIn(0.02f, 1f)
-                        hooks.setBrightness(brightness)
-                        feedback = "${(brightness * 100).toInt()} %"
-                    }
-                    is GestureAction.Volume -> {
-                        volume = (volume + action.delta).coerceIn(0f, 1f)
-                        hooks.setVolume(volume)
-                        feedback = "${(volume * 100).toInt()} %"
-                    }
-                    is GestureAction.HoldSpeed -> {
-                        vm.controller.holdSpeed(action.held)
-                        feedback = if (action.held) "${prefs.longPressRate}×" else null
-                    }
-                    is GestureAction.Pinch -> vm.scale.value = if (action.zoomIn) VideoScale.FILL else VideoScale.FIT
-                }
-            },
-        )
-
-        feedback?.let { Feedback(it, Modifier.align(Alignment.Center)) }
-
-        AnimatedVisibility(
-            visible = controlsVisible || !state.engine.playing,
-            enter = fadeIn(tween(Racha.duration(Racha.motion.fast))),
-            exit = fadeOut(tween(Racha.duration(Racha.motion.standard))),
+                    true
+                },
         ) {
-            PlayerControls(
-                vm = vm,
-                state = state,
-                position = scrubTarget ?: position,
-                fullscreen = fullscreen,
-                panelOpen = panel != PlayerPanel.None,
-                onBack = onBack,
-                onInteraction = ::touch,
-                onScreenshot = { vm.screenshot { path -> getString(Res.string.screenshot_saved, path) } },
-            )
-        }
+            val container = this
+            state.engine.subtitleText?.let { SubtitleText(it, Modifier.align(Alignment.BottomCenter).padding(bottom = if (controlsVisible && !inPip) 120.dp else 40.dp)) }
+            if (inPip) {
+                // Only reachable where the app drives PiP (desktop): click toggles playback, double click goes back.
+                Box(Modifier.fillMaxSize().pointerInput(Unit) {
+                    detectTapGestures(onTap = { vm.controller.togglePlay() }, onDoubleTap = { hooks.exitPictureInPicture() })
+                })
+                return@ControlsLayer
+            }
 
-        if (panel != PlayerPanel.None) {
-            PlayerPanelHost(
-                vm = vm,
-                state = state,
-                panel = panel,
-                compact = container.maxWidth < Racha.layout.compactMaxWidth,
-                modifier = Modifier.align(Alignment.CenterEnd),
+            val hiddenPointer = hooks.hiddenPointer
+            Box(
+                Modifier.fillMaxSize()
+                    .then(if (hiddenPointer != null && !controlsVisible && state.engine.playing) Modifier.pointerHoverIcon(hiddenPointer) else Modifier)
+                    .playerGestures(prefs, scope) { action ->
+                        when (action) {
+                            GestureAction.ToggleControls -> if (controlsVisible) controlsVisible = false else touch()
+                            GestureAction.PointerMoved -> touch()
+                            is GestureAction.SeekBy -> {
+                                vm.controller.seekBy(action.seconds)
+                                feedback = (if (action.seconds > 0) "+" else "−") + "${kotlin.math.abs(action.seconds)} s"
+                            }
+                            is GestureAction.Scrub -> {
+                                val base = vm.engine.positionMs()
+                                val target = (base + action.seconds * 1000L).coerceAtLeast(0)
+                                if (action.finished) {
+                                    vm.controller.seekTo(target)
+                                    scrubTarget = null
+                                } else {
+                                    scrubTarget = target
+                                    feedback = timecode(target / 1000)
+                                }
+                            }
+                            is GestureAction.Brightness -> {
+                                brightness = (brightness + action.delta).coerceIn(0.02f, 1f)
+                                hooks.setBrightness(brightness)
+                                feedback = "${(brightness * 100).toInt()} %"
+                            }
+                            is GestureAction.Volume -> {
+                                volume = (volume + action.delta).coerceIn(0f, 1f)
+                                hooks.setVolume(volume)
+                                feedback = "${(volume * 100).toInt()} %"
+                            }
+                            is GestureAction.HoldSpeed -> {
+                                vm.controller.holdSpeed(action.held)
+                                feedback = if (action.held) "${prefs.longPressRate}×" else null
+                            }
+                            is GestureAction.Pinch -> vm.scale.value = if (action.zoomIn) VideoScale.FILL else VideoScale.FIT
+                        }
+                    },
             )
-        }
 
-        state.resumeOffer?.let { offer -> ResumePrompt(offer, vm, Modifier.align(Alignment.Center)) }
-        if (state.reachedEnd) EndCard(onBack, Modifier.align(Alignment.Center))
-        if (state.unavailable) Unavailable(onBack, Modifier.align(Alignment.Center))
-        val belowTopBar = Modifier.statusBarsPadding().padding(top = topBarHeight(container.maxWidth) + 8.dp)
-        notice?.let { Notice(it, Modifier.align(Alignment.TopCenter).then(belowTopBar)) }
-        if (state.loopA != null) LoopBadge(state, Modifier.align(Alignment.TopStart).then(belowTopBar).padding(start = 16.dp))
+            feedback?.let { Feedback(it, Modifier.align(Alignment.Center)) }
+
+            AnimatedVisibility(
+                visible = controlsVisible || !state.engine.playing,
+                enter = fadeIn(tween(Racha.duration(Racha.motion.fast))),
+                exit = fadeOut(tween(Racha.duration(Racha.motion.standard))),
+            ) {
+                PlayerControls(
+                    vm = vm,
+                    state = state,
+                    position = scrubTarget ?: position,
+                    fullscreen = fullscreen,
+                    panelOpen = panel != PlayerPanel.None,
+                    onBack = onBack,
+                    onInteraction = ::touch,
+                    onScreenshot = { vm.screenshot { path -> getString(Res.string.screenshot_saved, path) } },
+                )
+            }
+
+            if (panel != PlayerPanel.None) {
+                PlayerPanelHost(
+                    vm = vm,
+                    state = state,
+                    panel = panel,
+                    compact = container.maxWidth < Racha.layout.compactMaxWidth,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
+
+            state.resumeOffer?.let { offer -> ResumePrompt(offer, vm, Modifier.align(Alignment.Center)) }
+            if (state.reachedEnd) EndCard(onBack, Modifier.align(Alignment.Center))
+            if (state.unavailable) Unavailable(onBack, Modifier.align(Alignment.Center))
+            val belowTopBar = Modifier.statusBarsPadding().padding(top = topBarHeight(container.maxWidth) + 8.dp)
+            notice?.let { Notice(it, Modifier.align(Alignment.TopCenter).then(belowTopBar)) }
+            if (state.loopA != null) LoopBadge(state, Modifier.align(Alignment.TopStart).then(belowTopBar).padding(start = 16.dp))
+        }
     }
 }
 
 @Composable
 private fun VideoBox(vm: PlayerViewModel, hooks: PlayerHooks, state: PlaybackState, scale: VideoScale, maxWidth: Dp, maxHeight: Dp) {
+    if (hooks.scalesVideo) {
+        LaunchedEffect(scale) { hooks.setScale(vm.engine, scale) }
+        hooks.VideoSurface(vm.engine, Modifier.fillMaxSize())
+        return
+    }
     val w = state.engine.videoWidth
     val h = state.engine.videoHeight
     val (width, height) = if (w <= 0 || h <= 0 || scale == VideoScale.STRETCH) {
