@@ -58,6 +58,23 @@ interface LibraryRepository {
     /** Elements already indexed with this content hash, to re-link progress after a move (spec §3.4). */
     suspend fun elementsWithHash(fileHash: String): List<PlayableElement>
 
+    /** Everything indexed under one root (archived included): the baseline of an incremental scan. */
+    suspend fun itemsInRoot(category: CategoryKey, root: RootKey): List<LibraryItem>
+
+    suspend fun elementsInRoot(category: CategoryKey, root: RootKey): List<PlayableElement>
+
+    /** Archived elements with a known hash and this exact size: the only candidates a new file can re-link to. */
+    suspend fun archivedElementsWithSize(fileSize: Long): List<PlayableElement>
+
+    /** Present elements without hash that carry user data (progress, bookmarks, favorites) worth re-linking later. */
+    suspend fun elementsNeedingHash(limit: Int): List<PlayableElement>
+
+    /**
+     * The file of [from] reappeared as [to] (moved or renamed): its progress, bookmarks, history and favorites move to
+     * [to] and the archived [from] element is removed, atomically.
+     */
+    suspend fun relinkElement(from: ContentId, to: ContentId)
+
     suspend fun subtitles(element: ContentId): List<Subtitle>
 
     suspend fun upsertSubtitle(subtitle: Subtitle)

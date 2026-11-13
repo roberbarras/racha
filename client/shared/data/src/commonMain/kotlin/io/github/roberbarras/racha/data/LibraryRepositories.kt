@@ -4,6 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import io.github.roberbarras.racha.application.library.CategoryRepository
 import io.github.roberbarras.racha.application.library.LibraryRepository
+import io.github.roberbarras.racha.data.db.Playable_element
 import io.github.roberbarras.racha.data.db.RachaDatabase
 import io.github.roberbarras.racha.domain.library.Category
 import io.github.roberbarras.racha.domain.library.CategoryKey
@@ -121,6 +122,30 @@ class SqlLibraryRepository(private val db: RachaDatabase, private val io: Corout
 
     override suspend fun elementsWithHash(fileHash: String): List<PlayableElement> =
         withContext(io) { q.selectElementsByHash(fileHash).executeAsList().map { it.toDomain() } }
+
+    override suspend fun itemsInRoot(category: CategoryKey, root: RootKey): List<LibraryItem> =
+        withContext(io) { q.selectItemsByRoot(category.value, root.value).executeAsList().map { it.toDomain() } }
+
+    override suspend fun elementsInRoot(category: CategoryKey, root: RootKey): List<PlayableElement> =
+        withContext(io) { q.selectElementsByRoot(category.value, root.value).executeAsList().map { it.toDomain() } }
+
+    override suspend fun archivedElementsWithSize(fileSize: Long): List<PlayableElement> =
+        withContext(io) { q.selectArchivedWithSize(fileSize, ::Playable_element).executeAsList().map { it.toDomain() } }
+
+    override suspend fun elementsNeedingHash(limit: Int): List<PlayableElement> =
+        withContext(io) { q.selectNeedingHash(limit.toLong()).executeAsList().map { it.toDomain() } }
+
+    override suspend fun relinkElement(from: ContentId, to: ContentId) = withContext(io) {
+        q.transaction {
+            q.relinkProgress(to.value, from.value)
+            q.deleteProgress(from.value) // only left over if [to] already had its own progress
+            q.relinkBookmarks(to.value, from.value)
+            q.relinkHistory(to.value, from.value)
+            q.relinkFavorite(to.value, from.value)
+            q.deleteFavoriteElement(from.value)
+            q.deleteElement(from.value)
+        }
+    }
 
     override suspend fun subtitles(element: ContentId): List<Subtitle> =
         withContext(io) { q.selectSubtitles(element.value).executeAsList().map { it.toDomain() } }

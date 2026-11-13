@@ -62,6 +62,8 @@ CREATE TABLE playable_element (
 CREATE INDEX playable_element_item ON playable_element(library_item_id);
 CREATE INDEX playable_element_hash ON playable_element(file_hash) WHERE file_hash IS NOT NULL;
 CREATE INDEX playable_element_first_seen ON playable_element(first_seen_at);
+-- Schema v2: re-link candidates are looked up by size among archived elements.
+CREATE INDEX playable_element_relink ON playable_element(file_size) WHERE archived = 1;
 
 CREATE TABLE subtitle (
     id TEXT NOT NULL PRIMARY KEY,
@@ -137,3 +139,45 @@ WHERE id = :id;
 
 deleteSubtitle:
 DELETE FROM subtitle WHERE id = ?;
+
+selectItemsByRoot:
+SELECT * FROM library_item WHERE category_key = ? AND root_key = ?;
+
+selectElementsByRoot:
+SELECT e.* FROM playable_element e
+JOIN library_item i ON i.id = e.library_item_id
+WHERE i.category_key = ? AND i.root_key = ?;
+
+selectArchivedWithSize:
+SELECT e.* FROM playable_element e WHERE e.archived = 1 AND e.file_size = ? AND e.file_hash IS NOT NULL;
+
+selectNeedingHash:
+SELECT e.* FROM playable_element e
+WHERE e.archived = 0 AND e.file_hash IS NULL AND (
+    EXISTS (SELECT 1 FROM progress p WHERE p.element_id = e.id)
+    OR EXISTS (SELECT 1 FROM bookmark b WHERE b.element_id = e.id)
+    OR EXISTS (SELECT 1 FROM favorite f WHERE f.target_type = 'element' AND f.target_id = e.id)
+)
+LIMIT :limit;
+
+relinkProgress:
+UPDATE progress SET element_id = :to
+WHERE element_id = :from AND NOT EXISTS (SELECT 1 FROM progress WHERE element_id = :to);
+
+deleteProgress:
+DELETE FROM progress WHERE element_id = ?;
+
+relinkBookmarks:
+UPDATE bookmark SET element_id = :to WHERE element_id = :from;
+
+relinkHistory:
+UPDATE history_entry SET element_id = :to WHERE element_id = :from;
+
+relinkFavorite:
+UPDATE OR IGNORE favorite SET target_id = :to WHERE target_type = 'element' AND target_id = :from;
+
+deleteFavoriteElement:
+DELETE FROM favorite WHERE target_type = 'element' AND target_id = ?;
+
+deleteElement:
+DELETE FROM playable_element WHERE id = ?;
