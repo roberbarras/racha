@@ -64,6 +64,6 @@ Subcarpetas más profundas se aplanan dentro de su sección.
 
 Se guardan: duración, resolución, códec de vídeo, fps y bitrate medio del fichero. Las pistas de audio y subtítulos internos las lee el reproductor al abrir.
 
-## Pendiente de decisión
+## Fuera de alcance
 
-- **"Usar duración para detectar partes de un mismo vídeo" (§3.2.2)**: no implementado a la espera de que el usuario concrete el caso (p. ej. grabaciones de directo partidas en trozos de duración fija).
+- **"Usar duración para detectar partes de un mismo vídeo" (§3.2.2)**: descartado por decisión del usuario (2026-11-13). Cada vídeo es un elemento independiente; basta con el orden y el autoplay al siguiente.

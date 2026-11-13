@@ -46,6 +46,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - Gestos en Linux: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda/arrastre vertical derecho = volumen, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x → H6.
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
+- §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
 
 ---
 
@@ -76,7 +77,7 @@ Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md). Capturas: [docs/evidence/
 - El emulador sin GPU necesita `-feature -HardwareDecoder` (sus decodificadores `c2.goldfish.*` fallan sin GPU del host); en dispositivos reales se usa el decodificador por hardware. El motor activa además el *fallback* de decodificador.
 - Cast (opcional en la spec) no se incluye: depende de servicios de Google.
 - Visor de recursos: H7. Ajustes del reproductor en la pantalla de Ajustes (paso de seek, gestos, velocidades, intervalo de guardado): H11; hoy se leen de los ajustes con sus valores por defecto.
-- §3.2.2 "partes de un mismo vídeo": sigue pendiente de que concretes el caso.
+- §3.2.2 "partes de un mismo vídeo": fuera de alcance (decidido tras el hito).
 
 **Bloqueos**: ninguno.
 
@@ -111,7 +112,7 @@ Documento: [docs/DISENO.md](docs/DISENO.md). Capturas: [docs/evidence/h4](docs/e
 - Tocar un elemento abre una pantalla provisional del reproductor (llega en H5/H6).
 - El idioma de la app sigue al del sistema; el selector llega con Ajustes (H11). Ajustes completos, Estadísticas y Onboarding: H10/H11.
 - La búsqueda distingue mayúsculas en letras acentuadas (`LIKE` de SQLite); búsqueda sin acentos y en el contenido de recursos: H7/H11.
-- §3.2.2 "partes de un mismo vídeo": sigue pendiente de que concretes el caso.
+- §3.2.2 "partes de un mismo vídeo": fuera de alcance (decidido tras el hito).
 
 **Bloqueos**: ninguno.
 
@@ -147,7 +148,7 @@ Reglas implementadas: [docs/ESCANEO.md](docs/ESCANEO.md).
 **Criterios §12**: ✅ **1** y ✅ **7**.
 
 **Pendiente / notas**
-- §3.2.2 "usar duración para detectar partes de un mismo vídeo": a la espera de que concretes el caso.
+- §3.2.2 "usar duración para detectar partes de un mismo vídeo": fuera de alcance (decidido el 2026-11-13).
 - La pantalla que pide el permiso de "acceso a todos los archivos" en Android llega con el onboarding (H4); sin él, una raíz externa se lista vacía.
 - Si una raíz deja de estar disponible (disco desconectado), su contenido se archiva y se restaura al volver, como indica §3.4.
 
