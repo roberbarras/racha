@@ -77,8 +77,12 @@ fun RachaShell(
     streakDays: Int,
     scan: ScanStatus,
     onScan: () -> Unit,
+    immersive: Boolean = false,
     content: @Composable (WindowClass) -> Unit,
 ) {
+    // Immersive screens (player, resource viewer) hide the navigation chrome and handle insets themselves. The tree
+    // keeps its shape so the NavHost below is not recreated when the chrome toggles.
+    val insets = if (immersive) Modifier else Modifier.statusBarsPadding().navigationBarsPadding()
     BoxWithConstraints(Modifier.fillMaxSize().background(Racha.colors.background)) {
         val windowClass = when {
             maxWidth < Racha.layout.compactMaxWidth -> WindowClass.Compact
@@ -87,16 +91,16 @@ fun RachaShell(
         }
         when (windowClass) {
             WindowClass.Expanded -> Row(Modifier.fillMaxSize()) {
-                Sidebar(current, onNavigate, categories, onCategory, streakDays, scan, onScan)
-                Box(Modifier.weight(1f).fillMaxHeight().statusBarsPadding().navigationBarsPadding()) { content(windowClass) }
+                if (!immersive) Sidebar(current, onNavigate, categories, onCategory, streakDays, scan, onScan)
+                Box(Modifier.weight(1f).fillMaxHeight().then(insets)) { content(windowClass) }
             }
             WindowClass.Medium -> Row(Modifier.fillMaxSize()) {
-                Rail(current, onNavigate, streakDays)
-                Box(Modifier.weight(1f).fillMaxHeight().statusBarsPadding().navigationBarsPadding()) { content(windowClass) }
+                if (!immersive) Rail(current, onNavigate, streakDays)
+                Box(Modifier.weight(1f).fillMaxHeight().then(insets)) { content(windowClass) }
             }
             WindowClass.Compact -> Column(Modifier.fillMaxSize()) {
-                Box(Modifier.weight(1f).fillMaxWidth().statusBarsPadding()) { content(windowClass) }
-                BottomBar(current, onNavigate)
+                Box(Modifier.weight(1f).fillMaxWidth().then(if (immersive) Modifier else Modifier.statusBarsPadding())) { content(windowClass) }
+                if (!immersive) BottomBar(current, onNavigate)
             }
         }
     }

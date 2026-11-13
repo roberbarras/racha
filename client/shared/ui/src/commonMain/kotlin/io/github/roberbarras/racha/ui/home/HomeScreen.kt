@@ -34,6 +34,7 @@ import io.github.roberbarras.racha.application.browse.HomeView
 import io.github.roberbarras.racha.application.learning.ContinueWatchingEntry
 import io.github.roberbarras.racha.domain.library.CategoryKey
 import io.github.roberbarras.racha.domain.library.ContentId
+import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.domain.library.LibraryItem
 import io.github.roberbarras.racha.domain.library.Mode
 import io.github.roberbarras.racha.ui.app.AppViewModel
@@ -77,7 +78,7 @@ fun HomeScreen(
     app: AppViewModel,
     deps: RachaDependencies,
     onOpenItem: (ContentId) -> Unit,
-    onPlay: (ContentId, Boolean) -> Unit,
+    onPlay: (ContentId, StartMode) -> Unit,
     onAddFolder: () -> Unit,
 ) {
     val view by app.home.collectAsStateWithLifecycle()
@@ -110,7 +111,7 @@ fun HomeScreen(
                     else -> {
                         item {
                             ContinueRow(home.continueWatching, selectedEntry?.element?.id.takeIf { withPane }) { entry ->
-                                if (withPane) selected = entry.element.id else onPlay(entry.element.id, false)
+                                if (withPane) selected = entry.element.id else onPlay(entry.element.id, StartMode.RESUME)
                             }
                         }
                         if (home.recommended.isNotEmpty()) item {

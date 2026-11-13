@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.roberbarras.racha.application.learning.ContinueWatchingEntry
 import io.github.roberbarras.racha.domain.library.ContentId
+import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import io.github.roberbarras.racha.ui.common.elementIcon
 import io.github.roberbarras.racha.ui.common.timecode
@@ -48,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ResumePane(
     entry: ContinueWatchingEntry,
     deps: RachaDependencies,
-    onPlay: (ContentId, Boolean) -> Unit,
+    onPlay: (ContentId, StartMode) -> Unit,
     onOpenItem: (ContentId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -94,13 +95,13 @@ fun ResumePane(
         Column(verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
             RText(entry.element.displayTitle, style = Racha.type.heading, color = colors.onRail, maxLines = 2)
         }
-        PaneButton(stringResource(Res.string.resume_from, timecode(entry.progress.positionSec)), filled = true) { onPlay(entry.element.id, false) }
-        PaneButton(stringResource(Res.string.start_over), filled = false) { onPlay(entry.element.id, true) }
+        PaneButton(stringResource(Res.string.resume_from, timecode(entry.progress.positionSec)), filled = true) { onPlay(entry.element.id, StartMode.RESUME) }
+        PaneButton(stringResource(Res.string.start_over), filled = false) { onPlay(entry.element.id, StartMode.BEGINNING) }
         if (upcoming.isNotEmpty()) {
             RText(stringResource(Res.string.up_next).uppercase(), style = Racha.type.overline, color = colors.onRailMuted, modifier = Modifier.padding(top = Racha.space.m))
             upcoming.forEach { next ->
                 Row(
-                    Modifier.fillMaxWidth().interactive({ onPlay(next.element.id, false) }, RoundedCornerShape(Racha.radius.s), overlay = colors.onRail)
+                    Modifier.fillMaxWidth().interactive({ onPlay(next.element.id, StartMode.RESUME) }, RoundedCornerShape(Racha.radius.s), overlay = colors.onRail)
                         .padding(vertical = Racha.space.s),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Racha.space.m),

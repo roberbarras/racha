@@ -41,6 +41,7 @@ import io.github.roberbarras.racha.application.browse.ItemDetailView
 import io.github.roberbarras.racha.application.browse.SectionView
 import io.github.roberbarras.racha.domain.learning.FavoriteTarget
 import io.github.roberbarras.racha.domain.library.ContentId
+import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.ResourceType
 import io.github.roberbarras.racha.domain.library.SectionKind
@@ -107,7 +108,7 @@ class DetailViewModel(private val deps: RachaDependencies, private val id: Conte
 
 /** Course/series/channel detail (spec §2.2): sections, per-element progress, manual marks, my list. */
 @Composable
-fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onPlay: (ContentId, Boolean) -> Unit) {
+fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onPlay: (ContentId, StartMode) -> Unit) {
     val vm = viewModel(key = id.value) { DetailViewModel(deps, id) }
     val detail by vm.state.collectAsStateWithLifecycle()
     val view = detail
@@ -132,7 +133,7 @@ fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onP
 }
 
 @Composable
-private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, Boolean) -> Unit) {
+private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, StartMode) -> Unit) {
     val tint = view.category?.color?.let(::parseColor) ?: Racha.colors.accent
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val wide = maxWidth >= 760.dp
@@ -154,7 +155,7 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
                         val position = next.progress?.positionSec ?: 0
                         RButton(
                             if (position > 0) stringResource(Res.string.resume_from, timecode(position)) else stringResource(Res.string.start),
-                            onClick = { onPlay(next.element.id, false) },
+                            onClick = { onPlay(next.element.id, StartMode.RESUME) },
                             icon = RachaIcons.Play,
                         )
                     }
@@ -186,7 +187,7 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
 }
 
 @Composable
-private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boolean, onPlay: (ContentId, Boolean) -> Unit) {
+private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boolean, onPlay: (ContentId, StartMode) -> Unit) {
     val title = when {
         section.section.titleOverride != null -> section.section.displayTitle
         section.section.kind == SectionKind.SEASON && section.section.title.isEmpty() -> stringResource(Res.string.season_n, section.section.order)
@@ -205,7 +206,7 @@ private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boo
         Column(Modifier.clip(shape).background(Racha.colors.surface).border(1.dp, Racha.colors.border, shape)) {
             section.elements.forEachIndexed { index, element ->
                 if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Racha.colors.border))
-                ElementRow(element, onPlay = { onPlay(element.element.id, false) }, vm = vm)
+                ElementRow(element, onPlay = { onPlay(element.element.id, StartMode.ASK) }, vm = vm)
             }
         }
     }

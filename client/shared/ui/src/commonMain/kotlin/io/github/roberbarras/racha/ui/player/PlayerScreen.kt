@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.player
 
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -262,8 +263,9 @@ fun PlayerScreen(
         state.resumeOffer?.let { offer -> ResumePrompt(offer, vm, Modifier.align(Alignment.Center)) }
         if (state.reachedEnd) EndCard(onBack, Modifier.align(Alignment.Center))
         if (state.unavailable) Unavailable(onBack, Modifier.align(Alignment.Center))
-        notice?.let { Notice(it, Modifier.align(Alignment.TopCenter).padding(top = 72.dp)) }
-        if (state.loopA != null) LoopBadge(state, Modifier.align(Alignment.TopStart).padding(top = 72.dp, start = 16.dp))
+        val belowTopBar = Modifier.statusBarsPadding().padding(top = topBarHeight(container.maxWidth) + 8.dp)
+        notice?.let { Notice(it, Modifier.align(Alignment.TopCenter).then(belowTopBar)) }
+        if (state.loopA != null) LoopBadge(state, Modifier.align(Alignment.TopStart).then(belowTopBar).padding(start = 16.dp))
     }
 }
 

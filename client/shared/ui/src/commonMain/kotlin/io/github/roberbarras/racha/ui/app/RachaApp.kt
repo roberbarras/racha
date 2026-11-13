@@ -35,6 +35,9 @@ import io.github.roberbarras.racha.ui.home.HomeScreen
 import io.github.roberbarras.racha.ui.lists.HistoryScreen
 import io.github.roberbarras.racha.ui.lists.MyListScreen
 import io.github.roberbarras.racha.ui.player.PlayerPlaceholder
+import io.github.roberbarras.racha.ui.player.PlayerScreen
+import io.github.roberbarras.racha.ui.player.ResourcePlaceholder
+import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.ui.search.SearchScreen
 import io.github.roberbarras.racha.ui.category.CategoryScreen
 
@@ -79,7 +82,8 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             }
         }
         val openItem: (ContentId) -> Unit = { navController.navigate(ItemRoute(it.value)) }
-        val play: (ContentId, Boolean) -> Unit = { id, fromStart -> navController.navigate(PlayerRoute(id.value, fromStart)) }
+        val play: (ContentId, StartMode) -> Unit = { id, mode -> navController.navigate(PlayerRoute(id.value, mode)) }
+        val immersive = destination != null && (destination.hasRoute(PlayerRoute::class) || destination.hasRoute(ResourceRoute::class))
         Box(
             Modifier.fillMaxSize().onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed) return@onPreviewKeyEvent false
@@ -98,6 +102,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 streakDays = home?.streakDays ?: 0,
                 scan = scan,
                 onScan = { app.scanNow() },
+                immersive = immersive,
             ) {
                 NavHost(navController, startDestination = HomeRoute) {
                     composable<HomeRoute> { HomeScreen(app, deps, openItem, play, onAddFolder = { go(Destination.Folders) }) }
@@ -109,7 +114,22 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                     composable<FoldersRoute> { FoldersScreen(deps, app) }
                     composable<PlayerRoute> {
                         val route = it.toRoute<PlayerRoute>()
-                        PlayerPlaceholder(deps, ContentId(route.elementId), route.fromStart, onBack = navController::navigateUp)
+                        val element = ContentId(route.elementId)
+                        val player = deps.platform.player
+                        if (player == null) {
+                            PlayerPlaceholder(deps, element, route.mode, onBack = navController::navigateUp)
+                        } else {
+                            PlayerScreen(
+                                deps, player, element, route.mode,
+                                onBack = navController::navigateUp,
+                                onOpenResource = { resource ->
+                                    navController.navigate(ResourceRoute(resource.id.value)) { popUpTo<PlayerRoute> { inclusive = true } }
+                                },
+                            )
+                        }
+                    }
+                    composable<ResourceRoute> {
+                        ResourcePlaceholder(deps, ContentId(it.toRoute<ResourceRoute>().elementId), onBack = navController::navigateUp)
                     }
                 }
             }

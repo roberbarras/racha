@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.ui.player
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,32 +63,23 @@ internal fun PlayerControls(
 ) {
     val step = vm.preferences.value.seekStep
     fun act(block: () -> Unit) = { onInteraction(); block() }
-    Box(Modifier.fillMaxSize()) {
-        Row(
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // On a phone the title gets its own row; wider windows keep everything on one line.
+        val compact = maxWidth < COMPACT_TOP_BAR
+        Column(
             Modifier.align(Alignment.TopStart).fillMaxWidth()
                 .background(Brush.verticalGradient(listOf(ControlsScrim, Color.Transparent)))
                 .statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            ControlButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), onBack)
-            Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
-                RText(state.element?.displayTitle.orEmpty(), style = Racha.type.heading, color = Color.White, maxLines = 1)
-                RText(state.item?.displayTitle.orEmpty(), style = Racha.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
-            }
-            if (state.subtitles.isNotEmpty()) ControlButton(RachaIcons.Captions, stringResource(Res.string.subtitles), act { vm.togglePanel(PlayerPanel.Subtitles) }, active = state.engine.selectedSubtitle != null)
-            if (state.engine.audioTracks.size > 1) ControlButton(RachaIcons.AudioLines, stringResource(Res.string.audio_track), act { vm.togglePanel(PlayerPanel.Audio) })
-            ControlButton(RachaIcons.Bookmark, stringResource(Res.string.bookmarks), act { vm.togglePanel(PlayerPanel.Bookmarks) })
-            ControlButton(RachaIcons.Repeat, stringResource(Res.string.ab_loop), act {
-                when {
-                    state.loopA == null -> vm.controller.markLoopA()
-                    state.loopB == null -> vm.controller.markLoopB()
-                    else -> vm.controller.clearLoop()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ControlButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), onBack)
+                Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                    RText(state.element?.displayTitle.orEmpty(), style = Racha.type.heading, color = Color.White, maxLines = 1)
+                    RText(state.item?.displayTitle.orEmpty(), style = Racha.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 1)
                 }
-            }, active = state.loopA != null)
-            ControlButton(RachaIcons.Camera, stringResource(Res.string.screenshot), act(onScreenshot))
-            ControlButton(RachaIcons.PictureInPicture2, stringResource(Res.string.picture_in_picture), act { vm.enterPictureInPicture() })
-            ControlButton(RachaIcons.Settings, stringResource(Res.string.player_settings), act { vm.togglePanel(PlayerPanel.Settings) })
-            ControlButton(RachaIcons.ListVideo, stringResource(Res.string.elements), act { vm.togglePanel(PlayerPanel.Queue) }, active = panelOpen)
+                if (!compact) Tools(vm, state, panelOpen, ::act, onScreenshot)
+            }
+            if (compact) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { Tools(vm, state, panelOpen, ::act, onScreenshot) }
         }
 
         Row(
@@ -145,3 +138,27 @@ private fun ControlButtonText(text: String, description: String, onClick: () -> 
 }
 
 internal fun trim(speed: Double): String = if (speed == speed.toLong().toDouble()) speed.toLong().toString() else speed.toString()
+
+/** Below this width the top bar uses two rows. */
+internal val COMPACT_TOP_BAR = 600.dp
+
+/** Height of the top bar, to place badges and notices under it. */
+internal fun topBarHeight(maxWidth: Dp): Dp = if (maxWidth < COMPACT_TOP_BAR) 120.dp else 72.dp
+
+@Composable
+private fun Tools(vm: PlayerViewModel, state: PlaybackState, panelOpen: Boolean, act: (() -> Unit) -> () -> Unit, onScreenshot: () -> Unit) {
+    if (state.subtitles.isNotEmpty()) ControlButton(RachaIcons.Captions, stringResource(Res.string.subtitles), act { vm.togglePanel(PlayerPanel.Subtitles) }, active = state.engine.selectedSubtitle != null)
+    if (state.engine.audioTracks.size > 1) ControlButton(RachaIcons.AudioLines, stringResource(Res.string.audio_track), act { vm.togglePanel(PlayerPanel.Audio) })
+    ControlButton(RachaIcons.Bookmark, stringResource(Res.string.bookmarks), act { vm.togglePanel(PlayerPanel.Bookmarks) })
+    ControlButton(RachaIcons.Repeat, stringResource(Res.string.ab_loop), act {
+        when {
+            state.loopA == null -> vm.controller.markLoopA()
+            state.loopB == null -> vm.controller.markLoopB()
+            else -> vm.controller.clearLoop()
+        }
+    }, active = state.loopA != null)
+    ControlButton(RachaIcons.Camera, stringResource(Res.string.screenshot), act(onScreenshot))
+    ControlButton(RachaIcons.PictureInPicture2, stringResource(Res.string.picture_in_picture), act { vm.enterPictureInPicture() })
+    ControlButton(RachaIcons.Settings, stringResource(Res.string.player_settings), act { vm.togglePanel(PlayerPanel.Settings) })
+    ControlButton(RachaIcons.ListVideo, stringResource(Res.string.elements), act { vm.togglePanel(PlayerPanel.Queue) }, active = panelOpen)
+}

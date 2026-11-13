@@ -77,6 +77,7 @@
     <string name="permission_message">To read courses anywhere on this device, allow “All files access”. Racha only reads; nothing leaves the device.</string>
     <string name="permission_action">Allow access</string>
     <string name="player_coming">The player arrives in the next milestone. This element will start at %1$s.</string>
+    <string name="resource_coming">The resource viewer arrives in a later milestone.</string>
     <string name="sections">Sections</string>
     <string name="kind_video">Video</string>
     <string name="kind_html">Web page</string>
