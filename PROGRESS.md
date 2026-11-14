@@ -71,7 +71,7 @@ Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md) (sección Linux), [ADR-001
 | Arnés de extremo a extremo en Xvfb (app real, ventana X11, sin audio): reanuda en 0:12, capa alineada en ventana/pantalla completa/PiP, PiP encima, captura, guardado al salir y al cerrar la ventana | ✅ 10/10 ejecuciones; también en CI |
 | Android tras los cambios compartidos (emulador) | ✅ 15 tests instrumentados |
 | `check` completo del cliente | ✅ |
-| CI (servidor + cliente + arnés Linux + emulador) | ✅ [run 43450568343](https://github.com/roberbarras/racha/actions/runs/43450568343) |
+| CI (servidor + cliente + arnés Linux + emulador) | ✅ [run 43653033593](https://github.com/roberbarras/racha/actions/runs/43653033593) |
 | Escritorio real (KDE Wayland, 4K al 170 % + portátil), con el AppImage: vídeo visible bajo los controles, alineación, pantalla completa, PiP y tamaño de la interfaz | ✅ confirmado por ti (2026-11-15) |
 | Capturas de diseño adaptable: 4K a pantalla completa (2259 dp), portátil 1280×720, teléfono | ✅ |
 
