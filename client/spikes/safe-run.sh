@@ -30,7 +30,7 @@ if [ -n "${fake_home:-}" ]; then
 fi
 
 if [ "$target" = virtual ]; then
-  if [ -e /tmp/.X11-unix/X97 ] || pgrep -f "Xvfb :97" >/dev/null; then
+  if [ -e /tmp/.X11-unix/X97 ] || pgrep -ax Xvfb | grep -q " :97 "; then
     echo "display :97 is already in use (a leftover Xvfb?): stop it first" >&2; exit 3
   fi
   Xvfb :97 -screen 0 1600x900x24 >/dev/null 2>&1 &

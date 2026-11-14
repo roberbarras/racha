@@ -37,6 +37,8 @@ compose.desktop {
         jvmArgs += desktopJvmArgs
         nativeDistributions {
             targetFormats(TargetFormat.AppImage)
+            // From `suggestRuntimeModules`: sqlite-jdbc needs java.sql; coroutines/Compose touch jdk.unsupported.
+            modules("java.instrument", "java.sql", "jdk.unsupported")
             packageName = "racha"
             packageVersion = "0.0.1"
         }
