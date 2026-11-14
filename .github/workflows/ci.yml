@@ -53,11 +53,20 @@ jobs:
         run: |
           cp=$(./gradlew -q --console=plain :desktop:printTestRuntimeClasspath | tail -1)
           home=$(mktemp -d)
-          HOME=$home timeout -k 5 180 xvfb-run -a -s "-screen 0 1600x900x24" \
+          set +e
+          HOME=$home RACHA_MPV_LOG=$home/mpv.log timeout -k 5 180 xvfb-run -a -s "-screen 0 1600x900x24" \
             java -Xmx512m --enable-native-access=ALL-UNNAMED \
               --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED \
               -Duser.home=$home -Dracha.mpv.ao=null \
-              -cp "$cp" io.github.roberbarras.racha.desktop.player.PlayerHarnessKt
+              -cp "$cp" io.github.roberbarras.racha.desktop.player.PlayerHarnessKt > $home/harness.log 2>&1
+          status=$?
+          cat $home/harness.log
+          if [ $status != 0 ]; then
+            # Logs need a login to read; annotations are public: surface the result and mpv's video output choice.
+            echo "::error title=Player harness ($status)::$(grep -E 'RESULT|STEP|Exception|X Error' $home/harness.log | tail -8 | tr '\n' ' ' | cut -c1-900)"
+            echo "::error title=mpv video output::$(grep -E 'Initializing GPU context|Using|\[vo/.*(error|fail|Fail)|VO:' $home/mpv.log | tail -10 | tr '\n' ' ' | cut -c1-900)"
+          fi
+          exit $status
       - uses: actions/upload-artifact@v7
         with:
           name: racha-android-debug-apk
