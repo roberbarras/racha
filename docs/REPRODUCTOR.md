@@ -46,6 +46,9 @@ adaptadores en [`android/player`](../client/android/src/main/kotlin/io/github/ro
 ## Linux (ADR-0011)
 
 - **Vídeo**: mpv presenta por su cuenta (`vo=gpu-next`) dentro de un `Canvas` AWT (ventana X11 hija, `wid`); los fotogramas nunca pasan por Compose. Decodificación por software por defecto (`hwdec=no`); "Decodificación por hardware" en Ajustes la activa (`auto-safe`).
+- **Solo contextos X11** (`gpu-context=x11vk,x11egl`): en automático, mpv en una sesión Wayland abría su propia superficie Wayland e ignoraba `wid` (no se veía el vídeo) y además probaba `drm`/`displayvk`, que manejan la GPU y la pantalla reales directamente.
+- **Escala de la interfaz**: Java en XWayland solo entiende escalas enteras (`GDK_SCALE`), así que en un 4K al 170 % lo dibujaba todo al 100 %. Se lee la escala que el escritorio anuncia a las apps X11 (`Xft.dpi`, XSETTINGS; `RACHA_SCALE` la fuerza) y se aplica a la densidad de Compose (fracciones incluidas), también en la capa de controles y el tamaño del PiP. X11 tiene una única escala para todas las pantallas.
+- **Diagnóstico**: `RACHA_MPV_LOG=<fichero>` guarda el log de mpv.
 - **Controles**: la misma UI compartida, dibujada en una ventana transparente sin decoración, propiedad de la principal y colocada exactamente sobre el área del reproductor (sigue movimientos, redimensionado, pantalla completa y PiP). Recibe ratón y teclado.
 - **Escalado** (ajustar / llenar / estirar) lo hace mpv (`panscan`, `keepaspect`), porque Compose no puede recortar una ventana nativa.
 - **Gestos con ratón**: clic/doble clic en bordes ±N s, arrastre horizontal = seek, rueda o arrastre vertical derecho = volumen del reproductor, arrastre vertical izquierdo = brillo del vídeo, mantener = 2x; mover el ratón muestra los controles y el cursor se oculta con ellos. Teclado: espacio/K, ←/→ (J/L), ↑/↓ volumen, F, N/P, Esc.

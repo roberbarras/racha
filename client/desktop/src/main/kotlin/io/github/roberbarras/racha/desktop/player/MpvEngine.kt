@@ -110,11 +110,12 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
         }
         start {
             mpv.setOption("wid", windowId.toString())
-            mpv.setOption("vo", "gpu-next,gpu,x11")
             // Only X11 contexts: the window is an X11 one (AWT runs on XWayland). Left to "auto", mpv on a Wayland
             // session opens its own Wayland surface and ignores `wid` (no video in the app), and it also probes
             // `drm`/`displayvk`, which drive the GPU and the screen directly (an atomic KMS commit was attempted).
-            mpv.setOption("gpu-context", "x11vk,x11egl")
+            // Builds differ (e.g. no Vulkan): use whichever X11 contexts this libmpv knows; with none, plain `x11`.
+            val context = X11_CONTEXTS.firstOrNull { runCatching { mpv.setOption("gpu-context", it) }.isSuccess }
+            mpv.setOption("vo", if (context != null) "gpu-next,gpu,x11" else "x11")
         }
     }
 
@@ -380,6 +381,9 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
 
     private companion object {
         const val VO_SHUTDOWN_TIMEOUT_NS = 500_000_000L
+
+        /** Preferred first; single names after the list for libmpv builds that lack one of them. */
+        val X11_CONTEXTS = listOf("x11vk,x11egl", "x11egl", "x11vk")
 
         val OBSERVED = listOf("pause", "eof-reached", "duration", "speed", "width", "height", "sub-text", "sid", "aid", "vo-configured")
 

@@ -12,7 +12,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H3 | Escaneo e indexación (heurísticas, incremental, watcher, archivado/revinculación, miniaturas) | ✅ Cerrado |
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | ✅ Cerrado |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | ✅ Cerrado |
-| H6 | Reproductor Linux (libmpv) | 🟡 En verificación (falta la comprobación visual en escritorio real) |
+| H6 | Reproductor Linux (libmpv) | ✅ Cerrado |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | Pendiente |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | Pendiente |
 | H9 | Sync extremo a extremo y conflictos | Pendiente |
@@ -26,7 +26,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 |---|---|---|---|
 | 1 | Escaneo de la estructura de ejemplo | H3 | ✅ H3 (dominio, SQLite, Linux real, Android) |
 | 2 | Home con "Continuar viendo" y pestaña principal | H4 | ✅ H4 (caso de uso + UI) |
-| 3 | Reproductor Android y Linux completo | H5, H6 | 🟡 Android ✅ (H5); Linux → H6 |
+| 3 | Reproductor Android y Linux completo | H5, H6 | ✅ Android (H5) y Linux (H6) |
 | 4 | Offline al 100 % | H5, H9 | 🟡 Reproducción y progreso 100 % locales ✅ (H5); sync que no bloquea → H9 |
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
 | 6 | Recurso HTML como elemento del curso | H7 | ⬜ |
@@ -35,7 +35,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
-| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4) y reproductor Android (H5) ✅; reproductor Linux → H6; pulido → H12 |
+| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4), reproductores Android (H5) y Linux (H6), interfaz adaptada a la escala y al ancho (H6) ✅; pulido → H12 |
 
 ## Alcance añadido o ajustado por el usuario (2026-11-11)
 
@@ -50,14 +50,17 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H6 · Reproductor Linux — 🟡 en verificación
+## H6 · Reproductor Linux — ✅ cerrado
 
-Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md) (sección Linux), [ADR-0011](docs/adr/0011-presentacion-video-linux.md).
+Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md) (sección Linux), [ADR-0011](docs/adr/0011-presentacion-video-linux.md). Capturas: [docs/evidence/h6](docs/evidence/h6).
 
 **Hecho**
 - `MpvEngine` (libmpv por FFM): presenta en una ventana X11 nativa, eventos por observación de propiedades (sin sondeo), subtítulos SRT externos apagados por defecto, pistas de audio, velocidad, seek, escalado nativo, brillo y volumen del vídeo, captura de fotograma. Decodificación por software salvo que se active la de hardware en Ajustes.
 - Capa de controles en ventana transparente sobre el vídeo con la misma UI compartida que Android; pantalla completa (se mantiene con el autoplay), PiP propio (ventana pequeña siempre encima), gestos de ratón aprobados, cursor oculto con los controles, atajos de teclado. Cerrar la ventana guarda la posición.
 - Sin libmpv instalado, abrir un vídeo muestra un aviso en lugar de fallar.
+- Escala de la interfaz según el escritorio (4K al 170 %: antes todo salía diminuto) y diseño adaptable: listas con ancho máximo legible y filas de tarjetas que se reparten el ancho; ventana inicial al 80 % de la pantalla.
+- mpv limitado a contextos X11: en Wayland abría su propia superficie (no se veía el vídeo en la app) y probaba `drm`/`displayvk`, que tocan la GPU y la pantalla reales (probable causa del cuelgue de H1).
+- AppImage de prueba reproducible: `desktop/packaging/build-appimage.sh` (libmpv del sistema por ahora).
 - Arreglos de fondo encontrados al probar: el shell ya no recrea la pantalla al cambiar de ancho (afectaba también a la rotación en Android); `close()` del reproductor guarda siempre y una sola vez; locale numérico y manejador de errores de Xlib (ver ADR-0011).
 - §3.2.2 "partes de un mismo vídeo": fuera de alcance por decisión tuya.
 
@@ -69,13 +72,15 @@ Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md) (sección Linux), [ADR-001
 | Android tras los cambios compartidos (emulador) | ✅ 15 tests instrumentados |
 | `check` completo del cliente | ✅ |
 | CI (servidor + cliente + arnés Linux + emulador) | ✅ [run 43450568343](https://github.com/roberbarras/racha/actions/runs/43450568343) |
-| Escritorio real (KDE Wayland/XWayland): transparencia de la capa, alineación, pantalla completa y PiP con gestor de ventanas | ⬜ pendiente de tu permiso |
+| Escritorio real (KDE Wayland, 4K al 170 % + portátil), con el AppImage: vídeo visible bajo los controles, alineación, pantalla completa, PiP y tamaño de la interfaz | ✅ confirmado por ti (2026-11-15) |
+| Capturas de diseño adaptable: 4K a pantalla completa (2259 dp), portátil 1280×720, teléfono | ✅ |
 
-**Criterios §12**: 🟡 **3** (Linux funcional en Xvfb; falta la comprobación visual en escritorio real).
+**Criterios §12**: ✅ **3**; 🟡 **12** (pulido en H12).
 
 **Pendiente / notas**
-- En Xvfb no hay compositor: la capa transparente se ve negra en las capturas; por eso la comprobación visual necesita tu escritorio.
-- Multimonitor: el PiP va a la pantalla donde está la ventana; sin probar con dos monitores.
+- En Xvfb no hay compositor: la capa transparente se ve negra en las capturas; la comprobación visual se hizo en tu escritorio.
+- Una sola escala X11 para todas las pantallas: en la pantalla del portátil (100 %) la app se ve algo grande. Un selector de escala llegará con Ajustes (H11); hoy `RACHA_SCALE`.
+- Empaquetado final (libmpv dentro, CI, `racha://`): H12.
 
 **Bloqueos**: ninguno.
 
