@@ -114,6 +114,10 @@ class ScreenshotTest {
     @Test fun desktopHomeEs() = shoot("desktop-home-es", 1440, 900, "es", dark = false)
     @Test fun desktopHomeDarkEn() = shoot("desktop-home-dark-en", 1440, 900, "en", dark = true)
     @Test fun desktopDetailEs() = shoot("desktop-detail-es", 1440, 900, "es", dark = false, openCourse = true)
+    // 4K monitor at 170 % (2259 × 1271 dp, fullscreen) and a small 1280 × 720 laptop at 100 %.
+    @Test fun wideHomeEs() = shoot("wide-home-es", 2259, 1271, "es", dark = false)
+    @Test fun wideDetailEs() = shoot("wide-detail-es", 2259, 1271, "es", dark = false, openCourse = true)
+    @Test fun smallLaptopHomeEs() = shoot("small-laptop-home-es", 1280, 720, "es", dark = false)
     @Test fun tabletHomeEs() = shoot("tablet-home-es", 1024, 768, "es", dark = false)
     @Test fun phoneHomeEs() = shoot("phone-home-es", 412, 915, "es", dark = false)
     @Test fun phoneDetailDarkEs() = shoot("phone-detail-dark-es", 412, 915, "es", dark = true, openCourse = true)

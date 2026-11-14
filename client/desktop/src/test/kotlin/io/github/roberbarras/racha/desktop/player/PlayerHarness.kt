@@ -86,6 +86,9 @@ fun main() {
                     checks["playerArea"] = playerArea().text()
                     capture(shots.resolve("window.png"), window.bounds)
 
+                    checks["videoOutput"] = engine.property("current-vo")
+                    check(engine.property("vo-configured") == "yes") { "mpv has no video output" }
+
                     System.err.println("STEP fullscreen"); hooks.setFullscreen(true)
                     delay(1_500)
                     checks["fullscreenArea"] = playerArea().text()

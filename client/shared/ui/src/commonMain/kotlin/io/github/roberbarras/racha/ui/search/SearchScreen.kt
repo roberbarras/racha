@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.search
 
+import io.github.roberbarras.racha.ui.common.ResponsiveColumn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,7 +56,7 @@ fun SearchScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
     val query by vm.query.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
     val categories by remember { deps.categories.observeAll() }.collectAsStateWithLifecycle(emptyList())
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Racha.space.xxl), verticalArrangement = Arrangement.spacedBy(Racha.space.xl)) {
+    ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item { SearchField(query, { vm.query.value = it }, stringResource(Res.string.search_placeholder), Modifier.fillMaxWidth()) }
         val r = results
         when {

@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.lists
 
+import io.github.roberbarras.racha.ui.common.ResponsiveColumn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,7 +40,7 @@ fun MyListScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
     val list by remember { deps.observeMyList() }.collectAsStateWithLifecycle(null)
     val categories by remember { deps.categories.observeAll() }.collectAsStateWithLifecycle(emptyList())
     val view = list
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Racha.space.xxl), verticalArrangement = Arrangement.spacedBy(Racha.space.xl)) {
+    ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item { ScreenTitle(stringResource(Res.string.nav_my_list)) }
         if (view != null && view.items.isEmpty() && view.elements.isEmpty()) {
             item { MessageState(RachaIcons.Bookmark, stringResource(Res.string.empty_my_list_title), stringResource(Res.string.empty_my_list_message)) }
@@ -58,7 +59,7 @@ fun MyListScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
 fun HistoryScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
     val rows by remember { deps.observeHistory() }.collectAsStateWithLifecycle(null)
     val today = deps.localDates.dateOf(deps.clock.now())
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Racha.space.xxl), verticalArrangement = Arrangement.spacedBy(Racha.space.xl)) {
+    ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item { ScreenTitle(stringResource(Res.string.nav_history)) }
         val history = rows
         if (history != null && history.isEmpty()) {

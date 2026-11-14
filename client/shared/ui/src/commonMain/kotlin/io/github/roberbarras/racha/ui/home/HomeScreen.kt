@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.home
 
+import io.github.roberbarras.racha.ui.common.rowCardWidth
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -117,9 +118,11 @@ fun HomeScreen(
                         if (home.recommended.isNotEmpty()) item {
                             Column(verticalArrangement = Arrangement.spacedBy(Racha.space.m)) {
                                 SectionHeader(stringResource(Res.string.recommended_today))
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
-                                    items(home.recommended, key = { it.element.id.value }) { r ->
-                                        RecommendationCard(r, Racha.layout.cardWidth) { onOpenItem(r.item.id) }
+                                CardRow { cardWidth ->
+                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
+                                        items(home.recommended, key = { it.element.id.value }) { r ->
+                                            RecommendationCard(r, cardWidth) { onOpenItem(r.item.id) }
+                                        }
                                     }
                                 }
                             }
@@ -170,10 +173,12 @@ private fun ContinueRow(entries: List<ContinueWatchingEntry>, selected: ContentI
         if (entries.isEmpty()) {
             RText(stringResource(Res.string.empty_continue), style = Racha.type.body, color = Racha.colors.inkMuted)
         } else {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
-                items(entries, key = { it.element.id.value }) { entry ->
-                    ContinueCard(entry, upNext = entry == entries.first(), selected = entry.element.id == selected, width = Racha.layout.cardWidth) {
-                        onSelect(entry)
+            CardRow { cardWidth ->
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
+                    items(entries, key = { it.element.id.value }) { entry ->
+                        ContinueCard(entry, upNext = entry == entries.first(), selected = entry.element.id == selected, width = cardWidth) {
+                            onSelect(entry)
+                        }
                     }
                 }
             }
@@ -225,5 +230,13 @@ private fun LoadingRows() {
                 repeat(3) { SkeletonBlock(Modifier.widthIn(min = 220.dp, max = 220.dp).padding(bottom = 120.dp)) }
             }
         }
+    }
+}
+
+/** A horizontal row of cards whose width adapts to the row (see [rowCardWidth]). */
+@Composable
+private fun CardRow(content: @Composable (cardWidth: androidx.compose.ui.unit.Dp) -> Unit) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        content(rowCardWidth(maxWidth, Racha.space.l, compact = maxWidth < Racha.layout.compactMaxWidth))
     }
 }

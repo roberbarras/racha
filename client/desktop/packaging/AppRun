@@ -1,0 +1,4 @@
+#!/bin/sh
+# Racha AppImage entry point: the jpackage launcher finds its runtime and classpath relative to itself.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/lib/racha/bin/racha" "$@"

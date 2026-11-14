@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.detail
 
+import io.github.roberbarras.racha.ui.common.ResponsiveColumn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -112,21 +113,14 @@ fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onP
     val vm = viewModel(key = id.value) { DetailViewModel(deps, id) }
     val detail by vm.state.collectAsStateWithLifecycle()
     val view = detail
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val compact = maxWidth < Racha.layout.compactMaxWidth
-        LazyColumn(
-            Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = if (compact) Racha.space.l else Racha.space.xxl, vertical = Racha.space.xl),
-            verticalArrangement = Arrangement.spacedBy(Racha.space.xl),
-        ) {
-            item { RIconButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), onBack) }
-            if (view == null) {
-                item { SkeletonBlock(Modifier.fillMaxWidth().height(280.dp)) }
-            } else {
-                item { Hero(view, vm, onPlay) }
-                view.sections.forEach { section ->
-                    item(key = section.section.id.value) { SectionBlock(section, vm, compact, onPlay) }
-                }
+    ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { compact ->
+        item { RIconButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), onBack) }
+        if (view == null) {
+            item { SkeletonBlock(Modifier.fillMaxWidth().height(280.dp)) }
+        } else {
+            item { Hero(view, vm, onPlay) }
+            view.sections.forEach { section ->
+                item(key = section.section.id.value) { SectionBlock(section, vm, compact, onPlay) }
             }
         }
     }

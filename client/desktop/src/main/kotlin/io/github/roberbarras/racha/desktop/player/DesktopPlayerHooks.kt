@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,12 +20,14 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberDialogState
 import io.github.roberbarras.racha.application.playback.PlayerEngine
+import io.github.roberbarras.racha.desktop.DesktopUiScale
 import io.github.roberbarras.racha.domain.preferences.VideoScale
 import io.github.roberbarras.racha.ui.player.PlayerHooks
 import kotlinx.coroutines.Dispatchers
@@ -122,6 +125,8 @@ class DesktopPlayerHooks(private val hardwareDecoding: () -> Boolean) : PlayerHo
         var area by remember { mutableStateOf(Rect.Zero) }
         Box(Modifier.fillMaxSize().onGloballyPositioned { area = it.boundsInWindow() })
         val inPip by inPictureInPicture.collectAsState()
+        // The overlay is its own window with its own density: keep the app's UI scale (see DesktopUiScale).
+        val density = LocalDensity.current
         DialogWindow(
             onCloseRequest = {},
             state = rememberDialogState(size = DpSize(1.dp, 1.dp)),
@@ -150,7 +155,7 @@ class DesktopPlayerHooks(private val hardwareDecoding: () -> Boolean) : PlayerHo
                 overlay.toFront()
                 overlay.requestFocus()
             }
-            BoxWithConstraints(modifier, content = content)
+            CompositionLocalProvider(LocalDensity provides density) { BoxWithConstraints(modifier, content = content) }
         }
     }
 
@@ -175,10 +180,11 @@ class DesktopPlayerHooks(private val hardwareDecoding: () -> Boolean) : PlayerHo
         val screen = window.graphicsConfiguration
         val insets = Toolkit.getDefaultToolkit().getScreenInsets(screen)
         val usable = screen.bounds.let { Rectangle(it.x + insets.left, it.y + insets.top, it.width - insets.left - insets.right, it.height - insets.top - insets.bottom) }
-        val width = PIP_WIDTH
-        val height = (width / aspect).toInt().coerceIn(PIP_WIDTH / 3, PIP_WIDTH)
-        window.minimumSize = Dimension(160, 90)
-        window.bounds = Rectangle(usable.x + usable.width - width - PIP_MARGIN, usable.y + usable.height - height - PIP_MARGIN, width, height)
+        val width = (PIP_WIDTH * DesktopUiScale.current).toInt()
+        val height = (width / aspect).toInt().coerceIn(width / 3, width)
+        window.minimumSize = Dimension(width / 3, width / 3 * 9 / 16)
+        val margin = (PIP_MARGIN * DesktopUiScale.current).toInt()
+        window.bounds = Rectangle(usable.x + usable.width - width - margin, usable.y + usable.height - height - margin, width, height)
         window.isAlwaysOnTop = true
         pip.value = true
         return true

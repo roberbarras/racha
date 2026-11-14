@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.folders
 
+import io.github.roberbarras.racha.ui.common.ResponsiveColumn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -83,7 +84,7 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
     val folders by vm.folders.collectAsStateWithLifecycle()
     val scan by app.scan.collectAsStateWithLifecycle()
     val storageAccess by app.storageAccess.collectAsStateWithLifecycle()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Racha.space.xxl), verticalArrangement = Arrangement.spacedBy(Racha.space.xl)) {
+    ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { ScreenTitle(stringResource(Res.string.folders_title), stringResource(Res.string.folders_message)) }

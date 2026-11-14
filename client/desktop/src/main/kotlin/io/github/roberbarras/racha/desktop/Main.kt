@@ -1,6 +1,11 @@
 package io.github.roberbarras.racha.desktop
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -16,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.Dimension
+import java.awt.GraphicsEnvironment
 
 fun main() {
     // Composition root: adapters are wired by hand, no reflection-based DI.
@@ -25,6 +31,10 @@ fun main() {
         graph.ensureBuiltInCategories()
         graph.keepLibraryUpToDate.run()
     }
+    val scale = DesktopUiScale.current
+    // Initial window: a comfortable share of the screen it opens on, whatever its size or density.
+    val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+    val initialSize = DpSize((screen.width * INITIAL_SHARE).dp, (screen.height * INITIAL_SHARE).dp)
     application {
         Window(
             onCloseRequest = {
@@ -34,13 +44,20 @@ fun main() {
                 graph.close()
                 exitApplication()
             },
-            state = rememberWindowState(size = DpSize(1440.dp, 900.dp)),
+            state = rememberWindowState(size = initialSize, position = WindowPosition(Alignment.Center)),
             title = "Racha",
             icon = rememberVectorPainter(RachaLogo),
         ) {
-            window.minimumSize = Dimension(480, 600)
+            window.minimumSize = Dimension((MIN_WIDTH_DP * scale).toInt(), (MIN_HEIGHT_DP * scale).toInt())
             graph.playerHooks.attach(window)
-            RachaApp(graph.dependencies)
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density * scale, base.fontScale)) {
+                RachaApp(graph.dependencies)
+            }
         }
     }
 }
+
+private const val INITIAL_SHARE = 0.8f
+private const val MIN_WIDTH_DP = 480
+private const val MIN_HEIGHT_DP = 560

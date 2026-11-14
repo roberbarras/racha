@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.ui.category
 
+import io.github.roberbarras.racha.ui.common.ResponsiveColumn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +29,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun CategoryScreen(deps: RachaDependencies, key: String, onBack: () -> Unit, onOpenItem: (ContentId) -> Unit) {
     val view by remember(key) { deps.observeCategory(CategoryKey(key)) }.collectAsStateWithLifecycle(null)
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(Racha.space.xxl), verticalArrangement = Arrangement.spacedBy(Racha.space.xl)) {
+    ResponsiveColumn { _ ->
         item { RIconButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), onBack) }
         view?.let { v ->
             item { ScreenTitle(categoryName(v.category)) }

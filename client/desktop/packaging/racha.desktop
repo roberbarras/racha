@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Racha
+Comment=Tus cursos y series locales, sin conexión
+Exec=racha
+Icon=racha
+Categories=AudioVideo;Video;Player;
+Terminal=false
+StartupWMClass=io-github-roberbarras-racha-desktop-MainKt

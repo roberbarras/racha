@@ -82,6 +82,11 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
         // -Dracha.mpv.ao=null silences test runs (harnesses play clips with a test tone through the real app).
         val audioOutput = if (audio) System.getProperty("racha.mpv.ao") else "null"
         audioOutput?.let { mpv.setOption("ao", it) }
+        // RACHA_MPV_LOG=/path/file.log: mpv's own log, to diagnose video output problems on a given desktop.
+        System.getenv("RACHA_MPV_LOG")?.takeIf { it.isNotBlank() }?.let {
+            mpv.setOption("log-file", it)
+            mpv.setOption("msg-level", "all=v")
+        }
     }
 
     /**
@@ -103,7 +108,14 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
             }
             return
         }
-        start { mpv.setOption("wid", windowId.toString()); mpv.setOption("vo", "gpu-next,gpu,x11") }
+        start {
+            mpv.setOption("wid", windowId.toString())
+            mpv.setOption("vo", "gpu-next,gpu,x11")
+            // Only X11 contexts: the window is an X11 one (AWT runs on XWayland). Left to "auto", mpv on a Wayland
+            // session opens its own Wayland surface and ignores `wid` (no video in the app), and it also probes
+            // `drm`/`displayvk`, which drive the GPU and the screen directly (an atomic KMS commit was attempted).
+            mpv.setOption("gpu-context", "x11vk,x11egl")
+        }
     }
 
     /** No video output at all: decoding, timing, audio and subtitles still work. */
@@ -215,6 +227,9 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
     override fun selectAudio(id: String?) {
         if (initialized && id != null) guarded(Unit) { mpv.setProperty("aid", id) }
     }
+
+    /** A raw mpv property, for diagnostics and the end-to-end harness. */
+    internal fun property(name: String): String? = if (initialized) guarded(null) { mpv.getProperty(name) } else null
 
     /** FIT keeps the aspect ratio, FILL crops to cover, STRETCH ignores the aspect ratio: mpv scales, not Compose. */
     fun setScale(scale: VideoScale) {
