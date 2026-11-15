@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -35,6 +36,9 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -180,6 +184,44 @@ fun SearchField(
             )
         }
         if (shortcutHint != null && value.isEmpty()) Tag(shortcutHint)
+    }
+}
+
+/** Labelled single-line input (forms such as the sync server and account). */
+@Composable
+fun RTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    password: Boolean = false,
+    enabled: Boolean = true,
+    imeAction: ImeAction = ImeAction.Next,
+    onSubmit: () -> Unit = {},
+) {
+    val colors = Racha.colors
+    val shape = RoundedCornerShape(Racha.radius.m)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
+        RText(label, style = Racha.type.label, color = colors.inkMuted, maxLines = 1)
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            singleLine = true,
+            textStyle = Racha.type.body.merge(androidx.compose.ui.text.TextStyle(color = if (enabled) colors.ink else colors.inkSubtle)),
+            cursorBrush = SolidColor(colors.accent),
+            visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (password) KeyboardType.Password else keyboardType,
+                imeAction = imeAction,
+                autoCorrectEnabled = false,
+            ),
+            keyboardActions = KeyboardActions(onDone = { onSubmit() }, onGo = { onSubmit() }),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(shape).background(colors.surface)
+                .border(1.dp, colors.borderStrong, shape).padding(horizontal = Racha.space.m, vertical = Racha.space.m - 2.dp)
+                .semantics { contentDescription = label },
+        )
     }
 }
 

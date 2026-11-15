@@ -63,6 +63,12 @@ object RachaIcons {
     /** lucide:clock */
     val Clock: ImageVector by lazy { icon("clock", "M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0z", "M12 6v6l4 2") }
 
+    /** lucide:cloud */
+    val Cloud: ImageVector by lazy { icon("cloud", "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z") }
+
+    /** lucide:cloud-alert */
+    val CloudAlert: ImageVector by lazy { icon("cloud-alert", "M12 12v4", "M12 20h.01", "M8.128 16.949A7 7 0 1 1 15.71 8h1.79a1 1 0 0 1 0 9h-1.642") }
+
     /** lucide:external-link */
     val ExternalLink: ImageVector by lazy { icon("external-link", "M15 3h6v6", "M10 14 21 3", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6") }
 

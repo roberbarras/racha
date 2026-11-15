@@ -45,6 +45,7 @@ import io.github.roberbarras.racha.ui.resources.app_name
 import io.github.roberbarras.racha.ui.resources.library_up_to_date
 import io.github.roberbarras.racha.ui.resources.nav_categories
 import io.github.roberbarras.racha.ui.resources.nav_folders
+import io.github.roberbarras.racha.ui.resources.nav_account
 import io.github.roberbarras.racha.ui.resources.nav_history
 import io.github.roberbarras.racha.ui.resources.nav_home
 import io.github.roberbarras.racha.ui.resources.nav_main
@@ -63,6 +64,7 @@ enum class Destination(val icon: ImageVector, val label: StringResource) {
     History(RachaIcons.History, Res.string.nav_history),
     Search(RachaIcons.Search, Res.string.nav_search),
     Folders(RachaIcons.FolderOpen, Res.string.nav_folders),
+    Account(RachaIcons.Cloud, Res.string.nav_account),
 }
 
 enum class WindowClass { Compact, Medium, Expanded }
@@ -78,6 +80,7 @@ fun RachaShell(
     scan: ScanStatus,
     onScan: () -> Unit,
     immersive: Boolean = false,
+    destinations: List<Destination> = Destination.entries,
     content: @Composable (WindowClass) -> Unit,
 ) {
     // One tree for every width: only the chrome around the content changes, so resizing the window (or rotating a
@@ -91,8 +94,8 @@ fun RachaShell(
         }
         val chrome = !immersive
         Row(Modifier.fillMaxSize()) {
-            if (chrome && windowClass == WindowClass.Expanded) Sidebar(current, onNavigate, categories, onCategory, streakDays, scan, onScan)
-            if (chrome && windowClass == WindowClass.Medium) Rail(current, onNavigate, streakDays)
+            if (chrome && windowClass == WindowClass.Expanded) Sidebar(destinations, current, onNavigate, categories, onCategory, streakDays, scan, onScan)
+            if (chrome && windowClass == WindowClass.Medium) Rail(destinations, current, onNavigate, streakDays)
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 val insets = when {
                     !chrome -> Modifier
@@ -100,7 +103,7 @@ fun RachaShell(
                     else -> Modifier.statusBarsPadding().navigationBarsPadding()
                 }
                 Box(Modifier.weight(1f).fillMaxWidth().then(insets)) { content(windowClass) }
-                if (chrome && windowClass == WindowClass.Compact) BottomBar(current, onNavigate)
+                if (chrome && windowClass == WindowClass.Compact) BottomBar(destinations, current, onNavigate)
             }
         }
     }
@@ -116,6 +119,7 @@ private fun Wordmark(onDark: Boolean) {
 
 @Composable
 private fun Sidebar(
+    destinations: List<Destination>,
     current: Destination?,
     onNavigate: (Destination) -> Unit,
     categories: List<CategorySummary>,
@@ -144,7 +148,7 @@ private fun Sidebar(
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             SidebarLabel(stringResource(Res.string.nav_main))
-            Destination.entries.forEach { d ->
+            destinations.forEach { d ->
                 SidebarItem(d.icon, stringResource(d.label), selected = current == d) { onNavigate(d) }
             }
             if (categories.isNotEmpty()) {
@@ -194,7 +198,7 @@ private fun SidebarItem(icon: ImageVector?, label: String, selected: Boolean, ba
 }
 
 @Composable
-private fun Rail(current: Destination?, onNavigate: (Destination) -> Unit, streakDays: Int) {
+private fun Rail(destinations: List<Destination>, current: Destination?, onNavigate: (Destination) -> Unit, streakDays: Int) {
     val colors = Racha.colors
     Column(
         Modifier.width(Racha.layout.railWidth).fillMaxHeight().background(colors.rail).statusBarsPadding().navigationBarsPadding()
@@ -204,7 +208,7 @@ private fun Rail(current: Destination?, onNavigate: (Destination) -> Unit, strea
     ) {
         Image(rememberVectorPainter(RachaLogo), contentDescription = stringResource(Res.string.app_name), modifier = Modifier.size(48.dp))
         Box(Modifier.height(Racha.space.l))
-        Destination.entries.forEach { d ->
+        destinations.forEach { d ->
             val selected = current == d
             val shape = RoundedCornerShape(Racha.radius.l)
             Column(
@@ -226,13 +230,13 @@ private fun Rail(current: Destination?, onNavigate: (Destination) -> Unit, strea
 }
 
 @Composable
-private fun BottomBar(current: Destination?, onNavigate: (Destination) -> Unit) {
+private fun BottomBar(destinations: List<Destination>, current: Destination?, onNavigate: (Destination) -> Unit) {
     val colors = Racha.colors
     Row(
         Modifier.fillMaxWidth().background(colors.surface).navigationBarsPadding().padding(vertical = Racha.space.xs),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        Destination.entries.forEach { d ->
+        destinations.forEach { d ->
             val selected = current == d
             Column(
                 Modifier.weight(1f).interactive({ onNavigate(d) }, RoundedCornerShape(Racha.radius.m), role = Role.Tab)

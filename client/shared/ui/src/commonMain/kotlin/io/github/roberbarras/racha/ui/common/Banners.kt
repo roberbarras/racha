@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.roberbarras.racha.ui.design.RButton
 import io.github.roberbarras.racha.ui.design.RText
@@ -25,7 +26,14 @@ import org.jetbrains.compose.resources.stringResource
 
 /** Android without "All files access" (ADR-0005): explains why and opens the system screen. */
 @Composable
-fun StorageAccessBanner(onAllow: () -> Unit, modifier: Modifier = Modifier) {
+fun StorageAccessBanner(onAllow: () -> Unit, modifier: Modifier = Modifier) = NoticeBanner(
+    RachaIcons.HardDrive, stringResource(Res.string.permission_title), stringResource(Res.string.permission_message),
+    stringResource(Res.string.permission_action), onAllow, modifier,
+)
+
+/** Something that needs the user (a permission, a question from sync): icon, text and one action. */
+@Composable
+fun NoticeBanner(icon: ImageVector, title: String, message: String, action: String, onAction: () -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(Racha.radius.l)
     Row(
         modifier.fillMaxWidth().clip(shape).background(Racha.colors.accentSoft).border(1.dp, Racha.colors.accent.copy(alpha = 0.4f), shape)
@@ -33,11 +41,11 @@ fun StorageAccessBanner(onAllow: () -> Unit, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Racha.space.l),
     ) {
-        IconBadge(RachaIcons.HardDrive)
+        IconBadge(icon)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
-            RText(stringResource(Res.string.permission_title), style = Racha.type.heading)
-            RText(stringResource(Res.string.permission_message), style = Racha.type.body, color = Racha.colors.inkMuted)
+            RText(title, style = Racha.type.heading)
+            RText(message, style = Racha.type.body, color = Racha.colors.inkMuted)
         }
-        RButton(stringResource(Res.string.permission_action), onAllow)
+        RButton(action, onAction)
     }
 }

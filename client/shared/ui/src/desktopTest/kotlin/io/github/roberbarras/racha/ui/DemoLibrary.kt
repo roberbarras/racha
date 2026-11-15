@@ -60,7 +60,10 @@ object DemoLibrary {
     lateinit var aws: LibraryItem
     lateinit var seriesEpisode: PlayableElement
 
-    fun dependencies(): RachaDependencies {
+    /** [sync] builds the account and sync controls over the same database (account screen tests). */
+    fun dependencies(
+        sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
+    ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
         RachaDatabase.Schema.create(driver)
         val db = LocalDatabase(driver, Dispatchers.IO)
@@ -114,6 +117,7 @@ object DemoLibrary {
                 ) { "en" }
             },
             appScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default),
+            sync = sync?.invoke(db, preferences, clock),
         )
     }
 

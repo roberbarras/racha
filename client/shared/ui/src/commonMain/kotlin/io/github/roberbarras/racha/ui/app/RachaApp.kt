@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ import io.github.roberbarras.racha.ui.common.parseColor
 import io.github.roberbarras.racha.ui.design.RachaTheme
 import io.github.roberbarras.racha.ui.detail.DetailScreen
 import io.github.roberbarras.racha.ui.folders.FoldersScreen
+import io.github.roberbarras.racha.ui.account.AccountScreen
 import io.github.roberbarras.racha.ui.home.HomeScreen
 import io.github.roberbarras.racha.ui.lists.HistoryScreen
 import io.github.roberbarras.racha.ui.lists.MyListScreen
@@ -69,8 +71,10 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             destination.hasRoute(HistoryRoute::class) -> Destination.History
             destination.hasRoute(SearchRoute::class) -> Destination.Search
             destination.hasRoute(FoldersRoute::class) -> Destination.Folders
+            destination.hasRoute(AccountRoute::class) -> Destination.Account
             else -> null
         }
+        val navScope = rememberCoroutineScope()
         fun go(d: Destination) {
             val route: Any = when (d) {
                 Destination.Home -> HomeRoute
@@ -78,15 +82,20 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 Destination.History -> HistoryRoute
                 Destination.Search -> SearchRoute
                 Destination.Folders -> FoldersRoute
+                Destination.Account -> AccountRoute
             }
-            navController.navigate(route) {
-                popUpTo(HomeRoute) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
+            // Main explicitly, like [play]: NavController must only be touched from the main thread.
+            navScope.launch(Dispatchers.Main.immediate) {
+                navController.navigate(route) {
+                    popUpTo(HomeRoute) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             }
         }
+        // Account and sync only where the platform offers it.
+        val destinations = remember(deps.sync) { Destination.entries.filter { it != Destination.Account || deps.sync != null } }
         val openItem: (ContentId) -> Unit = { navController.navigate(ItemRoute(it.value)) }
-        val navScope = rememberCoroutineScope()
         // Elements open where they belong: resources in the viewer, videos in the player (one navigation, so the
         // screen transition never gets interrupted by a redirect).
         val play: (ContentId, StartMode) -> Unit = { id, mode ->
@@ -117,15 +126,17 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 scan = scan,
                 onScan = { app.scanNow() },
                 immersive = immersive,
+                destinations = destinations,
             ) {
                 NavHost(navController, startDestination = HomeRoute) {
-                    composable<HomeRoute> { HomeScreen(app, deps, openItem, play, onAddFolder = { go(Destination.Folders) }) }
+                    composable<HomeRoute> { HomeScreen(app, deps, openItem, play, onAddFolder = { go(Destination.Folders) }, onOpenAccount = { go(Destination.Account) }) }
                     composable<CategoryRoute> { CategoryScreen(deps, it.toRoute<CategoryRoute>().key, onBack = navController::navigateUp, onOpenItem = openItem) }
                     composable<ItemRoute> { DetailScreen(deps, ContentId(it.toRoute<ItemRoute>().id), onBack = navController::navigateUp, onPlay = play) }
                     composable<MyListRoute> { MyListScreen(deps, openItem) }
                     composable<HistoryRoute> { HistoryScreen(deps, openItem) }
                     composable<SearchRoute> { SearchScreen(deps, openItem) }
                     composable<FoldersRoute> { FoldersScreen(deps, app) }
+                    composable<AccountRoute> { deps.sync?.let { AccountScreen(deps, it) } }
                     composable<PlayerRoute> {
                         val route = it.toRoute<PlayerRoute>()
                         val element = ContentId(route.elementId)

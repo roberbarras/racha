@@ -25,6 +25,9 @@ data object SearchRoute
 data object FoldersRoute
 
 @Serializable
+data object AccountRoute
+
+@Serializable
 data class PlayerRoute(val elementId: String, private val start: String = StartMode.ASK.name) {
     constructor(elementId: String, mode: StartMode) : this(elementId, mode.name)
 

@@ -45,6 +45,15 @@ import io.github.roberbarras.racha.ui.common.ItemGrid
 import io.github.roberbarras.racha.ui.common.NewElementRow
 import io.github.roberbarras.racha.ui.common.RecommendationCard
 import io.github.roberbarras.racha.ui.common.StorageAccessBanner
+import io.github.roberbarras.racha.application.sync.SyncAttention
+import io.github.roberbarras.racha.ui.common.NoticeBanner
+import io.github.roberbarras.racha.ui.resources.account_expired
+import io.github.roberbarras.racha.ui.resources.account_sign_in
+import io.github.roberbarras.racha.ui.resources.conflicts_banner_message
+import io.github.roberbarras.racha.ui.resources.conflicts_banner_title
+import io.github.roberbarras.racha.ui.resources.review
+import io.github.roberbarras.racha.ui.resources.sync_paused
+import kotlinx.coroutines.flow.flowOf
 import io.github.roberbarras.racha.ui.common.categoryName
 import io.github.roberbarras.racha.ui.common.longDate
 import io.github.roberbarras.racha.ui.design.MessageState
@@ -81,9 +90,11 @@ fun HomeScreen(
     onOpenItem: (ContentId) -> Unit,
     onPlay: (ContentId, StartMode) -> Unit,
     onAddFolder: () -> Unit,
+    onOpenAccount: () -> Unit = {},
 ) {
     val view by app.home.collectAsStateWithLifecycle()
     val storageAccess by app.storageAccess.collectAsStateWithLifecycle()
+    val syncAttention by remember(deps.sync) { deps.sync?.attention() ?: flowOf(null) }.collectAsStateWithLifecycle(null)
     val home = view
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val withPane = maxWidth >= 840.dp && home != null && home.continueWatching.isNotEmpty()
@@ -98,6 +109,7 @@ fun HomeScreen(
             ) {
                 item { Header(home, compact, onMode = { app.setMode(it) }) }
                 if (!storageAccess) item { StorageAccessBanner(onAllow = app::requestStorageAccess) }
+                syncAttention?.let { attention -> item(key = "sync-attention") { SyncAttentionBanner(attention, onOpenAccount) } }
                 when {
                     home == null -> item { LoadingRows() }
                     home.libraryIsEmpty -> item {
@@ -239,4 +251,16 @@ private fun CardRow(content: @Composable (cardWidth: androidx.compose.ui.unit.Dp
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
         content(rowCardWidth(maxWidth, Racha.space.l, compact = maxWidth < Racha.layout.compactMaxWidth))
     }
+}
+
+@Composable
+private fun SyncAttentionBanner(attention: SyncAttention, onOpen: () -> Unit) = when (attention) {
+    SyncAttention.SESSION_EXPIRED -> NoticeBanner(
+        RachaIcons.CloudAlert, stringResource(Res.string.sync_paused), stringResource(Res.string.account_expired),
+        stringResource(Res.string.account_sign_in), onOpen,
+    )
+    SyncAttention.SETTINGS_CONFLICT -> NoticeBanner(
+        RachaIcons.CloudAlert, stringResource(Res.string.conflicts_banner_title), stringResource(Res.string.conflicts_banner_message),
+        stringResource(Res.string.review), onOpen,
+    )
 }

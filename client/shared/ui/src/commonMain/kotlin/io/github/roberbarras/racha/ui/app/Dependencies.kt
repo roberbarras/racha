@@ -18,6 +18,7 @@ import io.github.roberbarras.racha.application.library.scan.KeepLibraryUpToDate
 import io.github.roberbarras.racha.application.library.scan.LocalDates
 import io.github.roberbarras.racha.application.preferences.Preferences
 import io.github.roberbarras.racha.application.shared.Clock
+import io.github.roberbarras.racha.application.sync.SyncControls
 import io.github.roberbarras.racha.application.playback.PlaybackController
 import io.github.roberbarras.racha.application.playback.PlayerEngine
 import io.github.roberbarras.racha.ui.player.PlayerHooks
@@ -50,6 +51,8 @@ class RachaDependencies(
     val resourceViewer: () -> ResourceViewer,
     /** Outlives screens: finishes saves when a player closes. */
     val appScope: CoroutineScope,
+    /** Account and sync (§7.4); null where the platform does not offer it (demo, previews). */
+    val sync: SyncControls? = null,
 )
 
 /** Platform capabilities the shared UI needs. */

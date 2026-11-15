@@ -27,6 +27,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.roberbarras.racha.domain.library.Category
 import io.github.roberbarras.racha.domain.library.CategoryKey
 import io.github.roberbarras.racha.domain.library.CategoryRoot
+import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.application.sync.RemoteRoot
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import io.github.roberbarras.racha.ui.resources.cancel
+import io.github.roberbarras.racha.ui.resources.link_folder
+import io.github.roberbarras.racha.ui.resources.link_message
+import io.github.roberbarras.racha.ui.resources.link_new
+import io.github.roberbarras.racha.ui.resources.link_title
+import io.github.roberbarras.racha.ui.resources.link_to
 import io.github.roberbarras.racha.ui.app.AppViewModel
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import io.github.roberbarras.racha.ui.common.IconBadge
@@ -52,22 +62,51 @@ import io.github.roberbarras.racha.ui.resources.scanning
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
-data class CategoryFolders(val category: Category, val roots: List<CategoryRoot>)
+/** [linkable]: folders of this category on the account's other devices not linked here yet (ADR-0004). */
+data class CategoryFolders(val category: Category, val roots: List<CategoryRoot>, val linkable: List<RemoteRoot>)
+
+/** Asking whether a folder is the same as one on another device: a new one ([location]) or an existing [root]. */
+data class LinkQuestion(val category: CategoryKey, val options: List<RemoteRoot>, val location: String? = null, val root: CategoryRoot? = null)
 
 class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
     private val refresh = MutableStateFlow(0)
     val folders: StateFlow<List<CategoryFolders>> = combine(deps.categories.observeAll(), refresh) { all, _ ->
-        all.map { CategoryFolders(it, deps.manageRoots.roots(it.key)) }
+        all.map { CategoryFolders(it, deps.manageRoots.roots(it.key), deps.manageRoots.linkable(it.key)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val mutableQuestion = MutableStateFlow<LinkQuestion?>(null)
+    val question: StateFlow<LinkQuestion?> = mutableQuestion.asStateFlow()
 
     fun add(category: CategoryKey) = viewModelScope.launch {
         val location = deps.platform.pickFolder() ?: return@launch
-        deps.manageRoots.add(category, location)
+        val options = deps.manageRoots.linkable(category)
+        if (options.isEmpty()) {
+            deps.manageRoots.add(category, location)
+            refresh.value++
+        } else {
+            mutableQuestion.value = LinkQuestion(category, options, location = location)
+        }
+    }
+
+    fun askLink(entry: CategoryFolders, root: CategoryRoot) {
+        mutableQuestion.value = LinkQuestion(entry.category.key, entry.linkable, root = root)
+    }
+
+    /** [remote] null: a new folder (when adding) or no change (when linking an existing one). */
+    fun answer(remote: RemoteRoot?) = viewModelScope.launch {
+        val question = mutableQuestion.value ?: return@launch
+        mutableQuestion.value = null
+        val target = remote?.let { RootKey(it.key) }
+        when {
+            question.location != null -> deps.manageRoots.add(question.category, question.location, linkTo = target)
+            question.root != null && target != null -> deps.manageRoots.link(question.root, target)
+        }
         refresh.value++
     }
 
@@ -82,6 +121,7 @@ class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
 fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
     val vm = viewModel { FoldersViewModel(deps) }
     val folders by vm.folders.collectAsStateWithLifecycle()
+    val question by vm.question.collectAsStateWithLifecycle()
     val scan by app.scan.collectAsStateWithLifecycle()
     val storageAccess by app.storageAccess.collectAsStateWithLifecycle()
     ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
@@ -102,13 +142,29 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
         }
         if (!storageAccess) item { StorageAccessBanner(onAllow = app::requestStorageAccess) }
         folders.forEach { entry ->
-            item(key = entry.category.key.value) { CategoryFoldersCard(entry, onAdd = { vm.add(entry.category.key) }, onRemove = vm::remove) }
+            item(key = entry.category.key.value) {
+                CategoryFoldersCard(
+                    entry,
+                    question = question?.takeIf { it.category == entry.category.key },
+                    onAdd = { vm.add(entry.category.key) },
+                    onRemove = vm::remove,
+                    onLink = { vm.askLink(entry, it) },
+                    onAnswer = { vm.answer(it) },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CategoryFoldersCard(entry: CategoryFolders, onAdd: () -> Unit, onRemove: (CategoryRoot) -> Unit) {
+private fun CategoryFoldersCard(
+    entry: CategoryFolders,
+    question: LinkQuestion?,
+    onAdd: () -> Unit,
+    onRemove: (CategoryRoot) -> Unit,
+    onLink: (CategoryRoot) -> Unit,
+    onAnswer: (RemoteRoot?) -> Unit,
+) {
     val shape = RoundedCornerShape(Racha.radius.l)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(Racha.colors.surface).border(1.dp, Racha.colors.border, shape).padding(Racha.space.l),
@@ -126,8 +182,34 @@ private fun CategoryFoldersCard(entry: CategoryFolders, onAdd: () -> Unit, onRem
             Box(Modifier.fillMaxWidth().height(1.dp).background(Racha.colors.border))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
                 RText(displayPath(root.location), style = Racha.type.body, modifier = Modifier.weight(1f), maxLines = 2)
+                if (entry.linkable.isNotEmpty()) RIconButton(RachaIcons.Link, stringResource(Res.string.link_folder), { onLink(root) }, tint = Racha.colors.inkMuted)
                 RIconButton(RachaIcons.Trash2, stringResource(Res.string.remove_folder), { onRemove(root) }, tint = Racha.colors.inkMuted)
             }
+        }
+        if (question != null) LinkChooser(question, onAnswer)
+    }
+}
+
+/** "Is it the same folder as on another device?": linking makes ids, and so progress, match (ADR-0004). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LinkChooser(question: LinkQuestion, onAnswer: (RemoteRoot?) -> Unit) {
+    val shape = RoundedCornerShape(Racha.radius.m)
+    Column(
+        Modifier.fillMaxWidth().clip(shape).background(Racha.colors.accentSoft).padding(Racha.space.l),
+        verticalArrangement = Arrangement.spacedBy(Racha.space.s),
+    ) {
+        RText(stringResource(Res.string.link_title), style = Racha.type.bodyStrong)
+        question.location?.let { RText(displayPath(it), style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 2) }
+        RText(stringResource(Res.string.link_message), style = Racha.type.body, color = Racha.colors.inkMuted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.s), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+            question.options.forEach { remote ->
+                RButton(stringResource(Res.string.link_to, remote.name), { onAnswer(remote) }, icon = RachaIcons.Link)
+            }
+            RButton(
+                stringResource(if (question.location != null) Res.string.link_new else Res.string.cancel),
+                { onAnswer(null) }, kind = ButtonKind.Secondary,
+            )
         }
     }
 }
