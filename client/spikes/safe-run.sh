@@ -7,7 +7,8 @@
 #
 # usage: spikes/safe-run.sh <virtual|real> <limitSeconds> <module> <args...>
 #   e.g. spikes/safe-run.sh virtual 60 linux-video embed "/path/video.mp4" 30 1280 720 no x11
-#        spikes/safe-run.sh virtual 120 desktop-player   (end-to-end player harness, throwaway home directory)
+#        spikes/safe-run.sh virtual 120 desktop-player      (end-to-end player harness, throwaway home directory)
+#        spikes/safe-run.sh virtual 120 desktop-resources   (end-to-end resource viewer harness, same)
 set -u
 target=$1; limit=$2; module=$3; shift 3
 client_dir=$(cd "$(dirname "$0")/.." && pwd)
@@ -15,8 +16,12 @@ home_args=()
 case $module in
   linux-video) main=io.github.roberbarras.racha.spike.video.MainKt; task=":spikes:$module:printRuntimeClasspath" ;;
   linux-webview) main=io.github.roberbarras.racha.spike.webview.MainKt; task=":spikes:$module:printRuntimeClasspath" ;;
-  desktop-player)
-    main=io.github.roberbarras.racha.desktop.player.PlayerHarnessKt; task=":desktop:printTestRuntimeClasspath"
+  desktop-player|desktop-resources)
+    case $module in
+      desktop-player) main=io.github.roberbarras.racha.desktop.player.PlayerHarnessKt ;;
+      desktop-resources) main=io.github.roberbarras.racha.desktop.resource.ResourceHarnessKt ;;
+    esac
+    task=":desktop:printTestRuntimeClasspath"
     # The app writes its database, thumbnails and screenshots under the home directory: use a throwaway one.
     fake_home=$(mktemp -d /tmp/racha-harness.XXXXXX)
     home_args=("-Duser.home=$fake_home" "-Dracha.mpv.ao=null" "-Dracha.debug.x11=${RACHA_DEBUG_X11:-false}") # the test clips carry a 440 Hz tone: never play it

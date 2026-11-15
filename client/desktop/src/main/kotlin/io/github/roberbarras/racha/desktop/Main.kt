@@ -17,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import io.github.roberbarras.racha.desktop.resource.PdfBoxDocument
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -24,12 +26,21 @@ import java.awt.Dimension
 import java.awt.GraphicsEnvironment
 
 fun main() {
+    val pdfFonts = DesktopPaths.cache.resolve("pdfbox")
+    PdfBoxDocument.configure(pdfFonts)
     // Composition root: adapters are wired by hand, no reflection-based DI.
     val graph = DesktopGraph()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     background.launch {
         graph.ensureBuiltInCategories()
         graph.keepLibraryUpToDate.run()
+    }
+    if (!PdfBoxDocument.fontIndexExists(pdfFonts)) {
+        // Once per installation, after start-up has settled: index fonts so the first PDF opens at once.
+        background.launch(Dispatchers.IO) {
+            delay(PDF_FONT_INDEX_DELAY_MS)
+            runCatching { PdfBoxDocument.buildFontIndex() }
+        }
     }
     val scale = DesktopUiScale.current
     // Initial window: a comfortable share of the screen it opens on, whatever its size or density.
@@ -61,3 +72,4 @@ fun main() {
 private const val INITIAL_SHARE = 0.8f
 private const val MIN_WIDTH_DP = 480
 private const val MIN_HEIGHT_DP = 560
+private const val PDF_FONT_INDEX_DELAY_MS = 30_000L

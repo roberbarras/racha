@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.desktop
 
+import io.github.roberbarras.racha.application.resource.ResourceViewer
+import io.github.roberbarras.racha.files.NioResourceFiles
 import io.github.roberbarras.racha.application.browse.GetElement
 import io.github.roberbarras.racha.application.playback.PlaybackController
 import kotlinx.coroutines.CoroutineScope
@@ -93,6 +95,9 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
+        resourceViewer = {
+            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock)
+        },
         playbackController = { engine, scope ->
         PlaybackController(
             engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
