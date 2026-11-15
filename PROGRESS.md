@@ -68,6 +68,7 @@ Documento: [docs/SERVIDOR.md](docs/SERVIDOR.md). ADR nuevo: [0012](docs/adr/0012
 | Tests contra PostgreSQL 18 real (Testcontainers): auth 7, registro cerrado 1, sync 11, telemetría y estadísticas 2, OpenAPI 1 | ✅ |
 | Unitarios (reglas de identidad, sync y racha) + ArchUnit | ✅ |
 | `docker compose up`: salud, registro, push, pull y OpenAPI de punta a punta | ✅ |
+| CI (servidor + cliente + arneses Linux + emulador) | ✅ [run 43737768122](https://github.com/roberbarras/racha/actions/runs/43737768122) |
 
 **Criterios §12**: 🟡 **9** (servidor listo; las apps inician sesión en H9); 🟡 **5** y **8** dependen de H9/H10.
 
