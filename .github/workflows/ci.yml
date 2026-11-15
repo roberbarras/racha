@@ -49,6 +49,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales libgtk-3-0t64 libxtst6
           sudo locale-gen es_ES.UTF-8
       - run: ./gradlew check :android:assembleDebug :desktop:jar --console=plain
+      - name: Failing tests (public annotations; logs need a login)
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for path in glob.glob("**/build/test-results/**/*.xml", recursive=True):
+              for case in ET.parse(path).getroot().iter("testcase"):
+                  for bad in list(case.findall("failure")) + list(case.findall("error")):
+                      text = (bad.get("message") or bad.text or "").replace("\n", " ")[:900]
+                      print(f"::error title={case.get('classname')}.{case.get('name')}::{text}")
+          PY
       - name: Linux resource viewer end to end (JavaFX WebKit page checks, PDF, text in Xvfb)
         run: |
           cp=$(./gradlew -q --console=plain :desktop:printTestRuntimeClasspath | tail -1)
