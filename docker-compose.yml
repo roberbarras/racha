@@ -26,6 +26,10 @@ services:
       RACHA_DB_USER: ${RACHA_DB_USER:-racha}
       RACHA_DB_PASSWORD: ${RACHA_DB_PASSWORD:-racha}
       RACHA_BASE_PATH: ${RACHA_BASE_PATH:-}
+      # At least 32 bytes, e.g. `openssl rand -base64 48`. Without it every restart signs all devices out.
+      RACHA_JWT_SECRET: ${RACHA_JWT_SECRET:-}
+      # open | closed: closed lets only existing users in (create yours first).
+      RACHA_REGISTRATION: ${RACHA_REGISTRATION:-open}
     ports:
       - "${RACHA_PORT:-8080}:8080"
 

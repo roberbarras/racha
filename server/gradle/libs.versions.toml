@@ -1,8 +1,10 @@
 [versions]
 spring-boot = "4.1.2"
 archunit = "1.5.1"
+springdoc = "3.2.0"
 
 [libraries]
+springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 
 [plugins]

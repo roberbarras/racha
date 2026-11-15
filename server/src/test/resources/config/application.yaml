@@ -1,0 +1,5 @@
+# Tests: every test registers users from the same address; keep the per-account login limit as in production.
+racha:
+  limits:
+    login-failures-per-client: 100000
+    registrations-per-client: 100000

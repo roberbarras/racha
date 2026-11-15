@@ -8,18 +8,48 @@ spring:
     url: ${RACHA_DB_URL:jdbc:postgresql://localhost:5432/racha}
     username: ${RACHA_DB_USER:racha}
     password: ${RACHA_DB_PASSWORD:racha}
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  mvc:
+    problemdetails:
+      enabled: true
+  servlet:
+    multipart:
+      enabled: false
 
 server:
   port: ${RACHA_PORT:8080}
   servlet:
     context-path: ${RACHA_BASE_PATH:}
   shutdown: graceful
+  # Sync batches and error reports are small JSON; anything bigger is refused before it is read.
+  tomcat:
+    max-http-form-post-size: 0
+    max-swallow-size: 2MB
+
+racha:
+  auth:
+    # HS256 key for access tokens, at least 32 bytes (base64 or plain text). Without it a random key is generated at
+    # start-up: fine for trying the server, but every restart signs everybody out.
+    jwt-secret: ${RACHA_JWT_SECRET:}
+    access-token-minutes: ${RACHA_ACCESS_TOKEN_MINUTES:15}
+    refresh-token-days: ${RACHA_REFRESH_TOKEN_DAYS:60}
+    # open: anyone who reaches the server can create an account; closed: only existing users (self-hosted server).
+    registration: ${RACHA_REGISTRATION:open}
+  limits:
+    max-batch: 1000
+    max-change-bytes: 65536
+    login-failures-per-email: 10
+    login-failures-per-client: 50
+    registrations-per-client: 20
+
+springdoc:
+  api-docs:
+    enabled: ${RACHA_API_DOCS:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${RACHA_API_DOCS:true}
+    path: /docs
 
 management:
   endpoints:

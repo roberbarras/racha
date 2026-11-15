@@ -1,8 +1,10 @@
 package io.github.roberbarras.racha;
 
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.library.Architectures.onionArchitecture;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -23,7 +25,9 @@ class HexagonalArchitectureTest {
             .adapter("web", "..adapter.web..")
             .adapter("persistence", "..adapter.persistence..")
             .adapter("security", "..adapter.security..")
-            .withOptionalLayers(true);
+            .withOptionalLayers(true)
+            // The composition root wires adapters into ports by design; it is not part of any layer.
+            .ignoreDependency(resideInAPackage("io.github.roberbarras.racha.config.."), DescribedPredicate.alwaysTrue());
 
     @ArchTest
     static final ArchRule domainIsFrameworkFree = noClasses()
