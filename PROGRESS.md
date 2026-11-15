@@ -15,7 +15,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H6 | Reproductor Linux (libmpv) | ✅ Cerrado |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | ✅ Cerrado |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | ✅ Cerrado |
-| H9 | Sync extremo a extremo y conflictos | Pendiente |
+| H9 | Sync extremo a extremo y conflictos | ✅ Cerrado |
 | H10 | Estadísticas y telemetría | Pendiente |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | Pendiente |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | Pendiente |
@@ -27,12 +27,12 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 1 | Escaneo de la estructura de ejemplo | H3 | ✅ H3 (dominio, SQLite, Linux real, Android) |
 | 2 | Home con "Continuar viendo" y pestaña principal | H4 | ✅ H4 (caso de uso + UI) |
 | 3 | Reproductor Android y Linux completo | H5, H6 | ✅ Android (H5) y Linux (H6) |
-| 4 | Offline al 100 % | H5, H9 | 🟡 Reproducción y progreso 100 % locales ✅ (H5); sync que no bloquea → H9 |
-| 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
+| 4 | Offline al 100 % | H5, H9 | ✅ Reproducción y progreso 100 % locales (H5); la sync es opcional, nunca bloquea y guarda la cola sin conexión (H9) |
+| 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ✅ H9 (dos clientes contra el servidor real en CI) |
 | 6 | Recurso HTML como elemento del curso | H7 | ✅ H7 (Android y Linux, aislado a su curso) |
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
-| 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | 🟡 Servidor ✅ (H8); login desde las apps → H9 |
+| 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ✅ Servidor (H8) y registro/login/refresh desde las apps (H9); OAuth aplazado (ADR-0006) |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
 | 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4), reproductores Android (H5) y Linux (H6), interfaz adaptada a la escala y al ancho (H6) ✅; pulido → H12 |
@@ -47,6 +47,42 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H9 · Sync extremo a extremo — ✅ cerrado
+
+Documento: [docs/SYNC.md](docs/SYNC.md). Precisiones en [ADR-0004](docs/adr/0004-contentid-y-multiples-raices.md) y [ADR-0012](docs/adr/0012-protocolo-sync-y-modelo-remoto.md).
+
+**Hecho**
+- Outbox local con triggers SQLite (solo con la sync activa y nunca para lo que llega del servidor), siembra al iniciar sesión y compactación por entidad; lápidas para borrados.
+- Motor de sync: push por lotes, aplicar lo que el servidor tiene más reciente, pull paginado con cursor; renovación del token y reintento ante 401; errores guardados con un código estable.
+- Reglas en el cliente (§6.3): gana el más reciente; el progreso conserva siempre el máximo visto; el historial solo se añade; ajustes con "Preguntar" o "Gana el último", preguntando solo cuando el cambio local pierde; hora del servidor adoptada si recorta un reloj adelantado.
+- Cuenta: registro, entrada, salida y renovación; sesión cifrada con el Android Keystore / en el servicio de secretos de Linux (libsecret por FFM, fichero `0600` de respaldo); volver a entrar reutiliza el dispositivo en el servidor.
+- Adaptador HTTP Ktor 3.6 + OkHttp en un módulo nuevo (`shared:remote`).
+- Programación: Linux mientras la app está abierta (red cada 30 s); Android mientras está visible (callbacks de red) y en segundo plano con WorkManager (red y batería no baja, cada max(N, 15) min, más un envío al salir con cambios pendientes).
+- UI: pantalla "Cuenta" (servidor, entrar/crear cuenta, estado, pendientes, último error, "Sincronizar ahora", intervalo, política de conflictos, cerrar sesión), ajustes por revisar con los dos valores, banner en Inicio (sesión caducada o ajustes por revisar), vinculación de carpetas con las de otros dispositivos al añadirlas o después. Textos es/en.
+- Navegación siempre en el hilo principal (también desde `go`): los clics que llegan por otro hilo, como en los tests, ya no rompen `NavController`.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Datos (JVM, SQLite real): outbox, compactación, lápidas, reglas por entidad, conflictos, vinculación de raíces (`SyncStoreTest`, `RootLinkTest`) | ✅ |
+| Adaptador HTTP con servidor simulado (`KtorSyncServerTest`) | ✅ |
+| **Dos clientes contra el servidor real** (Docker, PostgreSQL 18): progreso, marcadores, historial, favoritos, rebobinado sin perder el máximo, conflicto de ajustes preguntado y resuelto, cola sin conexión enviada al volver la red, rotación del refresh, reentrada sin duplicar dispositivo (`EndToEndSyncTest`; en CI job `sync-e2e`) | ✅ |
+| UI de escritorio con servidor falso: entrar (con error de credenciales), banner de ajustes por revisar y respuesta (`AccountUiTest`) | ✅ |
+| Credenciales: fichero de respaldo `0600` (JVM) y Keystore en dispositivo (`KeystoreCredentialStoreTest`); los tests no tocan el llavero real | ✅ |
+| Batería Android en el emulador (incluye triggers en el SQLite del dispositivo) | ✅ |
+| CI (servidor + cliente + arneses Linux + e2e de sync + emulador) | ✅ [run 43749114228](https://github.com/roberbarras/racha/actions/runs/43749114228) |
+
+**Criterios §12**: ✅ **4**, ✅ **5**, ✅ **9** (OAuth aplazado por decisión, ADR-0006).
+
+**Pendiente / notas**
+- Una ejecución anterior de CI (43748193228) falló en el paso `check` del cliente sin cambios de código respecto a la verde; no se pudo ver qué test (los logs piden sesión). Desde ahora los tests que fallan se publican como anotaciones; si se repite, se verá cuál es.
+- El envío de eventos de visualización a `/analytics/events` (estadísticas, §12.8) es H10.
+- La pantalla de Ajustes completa (H11) incluirá también la sección de sync; los nombres legibles de los ajustes ya están (`settingName`).
+
+**Bloqueos**: ninguno.
 
 ---
 
