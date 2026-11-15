@@ -70,6 +70,7 @@ Documento: [docs/RECURSOS.md](docs/RECURSOS.md). Capturas: [docs/evidence/h7](do
 | Android en dispositivo: página autocomprobada (5 ok, 4 escapes bloqueados), enlace externo, PDF, flujo real del visor | ✅ 3 tests; suite completa 18/18 |
 | Linux en Xvfb (app real): página autocomprobada en JavaFX, página pintada, PDF, TXT, vistos | ✅ también en CI |
 | Tu escritorio con el AppImage: HTML (enlaces y quiz), PDF al ancho, TXT, anterior/siguiente, lista, "Visto" | ✅ confirmado por ti (2026-11-15) |
+| CI (servidor + cliente + arneses Linux + emulador) | ✅ [run 43735623489](https://github.com/roberbarras/racha/actions/runs/43735623489) |
 
 **Criterios §12**: ✅ **6**.
 
