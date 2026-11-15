@@ -46,6 +46,7 @@ import io.github.roberbarras.racha.ui.resources.library_up_to_date
 import io.github.roberbarras.racha.ui.resources.nav_categories
 import io.github.roberbarras.racha.ui.resources.nav_folders
 import io.github.roberbarras.racha.ui.resources.nav_account
+import io.github.roberbarras.racha.ui.resources.nav_stats
 import io.github.roberbarras.racha.ui.resources.nav_history
 import io.github.roberbarras.racha.ui.resources.nav_home
 import io.github.roberbarras.racha.ui.resources.nav_main
@@ -58,13 +59,15 @@ import io.github.roberbarras.racha.ui.resources.streak_none
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-enum class Destination(val icon: ImageVector, val label: StringResource) {
+/** [inBottomBar]: shown in the phone's bottom bar; the rest are reached from Progress there (five fit). */
+enum class Destination(val icon: ImageVector, val label: StringResource, val inBottomBar: Boolean = true) {
     Home(RachaIcons.House, Res.string.nav_home),
     MyList(RachaIcons.Bookmark, Res.string.nav_my_list),
     History(RachaIcons.History, Res.string.nav_history),
     Search(RachaIcons.Search, Res.string.nav_search),
-    Folders(RachaIcons.FolderOpen, Res.string.nav_folders),
-    Account(RachaIcons.Cloud, Res.string.nav_account),
+    Stats(RachaIcons.ChartColumn, Res.string.nav_stats),
+    Folders(RachaIcons.FolderOpen, Res.string.nav_folders, inBottomBar = false),
+    Account(RachaIcons.Cloud, Res.string.nav_account, inBottomBar = false),
 }
 
 enum class WindowClass { Compact, Medium, Expanded }
@@ -236,7 +239,7 @@ private fun BottomBar(destinations: List<Destination>, current: Destination?, on
         Modifier.fillMaxWidth().background(colors.surface).navigationBarsPadding().padding(vertical = Racha.space.xs),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        destinations.forEach { d ->
+        destinations.filter { it.inBottomBar }.forEach { d ->
             val selected = current == d
             Column(
                 Modifier.weight(1f).interactive({ onNavigate(d) }, RoundedCornerShape(Racha.radius.m), role = Role.Tab)

@@ -11,6 +11,12 @@ import io.github.roberbarras.racha.application.sync.SyncChange
 import io.github.roberbarras.racha.application.sync.SyncRecord
 import io.github.roberbarras.racha.application.sync.SyncServer
 import io.github.roberbarras.racha.application.sync.Tokens
+import io.github.roberbarras.racha.application.stats.RemoteStats
+import io.github.roberbarras.racha.application.stats.StatsServer
+import io.github.roberbarras.racha.application.telemetry.ClientError
+import io.github.roberbarras.racha.application.telemetry.TelemetryEvent
+import io.github.roberbarras.racha.application.telemetry.TelemetryServer
+import io.github.roberbarras.racha.domain.library.scan.CalendarDate
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
@@ -39,7 +45,7 @@ import kotlin.time.Instant
  * Network failures become [RemoteError.Unreachable] (retry later); a rejected access token
  * [RemoteError.Unauthorized] (refresh); anything else the server refuses [RemoteError.Rejected] with its code.
  */
-class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, SyncServer, AutoCloseable {
+class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, SyncServer, TelemetryServer, StatsServer, AutoCloseable {
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
@@ -92,6 +98,39 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
         })
         val page = response.body<PageDto>()
         return PullPage(page.changes.map { it.record() }, page.cursor, page.hasMore)
+    }
+
+    override suspend fun sendEvents(baseUrl: String, accessToken: String, events: List<TelemetryEvent>) {
+        authorized(call {
+            client.post("$baseUrl/analytics/events") {
+                bearerAuth(accessToken)
+                jsonBody(events.map { EventDto(it.id, it.type, it.occurredAt.toString(), it.properties) })
+            }
+        })
+    }
+
+    override suspend fun sendErrors(baseUrl: String, accessToken: String, errors: List<ClientError>) {
+        authorized(call {
+            client.post("$baseUrl/errors") {
+                bearerAuth(accessToken)
+                jsonBody(errors.map { ErrorDto(it.id, it.platform, it.appVersion, it.message, it.stackTrace, it.occurredAt.toString(), it.context) })
+            }
+        })
+    }
+
+    override suspend fun personalStats(address: ServerAddress, accessToken: String, zone: String): RemoteStats {
+        val response = authorized(call {
+            client.get(address.baseUrl + "/stats/me") {
+                bearerAuth(accessToken)
+                parameter("zone", zone)
+            }
+        })
+        val dto = response.body<PersonalStatsDto>()
+        return RemoteStats(
+            dto.watchSeconds,
+            dto.watchByDay.mapNotNull { d -> CalendarDate.parseOrNull(d.day)?.let { it to d.seconds } }.toMap(),
+            dto.watchByCategory.mapNotNull { c -> c.categoryId?.let { it to c.seconds } }.toMap(),
+        )
     }
 
     override fun close() = client.close()

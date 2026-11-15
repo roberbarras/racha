@@ -22,7 +22,9 @@ import java.util.concurrent.TimeUnit
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val graph = (applicationContext as RachaApplication).graph
-        return when (val outcome = graph.syncEngine.syncNow()) {
+        val outcome = graph.syncEngine.syncNow()
+        graph.telemetryUploader.upload()
+        return when (outcome) {
             is SyncOutcome.Failed -> if (outcome.error is RemoteError.Unreachable && runAttemptCount < MAX_RETRIES) Result.retry() else Result.success()
             else -> Result.success()
         }

@@ -36,6 +36,7 @@ import io.github.roberbarras.racha.ui.design.RachaTheme
 import io.github.roberbarras.racha.ui.detail.DetailScreen
 import io.github.roberbarras.racha.ui.folders.FoldersScreen
 import io.github.roberbarras.racha.ui.account.AccountScreen
+import io.github.roberbarras.racha.ui.stats.StatsScreen
 import io.github.roberbarras.racha.ui.home.HomeScreen
 import io.github.roberbarras.racha.ui.lists.HistoryScreen
 import io.github.roberbarras.racha.ui.lists.MyListScreen
@@ -72,6 +73,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             destination.hasRoute(SearchRoute::class) -> Destination.Search
             destination.hasRoute(FoldersRoute::class) -> Destination.Folders
             destination.hasRoute(AccountRoute::class) -> Destination.Account
+            destination.hasRoute(StatsRoute::class) -> Destination.Stats
             else -> null
         }
         val navScope = rememberCoroutineScope()
@@ -83,6 +85,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 Destination.Search -> SearchRoute
                 Destination.Folders -> FoldersRoute
                 Destination.Account -> AccountRoute
+                Destination.Stats -> StatsRoute
             }
             // Main explicitly, like [play]: NavController must only be touched from the main thread.
             navScope.launch(Dispatchers.Main.immediate) {
@@ -137,6 +140,9 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                     composable<SearchRoute> { SearchScreen(deps, openItem) }
                     composable<FoldersRoute> { FoldersScreen(deps, app) }
                     composable<AccountRoute> { deps.sync?.let { AccountScreen(deps, it) } }
+                    composable<StatsRoute> {
+                        StatsScreen(deps, onFolders = { go(Destination.Folders) }, onAccount = deps.sync?.let { { go(Destination.Account) } })
+                    }
                     composable<PlayerRoute> {
                         val route = it.toRoute<PlayerRoute>()
                         val element = ContentId(route.elementId)

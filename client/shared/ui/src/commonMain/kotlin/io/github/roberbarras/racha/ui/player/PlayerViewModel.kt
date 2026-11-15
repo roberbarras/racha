@@ -78,6 +78,7 @@ class PlayerViewModel(
     fun setFullscreen(enabled: Boolean) {
         mutableFullscreen.value = enabled
         hooks.setFullscreen(enabled)
+        if (enabled) controller.usedFeature("fullscreen")
     }
 
     fun togglePanel(target: PlayerPanel) {
@@ -97,11 +98,13 @@ class PlayerViewModel(
         val element = state.value.element ?: return@launch
         val name = "racha-${element.id.value.take(8)}-${engine.positionMs() / 1000}"
         hooks.screenshot(engine, name)?.let { notice.value = savedMessage(it) }
+        controller.usedFeature("screenshot")
     }
 
     fun enterPictureInPicture() {
         val e = state.value.engine
         hooks.enterPictureInPicture(e.videoWidth, e.videoHeight)
+        controller.usedFeature("pip")
     }
 
     override fun onCleared() {

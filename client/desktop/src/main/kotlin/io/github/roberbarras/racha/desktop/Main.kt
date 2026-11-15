@@ -30,6 +30,7 @@ fun main() {
     PdfBoxDocument.configure(pdfFonts)
     // Composition root: adapters are wired by hand, no reflection-based DI.
     val graph = DesktopGraph()
+    reportCrashes(graph)
     graph.startSync()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     background.launch {
@@ -74,3 +75,12 @@ private const val INITIAL_SHARE = 0.8f
 private const val MIN_WIDTH_DP = 480
 private const val MIN_HEIGHT_DP = 560
 private const val PDF_FONT_INDEX_DELAY_MS = 30_000L
+
+/** Uncaught errors (any thread, the UI one included) go to the account's server (§8) before the usual handling. */
+private fun reportCrashes(graph: DesktopGraph) {
+    val previous = Thread.getDefaultUncaughtExceptionHandler()
+    Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+        runCatching { runBlocking { withTimeoutOrNull(2_000) { graph.telemetry.error(error, mapOf("thread" to thread.name)) } } }
+        if (previous != null) previous.uncaughtException(thread, error) else error.printStackTrace()
+    }
+}

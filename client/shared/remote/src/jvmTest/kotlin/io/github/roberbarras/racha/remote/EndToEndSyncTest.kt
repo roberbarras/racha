@@ -27,6 +27,14 @@ import kotlinx.coroutines.runBlocking
 import java.net.URI
 import java.util.UUID
 import kotlin.test.Test
+import io.github.roberbarras.racha.application.stats.LoadPersonalStats
+import io.github.roberbarras.racha.application.stats.RemoteStatsSource
+import io.github.roberbarras.racha.application.telemetry.Telemetry
+import io.github.roberbarras.racha.application.telemetry.Telemetry.Companion.feature
+import io.github.roberbarras.racha.application.telemetry.TelemetryUploader
+import io.github.roberbarras.racha.domain.library.scan.CalendarDate
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -58,7 +66,13 @@ class EndToEndSyncTest {
         val credentials = MemoryCredentials()
         val server = KtorSyncServer()
         val account = AccountService(server, credentials, db.sync, db.accounts, preferences, { DeviceDescriptor(null, name, platform, "e2e") }, clock)
-        val engine = SyncEngine(db.sync, server, account, preferences, clock)
+        val telemetry = Telemetry(db.telemetry, preferences, clock, platform, "e2e")
+        val engine = SyncEngine(db.sync, server, account, preferences, clock, telemetry)
+        val uploader = TelemetryUploader(db.telemetry, server, account, preferences, clock)
+        val personalStats = LoadPersonalStats(
+            db.categories, db.library, db.progress, db.history, db.stats, { CalendarDate.ofEpochDay(it.epochSeconds.floorDiv(86_400)) }, clock,
+            RemoteStatsSource(server, account, preferences) { "UTC" },
+        )
 
         suspend fun sync(): SyncOutcome.Done = assertIs<SyncOutcome.Done>(engine.syncNow())
 
@@ -145,6 +159,22 @@ class EndToEndSyncTest {
         phone.account.accessToken(forceRefresh = true)!!
         assertTrue(phone.credentials.session!!.refreshToken != before)
         phone.sync()
+
+        // Criterion 8 (H10): usage events and errors reach the server, and the account's watch time is seen from the
+        // other device's statistics.
+        laptop.telemetry.appOpened()
+        laptop.telemetry.record("watch", buildJsonObject {
+            put("elementId", lesson.value); put("categoryId", "courses"); put("seconds", 1_200); put("completed", false)
+            put("startedAt", laptop.now.toString()); put("endedAt", (laptop.now + 20.minutes).toString())
+        })
+        laptop.telemetry.feature("pip")
+        laptop.telemetry.error(IllegalStateException("e2e boom"))
+        assertEquals(4, laptop.uploader.upload())
+        assertEquals(1, phone.uploader.upload(), "the phone's failed round while offline (sync_failed: unreachable)")
+        val stats = phone.personalStats()
+        assertTrue(stats.allDevices)
+        assertTrue(stats.totalSeconds >= 1_200, "watch time from the laptop: ${stats.totalSeconds}")
+        assertTrue(stats.byCategory.any { it.category.key.value == "courses" && it.seconds >= 1_200 })
 
         // Signing in again (a session that expired) keeps the same device on the server, without a duplicate.
         val device = phone.credentials.session!!.deviceId

@@ -226,4 +226,23 @@
     <string name="setting_sync_conflictPolicy">Conflictos de ajustes</string>
     <string name="setting_advanced_telemetryEndpoint">Endpoint de telemetría</string>
     <string name="sync_paused">Sincronización en pausa</string>
+    <string name="nav_stats">Progreso</string>
+    <string name="stats_title">Tu progreso</string>
+    <string name="stats_this_device">Tiempo visto en este dispositivo. Inicia sesión en la sincronización para sumar todos tus dispositivos.</string>
+    <string name="stats_all_devices">Todos tus dispositivos juntos.</string>
+    <string name="stat_total">Tiempo total</string>
+    <string name="stat_week">Últimos 7 días</string>
+    <string name="stat_streak">Días de racha</string>
+    <string name="stat_best_streak">Mejor racha (días)</string>
+    <string name="stat_active_days">Días activos</string>
+    <string name="stat_completed">Lecciones y episodios completados</string>
+    <string name="activity_title">Actividad</string>
+    <string name="activity_less">Menos</string>
+    <string name="activity_more">Más</string>
+    <string name="activity_description">%1$d días activos en el último año</string>
+    <string name="by_category_title">Tiempo por categoría</string>
+    <string name="completed_title">Cursos y series completados</string>
+    <string name="stats_empty_title">Aún no hay actividad</string>
+    <string name="stats_empty_message">Mira algo y aquí aparecerán tu tiempo, tus rachas y los cursos completados.</string>
+    <string name="more_title">Más</string>
 </resources>

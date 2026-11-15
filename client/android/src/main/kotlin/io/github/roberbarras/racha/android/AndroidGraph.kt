@@ -46,6 +46,10 @@ import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.application.stats.LoadPersonalStats
+import io.github.roberbarras.racha.application.stats.RemoteStatsSource
+import io.github.roberbarras.racha.application.telemetry.Telemetry
+import io.github.roberbarras.racha.application.telemetry.TelemetryUploader
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -81,8 +85,11 @@ class AndroidGraph(context: Context) {
         syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(context), "android", appVersion(context)) }, clock,
     )
-    val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock)
-    val syncScheduler = SyncScheduler(syncEngine, preferences)
+    /** Usage events and client errors for the account's server (§8); nothing is kept while signed out. */
+    val telemetry = Telemetry(database.telemetry, preferences, clock, "android", appVersion(context))
+    val telemetryUploader = TelemetryUploader(database.telemetry, syncServer, account, preferences, clock)
+    val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry)
+    val syncScheduler = SyncScheduler(syncEngine, preferences) { telemetryUploader.upload() }
     val connectivity = ConnectivityMonitor(context)
     private val syncControls = SyncControls(account, syncEngine, syncScheduler, database.sync)
 
@@ -90,6 +97,7 @@ class AndroidGraph(context: Context) {
         val app = context.applicationContext
         appScope.launch {
             account.restore()
+            telemetry.appOpened()
             combine(preferences.observe(Settings.SyncEnabled), preferences.observe(Settings.SyncIntervalMinutes)) { on, minutes -> on to minutes }
                 .collect { (on, minutes) -> SyncWorker.schedule(app, on, minutes) }
         }
@@ -124,16 +132,20 @@ class AndroidGraph(context: Context) {
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
         resourceViewer = {
-            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock)
+            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock, telemetry)
         },
         playbackController = { engine, scope ->
         PlaybackController(
             engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
-            database.history, database.stats, preferences, updateItemProgress, clock, localDates,
+            database.history, database.stats, preferences, updateItemProgress, clock, localDates, telemetry,
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,
         sync = syncControls,
+        loadPersonalStats = LoadPersonalStats(
+            database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
+            RemoteStatsSource(syncServer, account, preferences) { java.util.TimeZone.getDefault().id },
+        ),
     )
 
     private companion object {

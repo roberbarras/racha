@@ -118,6 +118,9 @@ object DemoLibrary {
             },
             appScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default),
             sync = sync?.invoke(db, preferences, clock),
+            loadPersonalStats = io.github.roberbarras.racha.application.stats.LoadPersonalStats(
+                db.categories, db.library, db.progress, db.history, db.stats, utc, clock,
+            ),
         )
     }
 
@@ -156,6 +159,15 @@ object DemoLibrary {
         watch(seriesEpisode, 120, 5.hours)
         listOf(aws, created.getValue("Advanced Go Patterns").first).forEach { UpdateItemProgress(db.library, db.progress)(it.id) }
         (0 until 7).forEach { d -> db.history.add(HistoryEntry("h$d", awsIamLesson.id, now - d.days - 1.hours, 754)) }
+        // Months of watch time for the statistics screen: most days a little, some days a lot, a few days off.
+        (0 until 200).forEach { d ->
+            val minutes = listOf(0, 12, 25, 45, 70, 20, 0, 35, 90, 15)[(d * 7 + d / 9) % 10]
+            if (minutes == 0 && d >= 7) return@forEach
+            val day = utc.dateOf(now - d.days).toString()
+            val seconds = (if (d < 7) maxOf(minutes, 20) else minutes) * 60.0
+            db.stats.save(io.github.roberbarras.racha.domain.learning.LocalStat("watchSeconds", day, seconds, now))
+            db.stats.save(io.github.roberbarras.racha.domain.learning.LocalStat("watchSeconds.category:" + (if (d % 4 == 0) "series" else "courses"), day, seconds, now))
+        }
         // Newly detected: two AWS lessons and a Git lesson that appeared recently.
         listOf(
             awsElements.first { it.title.startsWith("S3") } to 2.hours,

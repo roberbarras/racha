@@ -47,6 +47,10 @@ import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
 import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.application.stats.LoadPersonalStats
+import io.github.roberbarras.racha.application.stats.RemoteStatsSource
+import io.github.roberbarras.racha.application.telemetry.Telemetry
+import io.github.roberbarras.racha.application.telemetry.TelemetryUploader
 import java.net.InetAddress
 
 /** Desktop composition root: wires adapters into use cases by hand (no reflection, no DI container). */
@@ -86,18 +90,23 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
 
     // Sync (§7.4, opt-in): runs while the app is open; the session's refresh token lives in the secret service.
+    private val appVersion = System.getProperty("racha.version") ?: "dev"
     private val syncServer = KtorSyncServer()
     val account = AccountService(
         syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
-        { DeviceDescriptor(null, deviceName(), "linux", System.getProperty("racha.version") ?: "dev") }, clock,
+        { DeviceDescriptor(null, deviceName(), "linux", appVersion) }, clock,
     )
-    private val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock)
-    private val syncScheduler = SyncScheduler(syncEngine, preferences)
+    /** Usage events and client errors for the account's server (§8); nothing is kept while signed out. */
+    val telemetry = Telemetry(database.telemetry, preferences, clock, "linux", appVersion)
+    private val telemetryUploader = TelemetryUploader(database.telemetry, syncServer, account, preferences, clock)
+    private val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry)
+    private val syncScheduler = SyncScheduler(syncEngine, preferences) { telemetryUploader.upload() }
 
     /** Restores the session and keeps syncing until the app closes. */
     fun startSync() {
         graphScope.launch {
             account.restore()
+            telemetry.appOpened()
             syncScheduler.run(this, NetworkMonitor.online())
         }
     }
@@ -125,16 +134,20 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
         resourceViewer = {
-            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock)
+            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock, telemetry)
         },
         playbackController = { engine, scope ->
         PlaybackController(
             engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
-            database.history, database.stats, preferences, updateItemProgress, clock, localDates,
+            database.history, database.stats, preferences, updateItemProgress, clock, localDates, telemetry,
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,
         sync = SyncControls(account, syncEngine, syncScheduler, database.sync),
+        loadPersonalStats = LoadPersonalStats(
+            database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
+            RemoteStatsSource(syncServer, account, preferences) { java.time.ZoneId.systemDefault().id },
+        ),
     )
 
     override fun close() {

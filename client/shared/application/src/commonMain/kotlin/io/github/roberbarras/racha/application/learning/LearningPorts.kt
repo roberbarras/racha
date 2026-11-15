@@ -10,6 +10,7 @@ import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.library.LibraryItem
 import io.github.roberbarras.racha.domain.library.PlayableElement
 import kotlinx.coroutines.flow.Flow
+import kotlin.time.Instant
 
 /** Read model of the Home "Continue watching" row: unfinished elements, most recently watched first. */
 data class ContinueWatchingEntry(val item: LibraryItem, val element: PlayableElement, val progress: Progress)
@@ -20,6 +21,8 @@ interface ProgressRepository {
     suspend fun save(progress: Progress)
 
     suspend fun forItem(item: ContentId): List<Progress>
+
+    suspend fun countCompleted(): Long
 
     fun observeForItem(item: ContentId): Flow<List<Progress>>
 
@@ -39,6 +42,9 @@ interface HistoryRepository {
     suspend fun add(entry: HistoryEntry)
 
     fun observeRecent(limit: Int): Flow<List<HistoryEntry>>
+
+    /** When each viewing since [since] started, oldest first (activity days for statistics). */
+    suspend fun watchTimesSince(since: Instant): List<Instant>
 
     suspend fun clear()
 }

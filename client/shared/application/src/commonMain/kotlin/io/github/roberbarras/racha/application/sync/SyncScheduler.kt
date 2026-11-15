@@ -19,7 +19,12 @@ import kotlin.time.Duration.Companion.minutes
  * something asks for it (sign-in, "sync now"). Runs only while [run] is active: platforms start it while the app is
  * in use, so an idle device does not wake up for it.
  */
-class SyncScheduler(private val engine: SyncEngine, private val preferences: Preferences) {
+class SyncScheduler(
+    private val engine: SyncEngine,
+    private val preferences: Preferences,
+    /** Runs after each round with sync on (telemetry upload). */
+    private val afterSync: suspend () -> Unit = {},
+) {
     private val requests = Channel<Unit>(Channel.CONFLATED)
 
     fun requestSync() {
@@ -33,7 +38,10 @@ class SyncScheduler(private val engine: SyncEngine, private val preferences: Pre
         }
         try {
             while (true) {
-                if (preferences.get(Settings.SyncEnabled)) engine.syncNow()
+                if (preferences.get(Settings.SyncEnabled)) {
+                    engine.syncNow()
+                    afterSync()
+                }
                 val interval = preferences.get(Settings.SyncIntervalMinutes).minutes
                 select {
                     requests.onReceive { }

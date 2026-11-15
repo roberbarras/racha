@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Instant
 import io.github.roberbarras.racha.data.db.Favorite as FavoriteRow
 
 class SqlProgressRepository(private val db: RachaDatabase, private val io: CoroutineContext) : ProgressRepository {
@@ -27,6 +28,8 @@ class SqlProgressRepository(private val db: RachaDatabase, private val io: Corou
 
     override suspend fun get(element: ContentId): Progress? =
         withContext(io) { q.selectProgress(element.value).executeAsOneOrNull()?.toDomain() }
+
+    override suspend fun countCompleted(): Long = withContext(io) { q.countCompleted().executeAsOne() }
 
     override suspend fun save(progress: Progress) = withContext(io) {
         val r = progress.toRow()
@@ -80,6 +83,9 @@ class SqlHistoryRepository(private val db: RachaDatabase, private val io: Corout
     private val q get() = db.learningQueries
 
     override suspend fun add(entry: HistoryEntry) = withContext(io) { q.insertHistory(entry.toRow()); Unit }
+
+    override suspend fun watchTimesSince(since: Instant): List<Instant> =
+        withContext(io) { q.historyTimesSince(since.toEpochMilliseconds()).executeAsList().map(Instant::fromEpochMilliseconds) }
 
     override fun observeRecent(limit: Int): Flow<List<HistoryEntry>> =
         q.selectRecentHistory(limit.toLong()).asFlow().mapToList(io).map { rows -> rows.map { it.toDomain() } }

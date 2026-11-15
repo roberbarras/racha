@@ -17,4 +17,18 @@ object Streak {
         }
         return length
     }
+
+    /** Longest run of consecutive active days ever. */
+    fun longest(activeDays: Set<CalendarDate>): Int {
+        val days = activeDays.map { it.toEpochDay() }.sorted()
+        var best = 0
+        var run = 0
+        var previous: Long? = null
+        for (day in days) {
+            run = if (previous != null && day == previous + 1) run + 1 else 1
+            best = maxOf(best, run)
+            previous = day
+        }
+        return best
+    }
 }

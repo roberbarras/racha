@@ -42,3 +42,25 @@ internal data class PageDto(val changes: List<RecordDto>, val cursor: Long, val 
 /** RFC 9457 problem details, with the server's stable `code`. */
 @Serializable
 internal data class ProblemDto(val code: String? = null, val detail: String? = null, val status: Int? = null)
+
+@Serializable
+internal data class EventDto(val id: String, val type: String, val occurredAt: String, val properties: JsonObject)
+
+@Serializable
+internal data class ErrorDto(
+    val id: String, val platform: String, val appVersion: String, val message: String, val stackTrace: String? = null, val occurredAt: String,
+    val context: JsonObject,
+)
+
+@Serializable
+internal data class DayWatchDto(val day: String, val seconds: Long)
+
+@Serializable
+internal data class CategoryWatchDto(val categoryId: String? = null, val seconds: Long)
+
+@Serializable
+internal data class PersonalStatsDto(
+    val watchSeconds: Long = 0,
+    val watchByDay: List<DayWatchDto> = emptyList(),
+    val watchByCategory: List<CategoryWatchDto> = emptyList(),
+)

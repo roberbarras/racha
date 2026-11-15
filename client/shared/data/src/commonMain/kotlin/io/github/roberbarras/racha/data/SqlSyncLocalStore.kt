@@ -61,6 +61,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
             sync.clearRemoteState()
             sync.clearConflicts()
             sync.resetSync()
+            db.telemetryQueries.clearTelemetry() // signed out: telemetry has nowhere to go
         }
         bump()
     }

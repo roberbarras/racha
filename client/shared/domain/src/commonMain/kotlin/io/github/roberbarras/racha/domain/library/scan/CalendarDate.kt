@@ -39,6 +39,13 @@ data class CalendarDate(val year: Int, val month: Int, val day: Int) : Comparabl
             return CalendarDate((yoe + era * 400 + if (m <= 2) 1 else 0).toInt(), m, d)
         }
 
+        /** `2026-11-13` → date; null when it is not one. */
+        fun parseOrNull(iso: String): CalendarDate? {
+            val parts = iso.split('-')
+            if (parts.size != 3) return null
+            return orNull(parts[0].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null, parts[2].toIntOrNull() ?: return null)
+        }
+
         fun orNull(year: Int, month: Int, day: Int): CalendarDate? =
             runCatching { CalendarDate(year, month, day) }.getOrNull()
 

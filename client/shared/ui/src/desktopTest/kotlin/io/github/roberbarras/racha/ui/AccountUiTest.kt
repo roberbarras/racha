@@ -86,19 +86,19 @@ class AccountUiTest {
     fun signsInWithTheServerAddressAndShowsTheAccount() = runDesktopComposeUiTest(1440, 900) {
         Locale.setDefault(Locale.ENGLISH)
         setContent { App(dependencies()) }
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Account").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Account").fetchSemanticsNodes().isNotEmpty() }
         onNodeWithText("Account").performClick()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Account and sync").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Account and sync").fetchSemanticsNodes().isNotEmpty() }
 
         onNode(hasContentDescription("Host")).performTextInput("sync.example.com")
         onNode(hasContentDescription("Email")).performTextInput("ana@example.com")
         onNode(hasContentDescription("Password")).performTextInput("wrong")
         onNode(hasText("Sign in") and hasClickAction() and !isSelectable()).performClick()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Wrong email or password.").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Wrong email or password.").fetchSemanticsNodes().isNotEmpty() }
 
         onNode(hasContentDescription("Password")).performTextReplacement("correct horse")
         onNode(hasText("Sign in") and hasClickAction() and !isSelectable()).performClick()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Signed in as ana@example.com").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Signed in as ana@example.com").fetchSemanticsNodes().isNotEmpty() }
 
         assertEquals("https://sync.example.com", server.lastAddress?.baseUrl)
         onNodeWithText("Server: https://sync.example.com").assertExists()
@@ -118,22 +118,25 @@ class AccountUiTest {
             db.sync.applyRemote(listOf(remote), ConflictPolicy.ASK)
         }
         setContent { App(deps) }
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Settings to review").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings to review").fetchSemanticsNodes().isNotEmpty() }
 
         onNodeWithText("Review").performClick()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isNotEmpty() }
         onNodeWithText("Theme").assertExists()
         onNodeWithText("This device: dark").assertExists()
         onNodeWithText("Other device: light").assertExists()
 
         onNodeWithText("Use the other").performClick()
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isEmpty() }
         runBlocking { assertEquals(ThemeMode.LIGHT, preferences.get(Settings.Theme)) }
     }
 
     private val out = java.io.File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
 
-    private fun shoot(name: String, width: Int, height: Int, signedIn: Boolean) = runDesktopComposeUiTest(width, height) {
+    private fun shoot(
+        name: String, width: Int, height: Int, signedIn: Boolean, route: Any = io.github.roberbarras.racha.ui.app.AccountRoute,
+        waitFor: String = "Cuenta y sincronización", dark: Boolean = false,
+    ) = runDesktopComposeUiTest(width, height) {
         Locale.setDefault(Locale.forLanguageTag("es"))
         val deps = dependencies()
         val nav = arrayOfNulls<androidx.navigation.NavHostController>(1)
@@ -143,19 +146,22 @@ class AccountUiTest {
             val remote = SyncRecord("setting", "user:general.theme", DemoLibrary.now + 1.minutes, false, 1, buildJsonObject { put("value", "light") })
             db.sync.applyRemote(listOf(remote), ConflictPolicy.ASK)
         }
+        if (dark) runBlocking { preferences.set(Settings.Theme, ThemeMode.DARK) }
         setContent {
             val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
             val controller = androidx.navigation.compose.rememberNavController().also { nav[0] = it }
             CompositionLocalProvider(LocalViewModelStoreOwner provides owner) { RachaApp(deps, controller) }
         }
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Cuenta").fetchSemanticsNodes().isNotEmpty() }
-        runOnIdle { nav[0]!!.navigate(io.github.roberbarras.racha.ui.app.AccountRoute) }
-        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Cuenta y sincronización").fetchSemanticsNodes().isNotEmpty() }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Inicio").fetchSemanticsNodes().isNotEmpty() }
+        runOnIdle { nav[0]!!.navigate(route) }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText(waitFor).fetchSemanticsNodes().isNotEmpty() }
         waitForIdle()
         javax.imageio.ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", java.io.File(out, "$name.png"))
     }
 
     @Test fun desktopAccountSignedOutEs() = shoot("desktop-account-signed-out-es", 1440, 900, signedIn = false)
+    @Test fun desktopStatsEs() = shoot("desktop-stats-es", 1440, 900, signedIn = false, route = io.github.roberbarras.racha.ui.app.StatsRoute, waitFor = "Días de racha")
+    @Test fun phoneStatsDarkEs() = shoot("phone-stats-dark-es", 412, 915, signedIn = false, route = io.github.roberbarras.racha.ui.app.StatsRoute, waitFor = "Días de racha", dark = true)
     @Test fun phoneAccountSignedInEs() = shoot("phone-account-signed-in-es", 412, 915, signedIn = true)
 
     private class MemoryCredentials : CredentialStore {

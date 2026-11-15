@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import io.github.roberbarras.racha.application.telemetry.UsageEvents
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /** Outbound port: reading resource files of a library root (spec §5). */
 interface ResourceFiles {
@@ -79,6 +82,7 @@ class ResourceViewer(
     private val history: HistoryRepository,
     private val updateItemProgress: UpdateItemProgress,
     private val clock: Clock,
+    private val usage: UsageEvents = UsageEvents.NONE,
 ) {
     private val mutableState = MutableStateFlow(ResourceState())
     val state: StateFlow<ResourceState> = mutableState.asStateFlow()
@@ -121,9 +125,18 @@ class ResourceViewer(
         val element = s.element ?: return
         if (s.content != ResourceContent.Missing && !s.watched) setWatched(true)
         val start = openedAt ?: return
-        if ((clock.now() - start).inWholeSeconds >= MIN_VISIT_SEC) {
+        val now = clock.now()
+        if ((now - start).inWholeSeconds >= MIN_VISIT_SEC) {
             history.add(HistoryEntry(Uuid.random().toString(), element.id, start, 0))
         }
+        usage.record("resource_view", buildJsonObject {
+            put("elementId", element.id.value)
+            put("itemId", element.libraryItemId.value)
+            s.item?.let { put("categoryId", it.categoryKey.value) }
+            element.resourceType?.let { put("resourceType", it.name.lowercase()) }
+            put("startedAt", start.toString())
+            put("endedAt", now.toString())
+        })
     }
 
     private suspend fun content(location: String, item: LibraryItem, element: PlayableElement): ResourceContent {

@@ -226,4 +226,23 @@
     <string name="setting_sync_conflictPolicy">Settings conflicts</string>
     <string name="setting_advanced_telemetryEndpoint">Telemetry endpoint</string>
     <string name="sync_paused">Sync paused</string>
+    <string name="nav_stats">Progress</string>
+    <string name="stats_title">Your progress</string>
+    <string name="stats_this_device">Time watched on this device. Sign in to sync to add up all your devices.</string>
+    <string name="stats_all_devices">All your devices together.</string>
+    <string name="stat_total">Total watched</string>
+    <string name="stat_week">Last 7 days</string>
+    <string name="stat_streak">Day streak</string>
+    <string name="stat_best_streak">Best streak (days)</string>
+    <string name="stat_active_days">Active days</string>
+    <string name="stat_completed">Lessons and episodes completed</string>
+    <string name="activity_title">Activity</string>
+    <string name="activity_less">Less</string>
+    <string name="activity_more">More</string>
+    <string name="activity_description">%1$d active days in the last year</string>
+    <string name="by_category_title">Time by category</string>
+    <string name="completed_title">Completed courses and series</string>
+    <string name="stats_empty_title">No activity yet</string>
+    <string name="stats_empty_message">Watch something and your time, streaks and completed courses will show up here.</string>
+    <string name="more_title">More</string>
 </resources>

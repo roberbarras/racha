@@ -35,6 +35,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Instant
+import io.github.roberbarras.racha.application.telemetry.Telemetry.Companion.feature
+import io.github.roberbarras.racha.application.telemetry.UsageEvents
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.uuid.Uuid
 
 data class QueueEntry(val element: PlayableElement, val progress: Progress?)
@@ -90,6 +94,7 @@ class PlaybackController(
     private val updateItemProgress: UpdateItemProgress,
     private val clock: Clock,
     private val localDates: LocalDates,
+    private val usage: UsageEvents = UsageEvents.NONE,
     private val systemLanguage: SystemLanguage,
 ) {
     private val mutableState = MutableStateFlow(PlaybackState())
@@ -97,6 +102,8 @@ class PlaybackController(
 
     private var sessionStart: Instant? = null
     private var playingSince: Instant? = null
+    /** Seconds actually played in this viewing session (pauses excluded), for the "watch" event (§8). */
+    private var sessionSeconds = 0L
     private var ticker: Job? = null
     private var bookmarksJob: Job? = null
     private var finishing = false
@@ -159,6 +166,7 @@ class PlaybackController(
         engine.setSpeed(speed.toFloat())
         engine.selectSubtitle(defaultSubtitle(subtitles)?.id?.value)
         sessionStart = clock.now()
+        sessionSeconds = 0
     }
 
     /** Subtitles are off by default (spec §4.2); when enabled, the preferred language, else the app language. */
@@ -199,20 +207,28 @@ class PlaybackController(
     fun setSpeed(speed: Double) {
         mutableState.update { it.copy(speed = speed) }
         if (!mutableState.value.holdingSpeed) engine.setSpeed(speed.toFloat())
+        feature("speed", mapOf("speed" to speed.toString()))
     }
 
     /** Long-press: temporary speed (2x by default) while held (spec §4.2). */
     fun holdSpeed(held: Boolean) {
         if (held == mutableState.value.holdingSpeed) return
         mutableState.update { it.copy(holdingSpeed = held) }
+        if (held) feature("hold_speed")
         scope.launch {
             engine.setSpeed(if (held) preferences.get(Settings.LongPressSpeed).toFloat() else mutableState.value.speed.toFloat())
         }
     }
 
-    fun selectSubtitle(subtitle: Subtitle?) = engine.selectSubtitle(subtitle?.id?.value)
+    fun selectSubtitle(subtitle: Subtitle?) {
+        engine.selectSubtitle(subtitle?.id?.value)
+        feature("subtitles", mapOf("language" to (subtitle?.language?.value ?: "off")))
+    }
 
-    fun selectAudio(id: String?) = engine.selectAudio(id)
+    fun selectAudio(id: String?) {
+        engine.selectAudio(id)
+        feature("audio_track")
+    }
 
     fun markLoopA() = mutableState.update { it.copy(loopA = engine.positionMs(), loopB = null) }
 
@@ -222,6 +238,7 @@ class PlaybackController(
         if (b > a) {
             mutableState.update { it.copy(loopB = b) }
             ensureTicker()
+            feature("ab_loop")
         }
     }
 
@@ -231,6 +248,14 @@ class PlaybackController(
         val element = mutableState.value.element ?: return
         val now = clock.now()
         bookmarks.save(Bookmark(Uuid.random().toString(), element.id, engine.positionMs() / 1000, note.trim(), now, now))
+        usage.feature("bookmark")
+    }
+
+    /** Features the platform UI handles (picture-in-picture, screenshot, fullscreen…), for usage stats (§8). */
+    fun usedFeature(name: String) = feature(name)
+
+    private fun feature(name: String, details: Map<String, String> = emptyMap()) {
+        scope.launch { usage.feature(name, details) }
     }
 
     suspend fun deleteBookmark(id: String) = bookmarks.delete(id)
@@ -385,9 +410,15 @@ class PlaybackController(
         playingSince = if (mutableState.value.engine.playing) now else null
         val seconds = (now - since).inWholeSeconds
         if (seconds <= 0) return
+        sessionSeconds += seconds
         val day = localDates.dateOf(now).toString()
-        val current = stats.get(WATCH_SECONDS, day)
-        stats.save(LocalStat(WATCH_SECONDS, day, (current?.value ?: 0.0) + seconds, now))
+        add(WATCH_SECONDS, day, seconds, now)
+        mutableState.value.item?.let { add(categoryMetric(it.categoryKey.value), day, seconds, now) }
+    }
+
+    private suspend fun add(metric: String, day: String, seconds: Long, now: Instant) {
+        val current = stats.get(metric, day)
+        stats.save(LocalStat(metric, day, (current?.value ?: 0.0) + seconds, now))
     }
 
     /** One history entry per viewing session longer than a few seconds (spec §2.2 "Historial"). */
@@ -397,8 +428,29 @@ class PlaybackController(
         val element = mutableState.value.element ?: return
         val now = clock.now()
         flushWatchTime(now)
+        val position = positionAtEnd ?: (engine.positionMs() / 1000)
+        if (sessionSeconds > 0) reportWatch(element, start, now, position)
         if ((now - start).inWholeSeconds < MIN_SESSION_SEC) return
-        history.add(HistoryEntry(Uuid.random().toString(), element.id, start, positionAtEnd ?: (engine.positionMs() / 1000)))
+        history.add(HistoryEntry(Uuid.random().toString(), element.id, start, position))
+    }
+
+    /** One viewing session (§8 "eventos de reproducción"). */
+    private suspend fun reportWatch(element: PlayableElement, start: Instant, end: Instant, positionSec: Long) {
+        val s = mutableState.value
+        val subtitle = s.subtitles.firstOrNull { it.id.value == s.engine.selectedSubtitle }
+        usage.record("watch", buildJsonObject {
+            put("elementId", element.id.value)
+            put("itemId", element.libraryItemId.value)
+            s.item?.let { put("categoryId", it.categoryKey.value) }
+            put("startedAt", start.toString())
+            put("endedAt", end.toString())
+            put("positionSec", positionSec)
+            put("completed", progress.get(element.id)?.completed ?: false)
+            put("playbackSpeed", s.speed)
+            subtitle?.let { put("subtitlesLang", it.language.value) }
+            put("seconds", sessionSeconds)
+        })
+        sessionSeconds = 0
     }
 
     private var closed = false
@@ -406,6 +458,9 @@ class PlaybackController(
 
     companion object {
         const val WATCH_SECONDS = "watchSeconds"
+
+        /** Watch time per category and day, for the personal statistics (§2.2). */
+        fun categoryMetric(categoryKey: String) = "$WATCH_SECONDS.category:$categoryKey"
         private const val LOOP_CHECK_MS = 150L
         private const val OUTRO_CHECK_MS = 1_000L
         private const val MIN_SESSION_SEC = 5L

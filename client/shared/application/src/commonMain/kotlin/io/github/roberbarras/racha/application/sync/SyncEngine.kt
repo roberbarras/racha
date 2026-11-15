@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import io.github.roberbarras.racha.application.telemetry.UsageEvents
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 enum class SyncRun { IDLE, SYNCING }
 
@@ -31,7 +34,11 @@ class SyncEngine(
     private val account: AccountService,
     private val preferences: Preferences,
     private val clock: Clock,
+    private val usage: UsageEvents = UsageEvents.NONE,
 ) {
+    /** Last failure reported as a `sync_failed` event: one event per change of state, not one per retry. */
+    private var reportedFailure: String? = null
+
     private val running = MutableStateFlow(SyncRun.IDLE)
     val run: StateFlow<SyncRun> = running.asStateFlow()
     private val lock = Mutex()
@@ -44,9 +51,15 @@ class SyncEngine(
             val pushed = authorized { token -> push(address, token) } ?: return@withLock SyncOutcome.NotSignedIn
             val pulled = authorized { token -> pull(address, token) } ?: return@withLock SyncOutcome.NotSignedIn
             local.recordSuccess(clock.now())
+            reportedFailure = null
             SyncOutcome.Done(pushed, pulled)
         } catch (e: RemoteError) {
-            local.recordError(e.reportCode())
+            val code = e.reportCode()
+            local.recordError(code)
+            if (code != reportedFailure) {
+                reportedFailure = code
+                usage.record("sync_failed", buildJsonObject { put("code", code) }) // sent once the server is reachable (§8)
+            }
             SyncOutcome.Failed(e)
         } finally {
             running.value = SyncRun.IDLE

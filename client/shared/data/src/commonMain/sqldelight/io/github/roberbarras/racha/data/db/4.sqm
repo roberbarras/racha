@@ -1,0 +1,9 @@
+-- v5 (H10): telemetry waiting to be sent (spec §8).
+CREATE TABLE telemetry_outbox (
+    id TEXT NOT NULL PRIMARY KEY,
+    kind TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX telemetry_outbox_kind ON telemetry_outbox(kind, created_at);

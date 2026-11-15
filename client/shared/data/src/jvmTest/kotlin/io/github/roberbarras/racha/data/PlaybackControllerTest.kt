@@ -38,6 +38,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import io.github.roberbarras.racha.application.telemetry.UsageEvents
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -52,6 +55,8 @@ class PlaybackControllerTest {
     private val preferences = Preferences(db.settings, clock)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val engine = FakeEngine()
+    private val events = java.util.concurrent.CopyOnWriteArrayList<Pair<String, JsonObject>>()
+    private val usage = UsageEvents { type, properties -> events += type to properties }
     private val item = Fixtures.item()
     private val intro = section(item, "01 - Introduction", 1)
     private val first = video(item, intro, "001 Course Introduction.mp4", 1).copy(media = video(item, intro, "x.mp4", 1).media.copy(durationSec = 2710))
@@ -68,7 +73,7 @@ class PlaybackControllerTest {
     }
     private val controller = PlaybackController(
         engine, scope, db.library, db.categories, uriSource, db.progress, db.bookmarks, db.history, db.stats, preferences,
-        UpdateItemProgress(db.library, db.progress), clock, LocalDates { CalendarDate(2026, 11, 13) }, { "es" },
+        UpdateItemProgress(db.library, db.progress), clock, LocalDates { CalendarDate(2026, 11, 13) }, usage, { "es" },
     )
 
     @AfterTest
@@ -119,6 +124,39 @@ class PlaybackControllerTest {
         assertEquals(1, db.history.observeRecentOnce().size, "one session in history")
         assertTrue(db.stats.get(PlaybackController.WATCH_SECONDS, "2026-11-13")!!.value >= 754.0)
     }
+
+    @Test
+    fun aViewingSessionIsReportedWithTheFieldsTheServerKeeps() = runBlocking {
+        seed()
+        controller.open(first.id, StartMode.BEGINNING)
+        controller.setSpeed(1.5)
+        engine.emitPlaying(true)
+        now += 300.seconds
+        engine.position = 300_000
+        controller.pause()
+        controller.markLoopA()
+        engine.position = 320_000
+        controller.markLoopB()
+        controller.addBookmark("note")
+        controller.usedFeature("pip")
+        controller.close()
+
+        eventually { events.any { it.first == "watch" } }
+        val watch = events.single { it.first == "watch" }.second
+        assertEquals(first.id.value, watch.str("elementId"))
+        assertEquals(item.id.value, watch.str("itemId"))
+        assertEquals("courses", watch.str("categoryId"))
+        assertEquals("300", watch.str("seconds"))
+        assertEquals("1.5", watch.str("playbackSpeed"))
+        assertEquals("false", watch.str("completed"))
+        assertEquals("2026-11-13T10:00:00Z", watch.str("startedAt"))
+        assertEquals("2026-11-13T10:05:00Z", watch.str("endedAt"))
+        eventually { events.count { it.first == "feature" } >= 4 }
+        assertEquals(setOf("speed", "ab_loop", "bookmark", "pip"), events.filter { it.first == "feature" }.map { it.second.str("name") }.toSet())
+        assertEquals(300.0, db.stats.get(PlaybackController.categoryMetric("courses"), "2026-11-13")!!.value, "watch time per category")
+    }
+
+    private fun JsonObject.str(key: String) = this[key]?.jsonPrimitive?.content
 
     @Test
     fun aResourceNextIsHandedToTheResourceViewer() = runBlocking {

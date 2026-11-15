@@ -1,0 +1,28 @@
+-- Usage events and client errors waiting to be sent to the account's server (spec §8, §11). Only filled while signed
+-- in; bounded (oldest dropped first) so a device that never reaches its server does not grow it forever.
+CREATE TABLE telemetry_outbox (
+    id TEXT NOT NULL PRIMARY KEY,
+    kind TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX telemetry_outbox_kind ON telemetry_outbox(kind, created_at);
+
+insertTelemetry:
+INSERT OR IGNORE INTO telemetry_outbox(id, kind, payload, created_at) VALUES (?, ?, ?, ?);
+
+oldestTelemetry:
+SELECT id, payload FROM telemetry_outbox WHERE kind = ? ORDER BY created_at, id LIMIT ?;
+
+deleteTelemetry:
+DELETE FROM telemetry_outbox WHERE id IN ?;
+
+countTelemetry:
+SELECT count(*) FROM telemetry_outbox;
+
+dropOldestTelemetry:
+DELETE FROM telemetry_outbox WHERE id IN (SELECT id FROM telemetry_outbox ORDER BY created_at, id LIMIT ?);
+
+clearTelemetry:
+DELETE FROM telemetry_outbox;

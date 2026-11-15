@@ -33,6 +33,7 @@ class LocalDatabase(driver: SqlDriver, dispatcher: CoroutineDispatcher = Dispatc
     val accounts = SqlAccountRepository(database, io)
     val sync = SqlSyncLocalStore(database, io)
     val rootRelinker = SqlRootRelinker(database, io)
+    val telemetry = SqlTelemetryOutbox(database, io)
 
     init {
         SyncTriggers.install(driver)

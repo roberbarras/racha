@@ -17,7 +17,7 @@ class SchemaTest {
     private val expectedTables = setOf(
         "category", "category_root", "library_item", "section", "playable_element", "subtitle",
         "progress", "bookmark", "history_entry", "favorite", "local_stat",
-        "app_setting", "sync_queue", "device", "account", "sync_state", "remote_root", "sync_conflict",
+        "app_setting", "sync_queue", "device", "account", "sync_state", "remote_root", "sync_conflict", "telemetry_outbox",
     )
 
     @Test
@@ -32,7 +32,7 @@ class SchemaTest {
         }, 0).value
 
         assertEquals(expectedTables, tables)
-        assertEquals(4, RachaDatabase.Schema.version) // v4 (H9): sync state, remote roots, conflicts
+        assertEquals(5, RachaDatabase.Schema.version) // v5 (H10): telemetry outbox
     }
 
     @Test
