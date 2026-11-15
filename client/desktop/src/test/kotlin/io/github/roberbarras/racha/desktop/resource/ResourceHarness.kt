@@ -80,6 +80,15 @@ fun main() {
                     listOf("javascript", "relativeCss", "relativeImage", "quizInteraction", "sameCourseFile").forEach { check(lines[it] == "ok") { "$it: ${lines[it]}" } }
                     listOf("fileUrlRead", "encodedTraversal", "siblingCourse", "absoluteEscape").forEach { check(lines[it]?.startsWith("blocked") == true) { "$it leaked" } }
                     delay(3_000)
+                    fun panels(c: Component): List<JFXPanel> = when (c) { is JFXPanel -> listOf(c); is Container -> c.components.flatMap(::panels); else -> emptyList() }
+                    // The page must also reach the screen: JFXPanel's own frame buffer holds what it paints (JavaFX
+                    // 27.0.1 ran the page fine but never painted it).
+                    val painted = panels(window).sumOf { p ->
+                        val im = JFXPanel::class.java.getDeclaredField("pixelsIm").apply { isAccessible = true }.get(p) as java.awt.image.BufferedImage?
+                        im?.let { (0 until it.width step 37).count { x -> (it.getRGB(x, minOf(200, it.height - 1)) and 0xFFFFFF) != 0xEEEEEE } } ?: 0
+                    }
+                    checks["pagePaintedSamples"] = painted
+                    check(painted > 5) { "the page ran but was not painted" }
                     capture(shots.resolve("html.png"), window)
 
                     nav.navigate(ResourceRoute(pdf.value)) { popUpTo<ResourceRoute> { inclusive = true } }

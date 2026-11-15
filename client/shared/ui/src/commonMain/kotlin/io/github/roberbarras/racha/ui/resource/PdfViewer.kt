@@ -77,6 +77,7 @@ private fun Pages(document: PdfDocument) {
     val listState = rememberLazyListState()
     BoxWithConstraints(Modifier.fillMaxSize().background(Racha.colors.surfaceSunken)) {
         val available = maxWidth
+        // "Fit width", like PDF readers: slides and documents fill the viewer; zoom goes from there.
         val fit = min(available - Racha.space.xl * 2, MAX_PAGE_WIDTH)
         val pageWidth = fit * zoom
         val horizontal = rememberScrollState()
@@ -116,7 +117,8 @@ private fun Page(document: PdfDocument, index: Int, width: Dp) {
     }
 }
 
-private val MAX_PAGE_WIDTH = 920.dp
+/** Only a safety bound for enormous windows; normally the page is as wide as the viewer. */
+private val MAX_PAGE_WIDTH = 3000.dp
 private const val ZOOM_STEP = 1.25f
 private const val MIN_ZOOM = 0.5f
 private const val MAX_ZOOM = 4f

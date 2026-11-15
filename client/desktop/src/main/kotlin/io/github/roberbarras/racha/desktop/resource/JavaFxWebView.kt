@@ -59,9 +59,9 @@ internal object JavaFx {
     private var prepared = false
 
     /**
-     * Before JavaFX starts: JavaFX would pick its own HiDPI scale from GTK while the Swing panel that hosts it
-     * stays at 1, so it renders the page bigger than the panel's pixel buffer (BufferOverflowException, blank
-     * page). It renders at 1 like Swing; the app's UI scale is applied as the WebView zoom instead.
+     * Before JavaFX starts: render at 1 like the Swing panel that hosts it; the app's UI scale is applied as the
+     * WebView zoom. (JavaFX 27.0.1's JFXPanel never paints here — BufferOverflowException, blank page — so the
+     * build pins 26.0.2; see the version catalog.)
      */
     fun prepare() {
         if (prepared) return
