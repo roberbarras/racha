@@ -16,7 +16,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H7 | Visor de recursos HTML/URL/TXT/PDF | ✅ Cerrado |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | ✅ Cerrado |
 | H9 | Sync extremo a extremo y conflictos | ✅ Cerrado |
-| H10 | Estadísticas y telemetría | Pendiente |
+| H10 | Estadísticas y telemetría | ✅ Cerrado |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | Pendiente |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | Pendiente |
 
@@ -31,7 +31,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ✅ H9 (dos clientes contra el servidor real en CI) |
 | 6 | Recurso HTML como elemento del curso | H7 | ✅ H7 (Android y Linux, aislado a su curso) |
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
-| 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
+| 8 | Estadísticas persistidas en servidor | H10 | ✅ H10 (visualizaciones, horas, errores, fallos de sync y eventos; vistas SQL consultadas en tests y contra el servidor real) |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ✅ Servidor (H8) y registro/login/refresh desde las apps (H9); OAuth aplazado (ADR-0006) |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
@@ -47,6 +47,38 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H10 · Estadísticas y telemetría — ✅ cerrado
+
+Documento: [docs/ESTADISTICAS.md](docs/ESTADISTICAS.md).
+
+**Hecho**
+- Telemetría del cliente (§8, §11): sesiones de visionado con los campos de §8, vistas de recursos, uso de funciones (PiP, A-B, marcadores, captura, pantalla completa, velocidad, subtítulos, pista de audio), apertura de la app (plataforma, versión, modo) y fallos de sync; errores no capturados con stack trace en Linux y Android.
+- Solo con cuenta y solo hacia su servidor (o el endpoint de telemetría configurado); cola local acotada (esquema v5) que se vacía al cerrar sesión; envío en lotes tras cada ronda de sync con backoff de 1 a 60 min.
+- Servidor: validación del formato de `watch`; 14 vistas SQL para el panel futuro (usuarios por plataforma y modo, activos por día, horas por usuario/categoría/curso, títulos, completados, rachas, fallos de sync, uso de funciones, errores por versión); `/stats/me` con tiempo por día y por categoría.
+- Pantalla **Progreso** (§2.2): tiempo total y de 7 días, racha actual y mejor, días activos, completados, mapa de calor de un año, tiempo por categoría y cursos completados. Funciona sin red y suma todos los dispositivos con cuenta. Tiempo visto por categoría guardado en local.
+- Navegación: en el móvil la barra inferior pasa a cinco destinos (Inicio, Mi lista, Historial, Buscar, Progreso); Carpetas y Cuenta se abren desde Progreso.
+- Tests de UI más robustos: esperas de 30 s en lugar de 10 (con toda la batería cargada, la de conflictos llegó a pasar de 10 s; probablemente era el fallo intermitente de CI de H9).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Servidor contra PostgreSQL 18 (Testcontainers): `StatsViewsTest` (todas las vistas, eventos inválidos rechazados, `/stats/me` por día y categoría) y el resto de la batería | ✅ |
+| Cliente JVM: `PlaybackControllerTest` (evento `watch` y funciones), `TelemetryTest` (6), `PersonalStatsTest` (3), `SchemaTest` v5 | ✅ |
+| UI de escritorio: `StatsUiTest`, capturas de Progreso (escritorio, móvil oscuro); batería completa dos veces seguidas | ✅ |
+| **Contra el servidor real** (Docker): eventos, error y fallo de sync llegan; el tiempo del portátil aparece en las estadísticas del móvil; vistas consultadas con `psql` | ✅ |
+| Batería Android en el emulador (38 tests) | ✅ |
+| CI (servidor + cliente + arneses Linux + e2e + emulador) | ✅ [run 43754314233](https://github.com/roberbarras/racha/actions/runs/43754314233) |
+
+**Criterios §12**: ✅ **8**.
+
+**Pendiente / notas**
+- El panel de administración en sí queda fuera (la spec pide guardar "para futuro panel"); las vistas son su base.
+- El widget de Android (racha, "hoy toca", continuar) es H11.
+
+**Bloqueos**: ninguno.
 
 ---
 
@@ -79,7 +111,7 @@ Documento: [docs/SYNC.md](docs/SYNC.md). Precisiones en [ADR-0004](docs/adr/0004
 
 **Pendiente / notas**
 - Una ejecución anterior de CI (43748193228) falló en el paso `check` del cliente sin cambios de código respecto a la verde; no se pudo ver qué test (los logs piden sesión). Desde ahora los tests que fallan se publican como anotaciones; si se repite, se verá cuál es.
-- El envío de eventos de visualización a `/analytics/events` (estadísticas, §12.8) es H10.
+- El envío de eventos de visualización a `/analytics/events` (estadísticas, §12.8) quedó hecho en H10.
 - La pantalla de Ajustes completa (H11) incluirá también la sección de sync; los nombres legibles de los ajustes ya están (`settingName`).
 
 **Bloqueos**: ninguno.
