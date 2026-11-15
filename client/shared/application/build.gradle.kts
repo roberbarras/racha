@@ -16,6 +16,7 @@ kotlin {
         commonMain.dependencies {
             api(project(":shared:domain"))
             api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.serialization.json) // sync changes travel as JSON objects (ADR-0012)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

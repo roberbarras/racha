@@ -31,6 +31,11 @@ class LocalDatabase(driver: SqlDriver, dispatcher: CoroutineDispatcher = Dispatc
     val syncQueue = SqlSyncQueueRepository(database, io)
     val devices = SqlDeviceRepository(database, io)
     val accounts = SqlAccountRepository(database, io)
+    val sync = SqlSyncLocalStore(database, io)
+
+    init {
+        SyncTriggers.install(driver)
+    }
 
     companion object {
         val schema = RachaDatabase.Schema

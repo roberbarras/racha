@@ -1,0 +1,33 @@
+-- Sync state (spec §7.4, ADR-0012). One row: whether local changes are recorded for upload (only while sync is on:
+-- otherwise scanning a big library would fill the queue for nothing), whether remote changes are being applied (then
+-- they are not queued back), the server cursor and the outcome of the last run.
+CREATE TABLE sync_state (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    recording INTEGER NOT NULL DEFAULT 0,
+    applying INTEGER NOT NULL DEFAULT 0,
+    cursor INTEGER NOT NULL DEFAULT 0,
+    last_success_at INTEGER,
+    last_error TEXT
+);
+
+INSERT OR IGNORE INTO sync_state(id, recording, applying, cursor) VALUES (1, 0, 0, 0);
+
+-- Library roots of the account on other devices (ADR-0004): offered when adding a folder here, so the same course
+-- gets the same ids on every device.
+CREATE TABLE remote_root (
+    key TEXT NOT NULL PRIMARY KEY,
+    category_key TEXT NOT NULL,
+    name TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Settings that changed both here and on another device (§6.3): the user decides.
+CREATE TABLE sync_conflict (
+    setting_key TEXT NOT NULL PRIMARY KEY,
+    local_value TEXT NOT NULL,
+    remote_value TEXT NOT NULL,
+    remote_updated_at INTEGER NOT NULL,
+    detected_at INTEGER NOT NULL
+);
+
+-- Outbox triggers: created at open time by SyncTriggers.kt (SQLDelight's 3.18 dialect cannot parse NEW/OLD).

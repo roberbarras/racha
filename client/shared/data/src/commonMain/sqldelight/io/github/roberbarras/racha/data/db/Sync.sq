@@ -1,0 +1,176 @@
+-- Sync state (spec §7.4, ADR-0012). One row: whether local changes are recorded for upload (only while sync is on:
+-- otherwise scanning a big library would fill the queue for nothing), whether remote changes are being applied (then
+-- they are not queued back), the server cursor and the outcome of the last run.
+CREATE TABLE sync_state (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    recording INTEGER NOT NULL DEFAULT 0,
+    applying INTEGER NOT NULL DEFAULT 0,
+    cursor INTEGER NOT NULL DEFAULT 0,
+    last_success_at INTEGER,
+    last_error TEXT
+);
+
+INSERT OR IGNORE INTO sync_state(id, recording, applying, cursor) VALUES (1, 0, 0, 0);
+
+-- Library roots of the account on other devices (ADR-0004): offered when adding a folder here, so the same course
+-- gets the same ids on every device.
+CREATE TABLE remote_root (
+    key TEXT NOT NULL PRIMARY KEY,
+    category_key TEXT NOT NULL,
+    name TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+-- Settings that changed both here and on another device (§6.3): the user decides.
+CREATE TABLE sync_conflict (
+    setting_key TEXT NOT NULL PRIMARY KEY,
+    local_value TEXT NOT NULL,
+    remote_value TEXT NOT NULL,
+    remote_updated_at INTEGER NOT NULL,
+    detected_at INTEGER NOT NULL
+);
+
+-- Outbox triggers: created at open time by SyncTriggers.kt (SQLDelight's 3.18 dialect cannot parse NEW/OLD).
+selectSyncState:
+SELECT * FROM sync_state WHERE id = 1;
+
+setApplying:
+UPDATE sync_state SET applying = :applying WHERE id = 1;
+
+setRecording:
+UPDATE sync_state SET recording = :recording WHERE id = 1;
+
+clearQueue:
+DELETE FROM sync_queue;
+
+clearRemoteState:
+DELETE FROM remote_root;
+
+clearConflicts:
+DELETE FROM sync_conflict;
+
+setCursor:
+UPDATE sync_state SET cursor = :cursor WHERE id = 1;
+
+recordSuccess:
+UPDATE sync_state SET last_success_at = :at, last_error = NULL WHERE id = 1;
+
+recordError:
+UPDATE sync_state SET last_error = :error WHERE id = 1;
+
+resetSync:
+UPDATE sync_state SET cursor = 0, last_success_at = NULL, last_error = NULL WHERE id = 1;
+
+upsertRemoteRoot:
+INSERT OR REPLACE INTO remote_root(key, category_key, name, updated_at) VALUES (?, ?, ?, ?);
+
+deleteRemoteRoot:
+DELETE FROM remote_root WHERE key = ?;
+
+selectRemoteRoots:
+SELECT * FROM remote_root WHERE category_key = ? ORDER BY name;
+
+upsertConflict:
+INSERT OR REPLACE INTO sync_conflict(setting_key, local_value, remote_value, remote_updated_at, detected_at) VALUES (?, ?, ?, ?, ?);
+
+selectConflicts:
+SELECT * FROM sync_conflict ORDER BY setting_key;
+
+deleteConflict:
+DELETE FROM sync_conflict WHERE setting_key = ?;
+
+pendingByEntity:
+SELECT entity_type, entity_id, max(id) AS last_id, max(created_at) AS changed_at FROM sync_queue
+GROUP BY entity_type, entity_id ORDER BY last_id LIMIT :limit;
+
+lastOperation:
+SELECT operation FROM sync_queue WHERE entity_type = ? AND entity_id = ? ORDER BY id DESC LIMIT 1;
+
+deleteQueuedUpTo:
+DELETE FROM sync_queue WHERE entity_type = :type AND entity_id = :id AND id <= :up_to;
+
+failQueuedUpTo:
+UPDATE sync_queue SET retries = retries + 1, last_error = :error WHERE entity_type = :type AND entity_id = :id AND id <= :up_to;
+
+hasPending:
+SELECT count(*) FROM sync_queue WHERE entity_type = ? AND entity_id = ?;
+
+-- First upload after signing in: everything that exists is queued once (then the triggers keep it current).
+seedCategory:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'category', key, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM category;
+
+seedCategoryRoot:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'categoryRoot', key, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM category_root;
+
+seedLibraryItem:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'libraryItem', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM library_item;
+
+seedSection:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'section', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM section;
+
+seedElement:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'element', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM playable_element;
+
+seedSubtitle:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'subtitle', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM subtitle;
+
+seedProgress:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'progress', element_id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM progress;
+
+seedBookmark:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'bookmark', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM bookmark;
+
+seedHistory:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'history', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM history_entry;
+
+seedFavorite:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'favorite', target_type || ':' || target_id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM favorite;
+
+seedSetting:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'setting', key, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM app_setting;
+
+-- Rows by id, for building outgoing changes and comparing incoming ones.
+rootByKey:
+SELECT * FROM category_root WHERE key = ?;
+
+sectionById:
+SELECT * FROM section WHERE id = ?;
+
+subtitleById:
+SELECT * FROM subtitle WHERE id = ?;
+
+bookmarkById:
+SELECT * FROM bookmark WHERE id = ?;
+
+historyById:
+SELECT * FROM history_entry WHERE id = ?;
+
+favoriteByKey:
+SELECT * FROM favorite WHERE target_type = ? AND target_id = ?;
+
+settingRow:
+SELECT * FROM app_setting WHERE key = ?;
+
+-- What another device may change on content scanned here: the user's own edits, never the scan results.
+applyItemOverrides:
+UPDATE library_item SET title_override = ?, order_override = ?, updated_at = ? WHERE id = ?;
+
+applySectionOverrides:
+UPDATE section SET title_override = ?, order_override = ?, updated_at = ? WHERE id = ?;
+
+applyElementOverrides:
+UPDATE playable_element SET title_override = ?, order_override = ?, skip_intro_sec = ?, skip_outro_sec = ?, updated_at = ? WHERE id = ?;
+
+deleteQueuedFor:
+DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?;
