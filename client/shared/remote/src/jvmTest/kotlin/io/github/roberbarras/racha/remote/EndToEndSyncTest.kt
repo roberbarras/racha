@@ -145,5 +145,11 @@ class EndToEndSyncTest {
         phone.account.accessToken(forceRefresh = true)!!
         assertTrue(phone.credentials.session!!.refreshToken != before)
         phone.sync()
+
+        // Signing in again (a session that expired) keeps the same device on the server, without a duplicate.
+        val device = phone.credentials.session!!.deviceId
+        phone.account.login(address(), email, "correct horse battery")
+        assertEquals(device, phone.credentials.session!!.deviceId)
+        phone.sync()
     }
 }

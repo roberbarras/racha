@@ -17,3 +17,5 @@
 - Persistencia con SQL explícito (`JdbcClient`), no JPA: las reglas de conflicto viven en la consulta y son atómicas.
 
 **Consecuencias**: el cliente guarda el último cursor por servidor; tras un pull aplica los cambios con la misma regla. La telemetría (`/analytics/events`, `/errors`) se guarda tal cual para el panel futuro (§8).
+
+**Precisión (H9, 2026-11-15, cliente)**: el cliente aplica lo que llega con la misma regla y, para los ajustes con la política "Preguntar", **solo pregunta cuando el cambio local pierde** (hay un cambio local sin enviar y el remoto es más reciente); un remoto más reciente sin cambio local se aplica sin más. Si el servidor guarda otra hora (reloj recortado), el cliente adopta la del servidor para no reenviar el cambio en bucle. Outbox con triggers SQLite, siembra al iniciar sesión y compactación por entidad. Detalle en [SYNC.md](../SYNC.md).

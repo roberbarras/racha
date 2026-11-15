@@ -90,12 +90,15 @@ class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
             deps.manageRoots.add(category, location)
             refresh.value++
         } else {
-            mutableQuestion.value = LinkQuestion(category, options, location = location)
+            // The folder with the same name on the other device is the likely match: offered first.
+            val name = displayPath(location).substringAfterLast('/')
+            mutableQuestion.value = LinkQuestion(category, options.sortedByDescending { it.name.equals(name, ignoreCase = true) }, location = location)
         }
     }
 
     fun askLink(entry: CategoryFolders, root: CategoryRoot) {
-        mutableQuestion.value = LinkQuestion(entry.category.key, entry.linkable, root = root)
+        val name = displayPath(root.location).substringAfterLast('/')
+        mutableQuestion.value = LinkQuestion(entry.category.key, entry.linkable.sortedByDescending { it.name.equals(name, ignoreCase = true) }, root = root)
     }
 
     /** [remote] null: a new folder (when adding) or no change (when linking an existing one). */
