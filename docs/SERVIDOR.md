@@ -32,7 +32,7 @@ Descripción completa (OpenAPI 3): `GET /v3/api-docs`, navegable en `/docs`. Err
 | Sync | `POST /sync/push`, `GET /sync/pull?since=<cursor>&limit=` |
 | Colecciones | `/categories`, `/library-items`, `/elements` (GET/POST/PUT/DELETE), `/progress` (GET/POST/PUT), `/bookmarks`, `/favorites` (GET/POST), `/history` (GET), `/settings` (GET/PUT) |
 | Telemetría | `POST /analytics/events`, `POST /errors` (lotes, idempotentes por `id`) |
-| Estadísticas | `GET /stats/me?zone=Europe/Madrid` |
+| Estadísticas | `GET /stats/me?zone=Europe/Madrid` (totales, racha, tiempo por día y por categoría); vistas SQL `stats_*` para el panel de administración: ver [ESTADISTICAS.md](ESTADISTICAS.md) |
 
 **Sesiones**: token de acceso JWT (15 min, `sub` = usuario, `did` = dispositivo) + refresh opaco de un solo uso. Cada refresh devuelve uno nuevo; si alguien usa uno ya usado (copiado), se cierran todas las sesiones de ese inicio de sesión. Contraseñas con BCrypt, mínimo 10 caracteres; 10 fallos seguidos bloquean la cuenta 15 min (y 50 por dirección).
 
