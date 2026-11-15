@@ -23,6 +23,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.sqldelight.sqlite.driver)
             implementation(libs.sqlite.jdbc)
+            implementation(project(":shared:files")) // real files for use cases that read them (resource viewer)
         }
     }
 }
