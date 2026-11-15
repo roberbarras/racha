@@ -46,9 +46,25 @@ jobs:
       - name: libmpv (desktop player, metadata, thumbnails), Xvfb + Mesa (player harness), a decimal-comma locale
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales
+          sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales libgtk-3-0t64 libxtst6
           sudo locale-gen es_ES.UTF-8
       - run: ./gradlew check :android:assembleDebug :desktop:jar --console=plain
+      - name: Linux resource viewer end to end (JavaFX WebKit page checks, PDF, text in Xvfb)
+        run: |
+          cp=$(./gradlew -q --console=plain :desktop:printTestRuntimeClasspath | tail -1)
+          home=$(mktemp -d)
+          set +e
+          HOME=$home timeout -k 5 240 xvfb-run -a -s "-screen 0 1600x900x24" \
+            java -Xmx768m --enable-native-access=ALL-UNNAMED \
+              --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED \
+              -Duser.home=$home -Dracha.mpv.ao=null \
+              -cp "$cp" io.github.roberbarras.racha.desktop.resource.ResourceHarnessKt > $home/harness.log 2>&1
+          status=$?
+          cat $home/harness.log
+          if [ $status != 0 ]; then
+            echo "::error title=Resource harness ($status)::$(grep -E 'RESULT|Exception' $home/harness.log | tail -6 | tr '\n' ' ' | cut -c1-900)"
+          fi
+          exit $status
       - name: Linux player end to end (real window in Xvfb, no audio)
         run: |
           cp=$(./gradlew -q --console=plain :desktop:printTestRuntimeClasspath | tail -1)

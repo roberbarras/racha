@@ -10,3 +10,5 @@
 - `.url`/`.txt`: texto enriquecido + abrir en navegador externo. `.pdf`: PdfRenderer (Android) / PDFBox (Linux).
 
 **Descartado**: `file://` con acceso universal (exfiltración); JCEF/KCEF (+150–200 MB de Chromium); WebKitGTK vía JNA (no incrustable de forma fiable en AWT).
+
+**Implementado en H7 (2026-11-15)**: tal cual en ambas plataformas, con tests de aislamiento en Android (dispositivo) y Linux (servidor + página autocomprobada). JavaFX queda fijado en 26.0.2 porque el `JFXPanel` de 27.0.1 no pinta la página ([RECURSOS.md](../RECURSOS.md)).

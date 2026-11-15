@@ -13,7 +13,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H4 | Sistema de diseño, navegación, Home/Detalle/Mi lista/Historial/Búsqueda, i18n, modos | ✅ Cerrado |
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | ✅ Cerrado |
 | H6 | Reproductor Linux (libmpv) | ✅ Cerrado |
-| H7 | Visor de recursos HTML/URL/TXT/PDF | Pendiente |
+| H7 | Visor de recursos HTML/URL/TXT/PDF | ✅ Cerrado |
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | Pendiente |
 | H9 | Sync extremo a extremo y conflictos | Pendiente |
 | H10 | Estadísticas y telemetría | Pendiente |
@@ -29,7 +29,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 3 | Reproductor Android y Linux completo | H5, H6 | ✅ Android (H5) y Linux (H6) |
 | 4 | Offline al 100 % | H5, H9 | 🟡 Reproducción y progreso 100 % locales ✅ (H5); sync que no bloquea → H9 |
 | 5 | Sync ≤5 min / al recuperar red, conflictos | H9 | ⬜ |
-| 6 | Recurso HTML como elemento del curso | H7 | ⬜ |
+| 6 | Recurso HTML como elemento del curso | H7 | ✅ H7 (Android y Linux, aislado a su curso) |
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
@@ -47,6 +47,37 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H7 · Visor de recursos — ✅ cerrado
+
+Documento: [docs/RECURSOS.md](docs/RECURSOS.md). Capturas: [docs/evidence/h7](docs/evidence/h7).
+
+**Hecho**
+- HTML, `.url`, `.txt` y PDF como elementos del curso en un visor a pantalla completa: anterior/siguiente, lista del curso, abrir fuera de la app, "Marcar como visto"; visto al salir e historial para visitas reales.
+- HTML aislado a su carpeta de curso (ADR-0003): WebViewAssetLoader en Android, servidor local con token + JavaFX WebKit en Linux; enlaces externos al navegador del sistema.
+- Visor PDF propio (PdfRenderer / PDFBox) que solo renderiza las páginas visibles, ajustadas al ancho, con zoom.
+- Texto con enlaces clicables y detección de codificación; accesos directos `.url` con esquemas seguros.
+- Arreglos encontrados al probar: abrir un elemento navega directo al visor o al reproductor y en el hilo principal (antes se superponían pantallas y podía cerrarse la app); JavaFX 26.0.2 (27.0.1 no pinta); PDF ajustado al ancho en pantallas grandes; índice de fuentes de PDFBox fuera de `$HOME` y preparado en segundo plano; módulos del JRE del AppImage.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio + caso de uso (SQLite y ficheros reales) | ✅ 4 + 5 tests |
+| Servidor local: 8 intentos de salir del curso → 404 | ✅ |
+| PDFBox: páginas, proporciones, píxeles | ✅ 3 tests |
+| Android en dispositivo: página autocomprobada (5 ok, 4 escapes bloqueados), enlace externo, PDF, flujo real del visor | ✅ 3 tests; suite completa 18/18 |
+| Linux en Xvfb (app real): página autocomprobada en JavaFX, página pintada, PDF, TXT, vistos | ✅ también en CI |
+| Tu escritorio con el AppImage: HTML (enlaces y quiz), PDF al ancho, TXT, anterior/siguiente, lista, "Visto" | ✅ confirmado por ti (2026-11-15) |
+
+**Criterios §12**: ✅ **6**.
+
+**Pendiente / notas**
+- Búsqueda dentro del contenido de los recursos: fuera de alcance por ahora (la búsqueda es por títulos).
+- JavaFX: volver a la última versión cuando una 27.x pase el arnés de recursos.
+
+**Bloqueos**: ninguno.
 
 ---
 
