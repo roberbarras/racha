@@ -1,4 +1,5 @@
 [versions]
+ktor = "3.6.1"
 # 27.0.1 regressed JFXPanel (blank page, BufferOverflowException in EmbeddedScene.getPixels): stay on 26.0.2
 # until a 27.x fixes it — check with the desktop-resources harness (it captures the page).
 javafx = "26.0.2"
@@ -18,6 +19,11 @@ android-targetSdk = "37"
 android-minSdk = "26"
 
 [libraries]
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 pdfbox = { module = "org.apache.pdfbox:pdfbox", version = "3.0.8" }
 javafx-base = { module = "org.openjfx:javafx-base", version.ref = "javafx" }
 javafx-graphics = { module = "org.openjfx:javafx-graphics", version.ref = "javafx" }

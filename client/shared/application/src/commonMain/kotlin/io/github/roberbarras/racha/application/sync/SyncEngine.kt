@@ -74,10 +74,14 @@ class SyncEngine(
             val byKey = results.associateBy { (it.entity to it.id) }
             val done = mutableListOf<PendingChange>()
             val serverNewer = mutableListOf<SyncRecord>()
+            val retimed = mutableListOf<Pair<SyncChange, SyncRecord>>()
             for (pending in batch) {
                 val result = byKey[pending.change.entity to pending.change.id]
                 when (result?.outcome) {
-                    PushOutcome.APPLIED -> done += pending
+                    PushOutcome.APPLIED -> {
+                        done += pending
+                        result.server?.takeIf { it.updatedAt != pending.change.updatedAt }?.let { retimed += pending.change to it }
+                    }
                     PushOutcome.STALE -> {
                         done += pending
                         result.server?.let { serverNewer += it }
@@ -88,6 +92,7 @@ class SyncEngine(
             }
             // The server kept a newer version: take it (settings may become a question for the user instead).
             if (serverNewer.isNotEmpty()) local.applyRemote(serverNewer, policy)
+            if (retimed.isNotEmpty()) local.adoptServerTimes(retimed)
             local.acknowledge(done)
             pushed += done.size
             if (batch.size < BATCH) return pushed

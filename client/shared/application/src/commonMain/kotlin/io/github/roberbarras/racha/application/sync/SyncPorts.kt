@@ -119,6 +119,12 @@ interface SyncLocalStore {
     /** Applies newer remote versions (last writer wins); settings that also changed here follow [policy]. */
     suspend fun applyRemote(records: List<SyncRecord>, policy: ConflictPolicy)
 
+    /**
+     * The server stored these pushed changes with its own time (it clamps clocks that run ahead, ADR-0012): rows
+     * not changed since take that time, or this device would ignore newer remote changes until its clock catches up.
+     */
+    suspend fun adoptServerTimes(pushed: List<Pair<SyncChange, SyncRecord>>)
+
     suspend fun cursor(): Long
 
     suspend fun setCursor(cursor: Long)

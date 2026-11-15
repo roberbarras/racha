@@ -107,6 +107,32 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
         bump()
     }
 
+    override suspend fun adoptServerTimes(pushed: List<Pair<SyncChange, SyncRecord>>) = withContext(io) {
+        sync.transaction {
+            sync.setApplying(1)
+            try {
+                pushed.forEach { (change, server) ->
+                    val id = change.id.localId(change.entity)
+                    val at = server.updatedAt.toEpochMilliseconds()
+                    val pushedAt = change.updatedAt.toEpochMilliseconds()
+                    // Only if the row is still the one that was pushed (same time): a newer local edit keeps its own.
+                    when (change.entity) {
+                        "category" -> sync.adoptCategoryTime(at, id, pushedAt)
+                        "libraryItem" -> sync.adoptItemTime(at, id, pushedAt)
+                        "section" -> sync.adoptSectionTime(at, id, pushedAt)
+                        "element" -> sync.adoptElementTime(at, id, pushedAt)
+                        "subtitle" -> sync.adoptSubtitleTime(at, id, pushedAt)
+                        "progress" -> sync.adoptProgressTime(at, id, pushedAt)
+                        "bookmark" -> sync.adoptBookmarkTime(at, id, pushedAt)
+                        "setting" -> sync.adoptSettingTime(at, id, pushedAt)
+                    }
+                }
+            } finally {
+                sync.setApplying(0)
+            }
+        }
+    }
+
     override suspend fun cursor(): Long = withContext(io) { sync.selectSyncState().executeAsOne().cursor }
 
     override suspend fun setCursor(cursor: Long) = withContext(io) { sync.setCursor(cursor); Unit }
@@ -309,6 +335,12 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
         val local = sync.settingRow(key).executeAsOneOrNull()
         if (local != null && local.updated_at >= at) return
         val remote = r.data.str("value")
+        // An open question stays open: a later remote value only updates what the user is asked about.
+        val open = sync.selectConflicts().executeAsList().firstOrNull { it.setting_key == key }
+        if (open != null) {
+            if (remote != null && at > open.remote_updated_at) sync.upsertConflict(key, open.local_value, remote, at, currentMillis())
+            return
+        }
         val changedHere = sync.hasPending("setting", key).executeAsOne() > 0
         if (policy == ConflictPolicy.ASK && changedHere && local != null && remote != null && local.value_ != remote) {
             sync.upsertConflict(key, local.value_, remote, at, currentMillis())

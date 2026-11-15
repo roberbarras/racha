@@ -132,6 +132,21 @@ class SyncStoreTest {
     }
 
     @Test
+    fun anOpenQuestionIsNotAnsweredByTheNextPull() = runBlocking {
+        seedLibrary()
+        store.startRecording()
+        store.acknowledge(store.pending(1000))
+        preferences.set(Settings.Theme, ThemeMode.DARK)
+        now += 1.minutes
+        val remote = record("setting", "user:general.theme", now, buildJsonObject { put("value", "light") })
+        store.applyRemote(listOf(remote), ConflictPolicy.ASK) // the push came back stale: a question
+        store.acknowledge(store.pending(1000)) // the pushed change leaves the queue
+        store.applyRemote(listOf(remote), ConflictPolicy.ASK) // the same value arrives again with the pull
+        assertEquals(ThemeMode.DARK, preferences.get(Settings.Theme))
+        assertEquals(1, store.observe().first().conflicts.size)
+    }
+
+    @Test
     fun withLastWriteWinsTheNewerSettingIsTaken() = runBlocking {
         seedLibrary()
         store.startRecording()

@@ -174,3 +174,28 @@ UPDATE playable_element SET title_override = ?, order_override = ?, skip_intro_s
 
 deleteQueuedFor:
 DELETE FROM sync_queue WHERE entity_type = ? AND entity_id = ?;
+
+-- The server's (clamped) time for a pushed row, only if the row has not changed since it was pushed.
+adoptCategoryTime:
+UPDATE category SET updated_at = :server WHERE key = :id AND updated_at = :pushed;
+
+adoptItemTime:
+UPDATE library_item SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
+
+adoptSectionTime:
+UPDATE section SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
+
+adoptElementTime:
+UPDATE playable_element SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
+
+adoptSubtitleTime:
+UPDATE subtitle SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
+
+adoptProgressTime:
+UPDATE progress SET updated_at = :server WHERE element_id = :id AND updated_at = :pushed;
+
+adoptBookmarkTime:
+UPDATE bookmark SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
+
+adoptSettingTime:
+UPDATE app_setting SET updated_at = :server WHERE key = :id AND updated_at = :pushed;
