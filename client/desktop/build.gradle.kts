@@ -11,8 +11,11 @@ kotlin {
 }
 
 // libmpv and sqlite-jdbc are native; mpv's `wid` needs the X11 window id of an AWT canvas (JDK internals).
+val appVersion = "0.0.1"
+
 val desktopJvmArgs = listOf(
     "--enable-native-access=ALL-UNNAMED",
+    "-Dracha.version=$appVersion", // sent with the device when signing in to the sync server
     "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
     "--add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED",
 )
@@ -21,6 +24,7 @@ dependencies {
     implementation(project(":shared:ui"))
     implementation(project(":shared:data"))
     implementation(project(":shared:files"))
+    implementation(project(":shared:remote"))
     implementation(libs.sqldelight.sqlite.driver)
     implementation(libs.sqlite.jdbc)
     implementation(compose.desktop.currentOs)
@@ -49,7 +53,7 @@ compose.desktop {
                 "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",
             )
             packageName = "racha"
-            packageVersion = "0.0.1"
+            packageVersion = appVersion
         }
     }
 }

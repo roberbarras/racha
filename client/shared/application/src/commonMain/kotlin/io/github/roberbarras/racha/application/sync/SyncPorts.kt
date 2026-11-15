@@ -61,6 +61,13 @@ sealed class RemoteError(message: String, cause: Throwable? = null) : Exception(
     class Rejected(val status: Int, val code: String?, detail: String?) : RemoteError(detail ?: "request rejected ($status)")
 }
 
+/** Stable, untranslated summary kept as the last sync error ("unreachable", "unauthorized", "rejected:500:code"); the UI words it. */
+fun RemoteError.reportCode(): String = when (this) {
+    is RemoteError.Unreachable -> "unreachable"
+    is RemoteError.Unauthorized -> "unauthorized"
+    is RemoteError.Rejected -> listOfNotNull("rejected", status.toString(), code).joinToString(":")
+}
+
 /** Outbound port: the account endpoints (§7.2). */
 interface AuthServer {
     suspend fun register(address: ServerAddress, email: String, password: String, displayName: String?, device: DeviceDescriptor): Tokens

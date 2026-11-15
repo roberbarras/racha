@@ -39,6 +39,15 @@ import io.github.roberbarras.racha.files.Sha256FileHasher
 import io.github.roberbarras.racha.files.SystemLocalDates
 import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.app.RachaDependencies
+import io.github.roberbarras.racha.application.sync.AccountService
+import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.SyncControls
+import io.github.roberbarras.racha.application.sync.SyncEngine
+import io.github.roberbarras.racha.application.sync.SyncScheduler
+import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
+import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
+import io.github.roberbarras.racha.remote.KtorSyncServer
+import java.net.InetAddress
 
 /** Desktop composition root: wires adapters into use cases by hand (no reflection, no DI container). */
 class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platformOverride: PlatformHooks? = null) : AutoCloseable {
@@ -75,6 +84,24 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
+
+    // Sync (§7.4, opt-in): runs while the app is open; the session's refresh token lives in the secret service.
+    private val syncServer = KtorSyncServer()
+    val account = AccountService(
+        syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
+        { DeviceDescriptor(null, deviceName(), "linux", System.getProperty("racha.version") ?: "dev") }, clock,
+    )
+    private val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock)
+    private val syncScheduler = SyncScheduler(syncEngine, preferences)
+
+    /** Restores the session and keeps syncing until the app closes. */
+    fun startSync() {
+        graphScope.launch {
+            account.restore()
+            syncScheduler.run(this, NetworkMonitor.online())
+        }
+    }
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     val dependencies = RachaDependencies(
@@ -91,7 +118,9 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         markProgress = MarkProgress(database.library, database.progress, updateItemProgress, clock),
         getElement = GetElement(database.library, database.progress),
         toggleFavorite = ToggleFavorite(database.favorites, clock),
-        manageRoots = ManageRoots(database.categories, database.library, scanLibrary, clock),
+        manageRoots = ManageRoots(
+            database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker,
+        ),
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
@@ -105,10 +134,15 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,
+        sync = SyncControls(account, syncEngine, syncScheduler, database.sync),
     )
 
     override fun close() {
         graphScope.cancel()
         probe.close()
+        syncServer.close()
     }
+
+    private fun deviceName(): String =
+        System.getenv("HOSTNAME")?.takeIf { it.isNotBlank() } ?: runCatching { InetAddress.getLocalHost().hostName }.getOrDefault("Linux")
 }

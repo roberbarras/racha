@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":shared:ui"))
     implementation(project(":shared:data"))
     implementation(project(":shared:files"))
+    implementation(project(":shared:remote"))
     implementation(libs.sqldelight.android.driver)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
@@ -42,6 +43,7 @@ dependencies {
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.session)
     implementation(libs.androidx.webkit)
+    implementation(libs.androidx.work.runtime)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)

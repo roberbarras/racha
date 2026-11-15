@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
             graph.ensureBuiltInCategories()
             repeatOnLifecycle(Lifecycle.State.STARTED) { graph.keepLibraryUpToDate.run() }
         }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) { graph.syncScheduler.run(this, graph.connectivity.online()) }
+        }
         val dependencies = graph.dependencies(platform)
         val coldStart = savedInstanceState == null
         setContent { RachaApp(dependencies, launchAnimation = coldStart) }
@@ -37,6 +40,11 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         (application as RachaApplication).playerHooks.detach(this)
         super.onDestroy()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) (application as RachaApplication).graph.flushSyncInBackground(applicationContext)
     }
 
     override fun onResume() {

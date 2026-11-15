@@ -50,14 +50,15 @@ class AccountService(
     }
 
     suspend fun register(address: ServerAddress, email: String, password: String, displayName: String?) =
-        start(address, email) { auth.register(address, email, password, displayName, device()) }
+        start(address, email) { known -> auth.register(address, email, password, displayName, device().copy(id = known)) }
 
     suspend fun login(address: ServerAddress, email: String, password: String) =
-        start(address, email) { auth.login(address, email, password, device()) }
+        start(address, email) { known -> auth.login(address, email, password, device().copy(id = known)) }
 
-    private suspend fun start(address: ServerAddress, email: String, call: suspend () -> Tokens) = lock.withLock {
-        val tokens = call()
+    /** [call] gets the id this device had on that server, so signing in again does not register a second device. */
+    private suspend fun start(address: ServerAddress, email: String, call: suspend (String?) -> Tokens) = lock.withLock {
         val previous = credentials.read()
+        val tokens = call(previous?.deviceId?.takeIf { previous.serverUrl == address.baseUrl })
         val sameAccount = previous != null && previous.userId == tokens.userId && previous.serverUrl == address.baseUrl
         if (!sameAccount) local.stopRecording() // another account or server: start from a clean slate
         credentials.write(StoredSession(address.baseUrl, tokens.userId, tokens.deviceId, email.trim().lowercase(), tokens.refreshToken))

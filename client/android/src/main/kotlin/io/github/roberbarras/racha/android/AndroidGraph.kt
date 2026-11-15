@@ -35,6 +35,20 @@ import io.github.roberbarras.racha.files.SystemLocalDates
 import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import java.io.File
+import android.os.Build
+import io.github.roberbarras.racha.android.sync.ConnectivityMonitor
+import io.github.roberbarras.racha.android.sync.KeystoreCredentialStore
+import io.github.roberbarras.racha.android.sync.SyncWorker
+import io.github.roberbarras.racha.application.sync.AccountService
+import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.SyncControls
+import io.github.roberbarras.racha.application.sync.SyncEngine
+import io.github.roberbarras.racha.application.sync.SyncScheduler
+import io.github.roberbarras.racha.domain.preferences.Settings
+import io.github.roberbarras.racha.remote.KtorSyncServer
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** Android composition root: one per process (held by [RachaApplication]), wired by hand. */
 class AndroidGraph(context: Context) {
@@ -61,6 +75,33 @@ class AndroidGraph(context: Context) {
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    // Sync (§7.4, opt-in): in the foreground while the app is visible ([MainActivity]), otherwise via WorkManager.
+    private val syncServer = KtorSyncServer()
+    val account = AccountService(
+        syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
+        { DeviceDescriptor(null, deviceName(context), "android", appVersion(context)) }, clock,
+    )
+    val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock)
+    val syncScheduler = SyncScheduler(syncEngine, preferences)
+    val connectivity = ConnectivityMonitor(context)
+    private val syncControls = SyncControls(account, syncEngine, syncScheduler, database.sync)
+
+    init {
+        val app = context.applicationContext
+        appScope.launch {
+            account.restore()
+            combine(preferences.observe(Settings.SyncEnabled), preferences.observe(Settings.SyncIntervalMinutes)) { on, minutes -> on to minutes }
+                .collect { (on, minutes) -> SyncWorker.schedule(app, on, minutes) }
+        }
+    }
+
+    /** The app went to the background: anything still queued goes out with the next network. */
+    fun flushSyncInBackground(context: Context) {
+        appScope.launch {
+            if (preferences.get(Settings.SyncEnabled) && database.sync.observe().first().pending > 0) SyncWorker.flushSoon(context)
+        }
+    }
+
     /** UI dependencies for one activity (the platform hooks are bound to it). */
     fun dependencies(platform: PlatformHooks) = RachaDependencies(
         clock = clock,
@@ -76,7 +117,9 @@ class AndroidGraph(context: Context) {
         markProgress = MarkProgress(database.library, database.progress, updateItemProgress, clock),
         getElement = GetElement(database.library, database.progress),
         toggleFavorite = ToggleFavorite(database.favorites, clock),
-        manageRoots = ManageRoots(database.categories, database.library, scanLibrary, clock),
+        manageRoots = ManageRoots(
+            database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker,
+        ),
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
@@ -90,5 +133,15 @@ class AndroidGraph(context: Context) {
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,
+        sync = syncControls,
     )
+
+    private companion object {
+        fun deviceName(context: Context): String =
+            android.provider.Settings.Global.getString(context.contentResolver, android.provider.Settings.Global.DEVICE_NAME)
+                ?.takeIf { it.isNotBlank() } ?: "${Build.MANUFACTURER} ${Build.MODEL}"
+
+        fun appVersion(context: Context): String =
+            runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "dev"
+    }
 }

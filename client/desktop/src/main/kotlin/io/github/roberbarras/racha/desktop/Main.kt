@@ -30,6 +30,7 @@ fun main() {
     PdfBoxDocument.configure(pdfFonts)
     // Composition root: adapters are wired by hand, no reflection-based DI.
     val graph = DesktopGraph()
+    graph.startSync()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     background.launch {
         graph.ensureBuiltInCategories()

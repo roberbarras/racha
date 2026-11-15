@@ -46,7 +46,7 @@ class SyncEngine(
             local.recordSuccess(clock.now())
             SyncOutcome.Done(pushed, pulled)
         } catch (e: RemoteError) {
-            local.recordError(e.message ?: e::class.simpleName.orEmpty())
+            local.recordError(e.reportCode())
             SyncOutcome.Failed(e)
         } finally {
             running.value = SyncRun.IDLE
