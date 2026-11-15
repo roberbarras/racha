@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files the app may hand to other apps (read-only, one at a time) from "Open outside the app": library folders
+     live on shared storage or SD cards, which only root-path can express. -->
+<paths>
+    <external-path name="storage" path="." />
+    <root-path name="volumes" path="storage/" />
+</paths>

@@ -47,7 +47,7 @@ Antes de construir el reproductor de escritorio (H6) y el visor de recursos (H7)
 
 ## 2. Recursos HTML (ADR-0003)
 
-JavaFX 27 WebView (WebKit) dentro de Compose (`SwingPanel` + `JFXPanel`), contenido servido por `CourseFileServer` (HTTP en 127.0.0.1, puerto aleatorio, token de 128 bits, solo la carpeta del curso). Fixture: [`client/spikes/linux-webview/fixture`](../../client/spikes/linux-webview/fixture).
+JavaFX 27 WebView (WebKit) dentro de Compose (`SwingPanel` + `JFXPanel`), contenido servido por `CourseFileServer` (HTTP en 127.0.0.1, puerto aleatorio, token de 128 bits, solo la carpeta del curso). Fixture: [`client/testdata/web`](../../client/testdata/web).
 
 | Comprobación | Resultado |
 |---|---|
@@ -61,7 +61,7 @@ JavaFX 27 WebView (WebKit) dentro de Compose (`SwingPanel` + `JFXPanel`), conten
 | Otro curso (`../../Other Course/…`) | 🔒 404 |
 | Ruta absoluta (`//etc/passwd`) | 🔒 404 |
 
-Reproducible: `client/spikes/safe-run.sh virtual 60 linux-webview "<ruta>/fixture/AWS Course" "01 - Introduction/003 AWS Account Activation Troubleshooting.html"`.
+Reproducible: `client/spikes/safe-run.sh virtual 60 linux-webview "<ruta>/client/testdata/web/AWS Course" "01 - Introduction/003 AWS Account Activation Troubleshooting.html"`.
 
 **Riesgos que pasan a H7**
 - Primer arranque lento (5,7 s en escritorio real, 16 s en Xvfb, incluye inicializar la JVM y JavaFX): inicializar JavaFX en segundo plano al abrir un curso.

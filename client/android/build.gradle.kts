@@ -16,7 +16,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    sourceSets["androidTest"].assets.directories += "../testdata/media"
+    sourceSets["androidTest"].assets.directories += listOf("../testdata/media", "../testdata/web", "../testdata/documents")
 
     buildTypes {
         release {
@@ -41,6 +41,7 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.session)
+    implementation(libs.androidx.webkit)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)

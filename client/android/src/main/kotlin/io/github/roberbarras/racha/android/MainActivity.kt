@@ -8,6 +8,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import io.github.roberbarras.racha.android.resource.AndroidResourceHooks
 import io.github.roberbarras.racha.ui.app.RachaApp
 import kotlinx.coroutines.launch
 
@@ -22,7 +23,7 @@ class MainActivity : ComponentActivity() {
         val app = application as RachaApplication
         val graph = app.graph
         app.playerHooks.attach(this)
-        platform = AndroidPlatform(this, app.playerHooks)
+        platform = AndroidPlatform(this, app.playerHooks, AndroidResourceHooks(app))
         // Scanning and file watching run only while the app is visible: nothing stays awake in the background.
         lifecycleScope.launch {
             graph.ensureBuiltInCategories()

@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.android
 
+import io.github.roberbarras.racha.application.resource.ResourceViewer
+import io.github.roberbarras.racha.files.NioResourceFiles
 import android.content.Context
 import io.github.roberbarras.racha.android.library.AndroidMediaProbe
 import io.github.roberbarras.racha.android.library.AndroidThumbnailRenderer
@@ -78,6 +80,9 @@ class AndroidGraph(context: Context) {
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
+        resourceViewer = {
+            ResourceViewer(database.library, database.categories, NioResourceFiles(), database.progress, database.history, updateItemProgress, clock)
+        },
         playbackController = { engine, scope ->
         PlaybackController(
             engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
