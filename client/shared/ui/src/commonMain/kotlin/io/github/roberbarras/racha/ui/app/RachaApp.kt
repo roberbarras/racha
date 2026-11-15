@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -36,7 +39,8 @@ import io.github.roberbarras.racha.ui.lists.HistoryScreen
 import io.github.roberbarras.racha.ui.lists.MyListScreen
 import io.github.roberbarras.racha.ui.player.PlayerPlaceholder
 import io.github.roberbarras.racha.ui.player.PlayerScreen
-import io.github.roberbarras.racha.ui.player.ResourcePlaceholder
+import io.github.roberbarras.racha.ui.resource.ResourceScreen
+import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.ui.search.SearchScreen
 import io.github.roberbarras.racha.ui.category.CategoryScreen
@@ -82,7 +86,17 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             }
         }
         val openItem: (ContentId) -> Unit = { navController.navigate(ItemRoute(it.value)) }
-        val play: (ContentId, StartMode) -> Unit = { id, mode -> navController.navigate(PlayerRoute(id.value, mode)) }
+        val navScope = rememberCoroutineScope()
+        // Elements open where they belong: resources in the viewer, videos in the player (one navigation, so the
+        // screen transition never gets interrupted by a redirect).
+        val play: (ContentId, StartMode) -> Unit = { id, mode ->
+            // Main explicitly: NavController is not thread-safe, and the lookup must not decide where we resume.
+            navScope.launch(Dispatchers.Main.immediate) {
+                val resource = deps.getElement(id)?.element?.kind == ElementKind.RESOURCE
+                // Single top: a double tap (or a tap while the transition runs) must not stack the same screen twice.
+                navController.navigate(if (resource) ResourceRoute(id.value) else PlayerRoute(id.value, mode)) { launchSingleTop = true }
+            }
+        }
         val immersive = destination != null && (destination.hasRoute(PlayerRoute::class) || destination.hasRoute(ResourceRoute::class))
         Box(
             Modifier.fillMaxSize().onPreviewKeyEvent { event ->
@@ -129,7 +143,14 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                         }
                     }
                     composable<ResourceRoute> {
-                        ResourcePlaceholder(deps, ContentId(it.toRoute<ResourceRoute>().elementId), onBack = navController::navigateUp)
+                        ResourceScreen(
+                            deps, ContentId(it.toRoute<ResourceRoute>().elementId),
+                            onBack = navController::navigateUp,
+                            onOpenElement = { target ->
+                                val route: Any = if (target.kind == ElementKind.VIDEO) PlayerRoute(target.id.value, StartMode.RESUME) else ResourceRoute(target.id.value)
+                                navController.navigate(route) { popUpTo<ResourceRoute> { inclusive = true } }
+                            },
+                        )
                     }
                 }
             }

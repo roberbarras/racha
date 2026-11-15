@@ -22,7 +22,6 @@ import io.github.roberbarras.racha.ui.design.RachaIcons
 import io.github.roberbarras.racha.ui.resources.Res
 import io.github.roberbarras.racha.ui.resources.back
 import io.github.roberbarras.racha.ui.resources.player_coming
-import io.github.roberbarras.racha.ui.resources.resource_coming
 import org.jetbrains.compose.resources.stringResource
 
 /** Where the platform cannot play (desktop without libmpv). */
@@ -32,12 +31,6 @@ fun PlayerPlaceholder(deps: RachaDependencies, element: ContentId, mode: StartMo
         val start = if (mode == StartMode.BEGINNING) 0 else PlaybackRules.resumePosition(c.progress) ?: 0
         stringResource(Res.string.player_coming, timecode(start))
     }
-}
-
-/** Resources (HTML/URL/TXT/PDF) open in the viewer that arrives in H7. */
-@Composable
-fun ResourcePlaceholder(deps: RachaDependencies, element: ContentId, onBack: () -> Unit) {
-    Placeholder(deps, element, onBack) { stringResource(Res.string.resource_coming) }
 }
 
 @Composable

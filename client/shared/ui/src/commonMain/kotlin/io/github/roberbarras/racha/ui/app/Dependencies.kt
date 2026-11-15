@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.ui.app
 
+import io.github.roberbarras.racha.application.resource.ResourceViewer
+import io.github.roberbarras.racha.ui.resource.ResourceHooks
 import io.github.roberbarras.racha.application.browse.GetElement
 import io.github.roberbarras.racha.application.browse.ManageRoots
 import io.github.roberbarras.racha.application.browse.MarkProgress
@@ -44,6 +46,8 @@ class RachaDependencies(
     val platform: PlatformHooks,
     /** Builds the shared playback controller around a platform engine (player screen). */
     val playbackController: (PlayerEngine, CoroutineScope) -> PlaybackController,
+    /** A fresh resource viewer per screen (spec §5). */
+    val resourceViewer: () -> ResourceViewer,
     /** Outlives screens: finishes saves when a player closes. */
     val appScope: CoroutineScope,
 )
@@ -61,4 +65,7 @@ interface PlatformHooks {
 
     /** Video playback capabilities; null where the player is not available yet. */
     val player: PlayerHooks? get() = null
+
+    /** Embedded web view, PDF rendering and "open outside" for resources; null where not available. */
+    val resources: ResourceHooks? get() = null
 }

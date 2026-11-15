@@ -97,6 +97,16 @@ object DemoLibrary {
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = null
             },
+            resourceViewer = {
+                io.github.roberbarras.racha.application.resource.ResourceViewer(
+                    db.library, db.categories,
+                    object : io.github.roberbarras.racha.application.resource.ResourceFiles {
+                        override suspend fun readText(location: String, path: RelativePath, maxBytes: Int) = null
+                        override fun localPath(location: String, path: RelativePath): String? = null
+                    },
+                    db.progress, db.history, update, clock,
+                )
+            },
             playbackController = { engine, scope ->
                 io.github.roberbarras.racha.application.playback.PlaybackController(
                     engine, scope, db.library, db.categories, emptySource, db.progress, db.bookmarks, db.history, db.stats,

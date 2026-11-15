@@ -77,7 +77,6 @@
     <string name="permission_message">Para leer cursos en cualquier carpeta del dispositivo, permite el «Acceso a todos los archivos». Racha solo lee; nada sale del dispositivo.</string>
     <string name="permission_action">Permitir acceso</string>
     <string name="player_coming">El reproductor no puede arrancar en este equipo: falta libmpv (instala el paquete mpv). Este elemento empezaría en %1$s.</string>
-    <string name="resource_coming">El visor de recursos llega en un hito posterior.</string>
     <string name="sections">Secciones</string>
     <string name="kind_video">Vídeo</string>
     <string name="kind_html">Página web</string>
@@ -125,4 +124,15 @@
     <string name="subtitles_off">Desactivados</string>
     <string name="track_default">Pista %1$d</string>
     <string name="delete_bookmark">Borrar marcador</string>
+    <string name="watched">Visto</string>
+    <string name="open_externally">Abrir fuera de la app</string>
+    <string name="open_in_browser">Abrir en el navegador</string>
+    <string name="resource_missing_title">No se encuentra el fichero</string>
+    <string name="resource_missing_message">Puede que se haya movido o borrado. Vuelve a escanear la carpeta.</string>
+    <string name="resource_unsupported">Este tipo de recurso aún no se puede ver en este dispositivo.</string>
+    <string name="shortcut_without_link">Este acceso directo no contiene un enlace web válido.</string>
+    <string name="text_truncated">El texto es muy largo: se muestran los primeros 2 MB.</string>
+    <string name="pdf_unreadable">No se puede abrir este PDF.</string>
+    <string name="zoom_in">Acercar</string>
+    <string name="zoom_out">Alejar</string>
 </resources>

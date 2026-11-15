@@ -63,6 +63,9 @@ object RachaIcons {
     /** lucide:clock */
     val Clock: ImageVector by lazy { icon("clock", "M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0z", "M12 6v6l4 2") }
 
+    /** lucide:external-link */
+    val ExternalLink: ImageVector by lazy { icon("external-link", "M15 3h6v6", "M10 14 21 3", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6") }
+
     /** lucide:file-text */
     val FileText: ImageVector by lazy { icon("file-text", "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z", "M14 2v5a1 1 0 0 0 1 1h5", "M10 9H8", "M16 13H8", "M16 17H8") }
 
@@ -123,6 +126,9 @@ object RachaIcons {
     /** lucide:moon */
     val Moon: ImageVector by lazy { icon("moon", "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401") }
 
+    /** lucide:panel-right */
+    val PanelRight: ImageVector by lazy { icon("panel-right", "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2z", "M15 3v18") }
+
     /** lucide:pause */
     val Pause: ImageVector by lazy { icon("pause", "M15 3h3a1 1 0 0 1 1 1v16a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-16a1 1 0 0 1 1 -1z", "M6 3h3a1 1 0 0 1 1 1v16a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-16a1 1 0 0 1 1 -1z") }
 
@@ -179,6 +185,12 @@ object RachaIcons {
 
     /** lucide:x */
     val X: ImageVector by lazy { icon("x", "M18 6 6 18", "m6 6 12 12") }
+
+    /** lucide:zoom-in */
+    val ZoomIn: ImageVector by lazy { icon("zoom-in", "M3 11a8 8 0 1 0 16 0a8 8 0 1 0 -16 0z", "M21 21L16.65 16.65", "M11 8L11 14", "M8 11L14 11") }
+
+    /** lucide:zoom-out */
+    val ZoomOut: ImageVector by lazy { icon("zoom-out", "M3 11a8 8 0 1 0 16 0a8 8 0 1 0 -16 0z", "M21 21L16.65 16.65", "M8 11L14 11") }
 
     private fun icon(name: String, vararg paths: String): ImageVector =
         ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {

@@ -77,7 +77,6 @@
     <string name="permission_message">To read courses anywhere on this device, allow “All files access”. Racha only reads; nothing leaves the device.</string>
     <string name="permission_action">Allow access</string>
     <string name="player_coming">The player cannot start on this device: libmpv is missing (install the mpv package). This element would start at %1$s.</string>
-    <string name="resource_coming">The resource viewer arrives in a later milestone.</string>
     <string name="sections">Sections</string>
     <string name="kind_video">Video</string>
     <string name="kind_html">Web page</string>
@@ -125,4 +124,15 @@
     <string name="subtitles_off">Off</string>
     <string name="track_default">Track %1$d</string>
     <string name="delete_bookmark">Delete bookmark</string>
+    <string name="watched">Viewed</string>
+    <string name="open_externally">Open outside the app</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="resource_missing_title">File not found</string>
+    <string name="resource_missing_message">It may have been moved or deleted. Scan the folder again.</string>
+    <string name="resource_unsupported">This kind of resource cannot be shown on this device yet.</string>
+    <string name="shortcut_without_link">This shortcut does not contain a valid web link.</string>
+    <string name="text_truncated">This text is very long: only the first 2 MB are shown.</string>
+    <string name="pdf_unreadable">This PDF cannot be opened.</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="zoom_out">Zoom out</string>
 </resources>

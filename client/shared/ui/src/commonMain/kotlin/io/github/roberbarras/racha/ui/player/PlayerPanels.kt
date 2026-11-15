@@ -31,6 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import io.github.roberbarras.racha.application.playback.PlaybackState
 import io.github.roberbarras.racha.domain.library.ElementKind
+import io.github.roberbarras.racha.ui.common.CourseQueueList
 import io.github.roberbarras.racha.ui.common.elementIcon
 import io.github.roberbarras.racha.ui.common.timecode
 import io.github.roberbarras.racha.ui.design.ButtonKind
@@ -101,32 +102,7 @@ internal fun PlayerPanelHost(vm: PlayerViewModel, state: PlaybackState, panel: P
 
 @Composable
 private fun QueuePanel(vm: PlayerViewModel, state: PlaybackState) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
-        items(state.queue, key = { it.element.id.value }) { entry ->
-            val current = entry.element.id == state.element?.id
-            val shape = RoundedCornerShape(Racha.radius.m)
-            Row(
-                Modifier.fillMaxWidth().alpha(if (entry.element.archived) 0.5f else 1f).clip(shape)
-                    .background(if (current) Racha.colors.accent.copy(alpha = 0.22f) else Color.Transparent)
-                    .interactive({ vm.jumpTo(entry.element.id) }, shape, enabled = !entry.element.archived, overlay = Color.White)
-                    .padding(Racha.space.s),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Racha.space.m),
-            ) {
-                val done = entry.progress?.completed == true
-                Box(Modifier.size(26.dp).clip(CircleShape).background(if (done) Racha.colors.success else Color.White.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                    if (done) RIcon(RachaIcons.Check, null, tint = Color.White, size = 14.dp)
-                    else RIcon(elementIcon(entry.element), null, tint = Racha.colors.onRailMuted, size = 14.dp)
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Racha.space.xxs)) {
-                    RText(entry.element.displayTitle, style = if (current) Racha.type.bodyStrong else Racha.type.body, color = Racha.colors.onRail, maxLines = 2)
-                    val percent = entry.progress?.percent ?: 0.0
-                    if (!done && percent > 0 && entry.element.kind == ElementKind.VIDEO) ProgressBar((percent / 100).toFloat(), height = 3.dp)
-                }
-                entry.element.media.durationSec?.let { RText(timecode(it), style = with(Racha.type) { caption.numeric() }, color = Racha.colors.onRailMuted) }
-            }
-        }
-    }
+    CourseQueueList(state.queue, state.element?.id, onSelect = { vm.jumpTo(it.element.id) })
 }
 
 @Composable
