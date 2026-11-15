@@ -14,7 +14,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H5 | Reproductor Android (Media3) + UI de reproductor compartida | ✅ Cerrado |
 | H6 | Reproductor Linux (libmpv) | ✅ Cerrado |
 | H7 | Visor de recursos HTML/URL/TXT/PDF | ✅ Cerrado |
-| H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | Pendiente |
+| H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | ✅ Cerrado |
 | H9 | Sync extremo a extremo y conflictos | Pendiente |
 | H10 | Estadísticas y telemetría | Pendiente |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | Pendiente |
@@ -32,7 +32,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 6 | Recurso HTML como elemento del curso | H7 | ✅ H7 (Android y Linux, aislado a su curso) |
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ⬜ |
-| 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ⬜ |
+| 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | 🟡 Servidor ✅ (H8); login desde las apps → H9 |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
 | 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4), reproductores Android (H5) y Linux (H6), interfaz adaptada a la escala y al ancho (H6) ✅; pulido → H12 |
@@ -47,6 +47,35 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H8 · Backend — ✅ cerrado
+
+Documento: [docs/SERVIDOR.md](docs/SERVIDOR.md). ADR nuevo: [0012](docs/adr/0012-protocolo-sync-y-modelo-remoto.md).
+
+**Hecho**
+- Cuentas (ADR-0006): registro, login, refresh rotativo con detección de reutilización, logout, dispositivos; BCrypt; límite de intentos; registro abierto/cerrado por configuración.
+- Modelo remoto (§6.2) en PostgreSQL 18 con Flyway: identidad, una tabla por entidad sincronizable, auditoría de sync, telemetría.
+- Sync (§7.3–7.4, §6.3): push con "gana el más reciente" atómico en SQL, progreso que nunca se pierde, historial de solo inserción, conflictos de ajustes devueltos para preguntar, lápidas, relojes adelantados recortados, pull paginado con cursor.
+- Todas las colecciones de §7.3, telemetría (`/analytics/events`, `/errors`) y `/stats/me`.
+- OpenAPI 3 (`/v3/api-docs`, `/docs`); errores RFC 9457 con `code`.
+- Arquitectura hexagonal por contextos (identidad, sync, telemetría, estadísticas) verificada con ArchUnit; la raíz de composición (`config`) es la única que une adaptadores y casos de uso.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Tests contra PostgreSQL 18 real (Testcontainers): auth 7, registro cerrado 1, sync 11, telemetría y estadísticas 2, OpenAPI 1 | ✅ |
+| Unitarios (reglas de identidad, sync y racha) + ArchUnit | ✅ |
+| `docker compose up`: salud, registro, push, pull y OpenAPI de punta a punta | ✅ |
+
+**Criterios §12**: 🟡 **9** (servidor listo; las apps inician sesión en H9); 🟡 **5** y **8** dependen de H9/H10.
+
+**Pendiente / notas**
+- OAuth (Google/GitHub) y OTP por email siguen aplazados (ADR-0006); el esquema ya tiene `oauth_accounts`.
+- HTTPS: detrás de un proxy (documentado).
+
+**Bloqueos**: ninguno.
 
 ---
 
