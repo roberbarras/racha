@@ -15,3 +15,4 @@ Formato: Estado · Contexto · Decisión · Alternativas descartadas · Consecue
 | [0009](0009-empaquetado-y-distribucion.md) | AppImage (Linux) y APK universal firmado (Android) | Aceptada |
 | [0010](0010-formato-export-config.md) | Export/import de configuración en JSON versionado | Aceptada |
 | [0011](0011-presentacion-video-linux.md) | Linux: salida nativa de mpv incrustada + UI en ventana superpuesta; hwdec desactivado por defecto | Aceptada |
+| [0012](0012-protocolo-sync-y-modelo-remoto.md) | Modelo remoto por entidad, LWW atómico en SQL, pull con cursor de secuencia | Aceptada |
