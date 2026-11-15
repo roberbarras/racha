@@ -74,7 +74,7 @@ Documento: [docs/RECURSOS.md](docs/RECURSOS.md). Capturas: [docs/evidence/h7](do
 **Criterios §12**: ✅ **6**.
 
 **Pendiente / notas**
-- Búsqueda dentro del contenido de los recursos: fuera de alcance por ahora (la búsqueda es por títulos).
+- Búsqueda en el contenido textual de los recursos (spec §2 "si es viable": lo es): planificada en H11 junto con la búsqueda sin acentos, con un índice de texto completo (FTS) alimentado por el escaneo.
 - JavaFX: volver a la última versión cuando una 27.x pase el arnés de recursos.
 
 **Bloqueos**: ninguno.
