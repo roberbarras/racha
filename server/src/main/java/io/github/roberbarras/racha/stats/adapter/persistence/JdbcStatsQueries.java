@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -55,6 +56,28 @@ public final class JdbcStatsQueries implements PersonalStats.Queries {
                     Timestamp t = rs.getTimestamp(1);
                     return t == null ? null : t.toInstant();
                 }).optional().orElse(null);
+    }
+
+    @Override
+    public List<PersonalStats.DayWatch> watchByDay(UUID userId, ZoneId zone, LocalDate from) {
+        return jdbc.sql("""
+                select day, sum(seconds) as seconds from (
+                    select (occurred_at at time zone :zone)::date as day, (properties ->> 'seconds')::bigint as seconds
+                    from analytics_events where user_id = :user and type = 'watch' and jsonb_typeof(properties -> 'seconds') = 'number') w
+                where day >= :from
+                group by day order by day""")
+                .param("zone", zone.getId()).param("user", userId).param("from", from)
+                .query((rs, row) -> new PersonalStats.DayWatch(rs.getObject("day", LocalDate.class), rs.getLong("seconds"))).list();
+    }
+
+    @Override
+    public List<PersonalStats.CategoryWatch> watchByCategory(UUID userId) {
+        return jdbc.sql("""
+                select properties ->> 'categoryId' as category, sum((properties ->> 'seconds')::bigint) as seconds
+                from analytics_events where user_id = :user and type = 'watch' and properties ->> 'categoryId' is not null and jsonb_typeof(properties -> 'seconds') = 'number'
+                group by properties ->> 'categoryId' order by seconds desc""")
+                .param("user", userId)
+                .query((rs, row) -> new PersonalStats.CategoryWatch(rs.getString("category"), rs.getLong("seconds"))).list();
     }
 
     private long count(String sql, UUID userId) {

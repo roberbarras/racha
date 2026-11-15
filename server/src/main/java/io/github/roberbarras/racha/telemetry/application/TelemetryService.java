@@ -21,9 +21,7 @@ public final class TelemetryService {
 
     public Accepted events(UUID userId, UUID deviceId, List<Telemetry.Event> events) {
         check(events.size());
-        var valid = events.stream()
-                .filter(e -> e.id() != null && e.occurredAt() != null && e.type() != null && !e.type().isBlank() && e.type().length() <= Telemetry.MAX_TYPE_LENGTH)
-                .toList();
+        var valid = events.stream().filter(Telemetry::wellFormed).toList();
         store.saveEvents(userId, deviceId, valid, clock.instant());
         return new Accepted(valid.size(), events.size() - valid.size());
     }
