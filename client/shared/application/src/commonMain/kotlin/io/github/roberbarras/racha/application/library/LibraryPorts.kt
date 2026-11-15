@@ -99,3 +99,11 @@ interface LibraryRepository {
 
     suspend fun deleteSubtitle(id: ContentId)
 }
+
+/**
+ * Outbound port (ADR-0004): gives a local root the key the same folder has on another device, moving progress,
+ * bookmarks, history and favourites to the content ids that key produces. The library rows are rebuilt by a scan.
+ */
+fun interface RootRelinker {
+    suspend fun relink(root: CategoryRoot, to: RootKey)
+}

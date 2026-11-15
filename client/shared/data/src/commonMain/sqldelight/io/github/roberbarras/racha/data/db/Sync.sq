@@ -199,3 +199,10 @@ UPDATE bookmark SET updated_at = :server WHERE id = :id AND updated_at = :pushed
 
 adoptSettingTime:
 UPDATE app_setting SET updated_at = :server WHERE key = :id AND updated_at = :pushed;
+
+-- Linking a root to the same folder on another device (ADR-0004): its content is re-keyed.
+relinkItemFavorite:
+UPDATE OR IGNORE favorite SET target_id = :to WHERE target_type = 'item' AND target_id = :from;
+
+deleteItemsOfRoot:
+DELETE FROM library_item WHERE category_key = ? AND root_key = ?;
