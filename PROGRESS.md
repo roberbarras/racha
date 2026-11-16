@@ -17,7 +17,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H8 | Backend: auth email/JWT, modelo remoto, endpoints §7.3, OpenAPI | ✅ Cerrado |
 | H9 | Sync extremo a extremo y conflictos | ✅ Cerrado |
 | H10 | Estadísticas y telemetría | ✅ Cerrado |
-| H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | Pendiente |
+| H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | ✅ Cerrado |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | Pendiente |
 
 ## Criterios de aceptación (§12)
@@ -33,7 +33,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 7 | IDs estables, archivado | H3 | ✅ H3 (mover conserva progreso; borrar archiva) |
 | 8 | Estadísticas persistidas en servidor | H10 | ✅ H10 (visualizaciones, horas, errores, fallos de sync y eventos; vistas SQL consultadas en tests y contra el servidor real) |
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ✅ Servidor (H8) y registro/login/refresh desde las apps (H9); OAuth aplazado (ADR-0006) |
-| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4); subtítulos por idioma, apagados por defecto (H5) |
+| 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4) con selector de idioma de la app (H11); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
 | 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4), reproductores Android (H5) y Linux (H6), interfaz adaptada a la escala y al ancho (H6) ✅; pulido → H12 |
 
@@ -47,6 +47,42 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H11 · Ajustes, notificaciones, widget, deep links, export/import y onboarding — ✅ cerrado
+
+Documento: [docs/AJUSTES.md](docs/AJUSTES.md). Precisión en [ADR-0010](docs/adr/0010-formato-export-config.md). Evidencias: [docs/evidence/h11](docs/evidence/h11).
+
+**Hecho**
+- **Ajustes completos (§9)**, aplicados al momento: general (idioma de la app que cambia toda la interfaz sin reiniciar, tema, acento, tamaño de texto y, en Linux, tamaño de la interfaz), categorías (crear, renombrar, borrar, reordenar, principal, visibilidad por modo, exclusiones), reproductor, progreso, escaneo, sincronización, notificaciones, almacenamiento (cachés, historial local, exportar/importar), avanzado (nivel de log, endpoint de telemetría, proxy y User-Agent que se aplican de verdad) y acerca de.
+- **Exportar/importar** la configuración (ADR-0010), sin secretos, carpetas ni la sync activa; ficheros inválidos o de versiones futuras rechazados sin tocar nada.
+- **Búsqueda** sin mayúsculas ni acentos y **en el contenido** de recursos HTML/TXT/enlaces, con fragmento y la coincidencia en negrita (esquema v6).
+- **Notificaciones**: novedades tras escaneos automáticos, sync fallida (sin ruido offline) y recordatorio diario solo los días sin estudiar. Android con canales, permiso y WorkManager; Linux por D-Bus.
+- **Deep links** `racha://item|play/<id>` en Android y Linux; en Linux, **una sola instancia** que recibe enlaces por socket Unix y se trae al frente.
+- **Widget de Android** (racha, hoy toca con su curso y progreso, continuar).
+- **Onboarding** del primer uso (idioma, modo, carpetas, recordatorio, sync), solo con la biblioteca vacía y sustituyendo a la app mientras dura.
+- **Portadas con IA** (opcionales, §3): endpoint, prompt base y API key en el almacén protegido del sistema.
+- Filas de interruptor que se activan desde toda la fila; log de la app con nivel (Linux `~/.cache/racha/racha.log`, Android logcat).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| JVM (SQLite real): ajustes y categorías, export/import (ida y vuelta, ficheros malos), almacenamiento, búsqueda y contenido, notificaciones, portadas | ✅ |
+| Adaptadores HTTP con servidores simulados (sync, telemetría, IA de imágenes); ningún test llama a servicios reales | ✅ |
+| Linux: instancia única por socket, llamada D-Bus de notificaciones (sin mostrar ninguna), hora del recordatorio | ✅ |
+| UI de escritorio: idioma al momento en toda la app, interruptores, categorías, onboarding completo (y que una biblioteca existente no lo ve), deep links; capturas | ✅ |
+| Android en el emulador: 42 tests, incluidos notificaciones en sus canales, Keystore y el widget renderizado | ✅ |
+| CI (servidor + cliente + arneses Linux + e2e + emulador) | ✅ [run 43838580857](https://github.com/roberbarras/racha/actions/runs/43838580857) |
+
+**Criterios §12**: ✅ **10** (idioma de la app seleccionable, además del del sistema); 🟡 **12** avanza (Ajustes, Progreso, onboarding y widget con la identidad propia; pulido → H12).
+
+**Pendiente / notas**
+- En Linux el recordatorio diario solo llega con la app abierta (no hay planificador del sistema para una app cerrada).
+- El AppImage ya declara `x-scheme-handler/racha`; registrarlo en el escritorio depende de la integración del AppImage (AppImageLauncher, appimaged) o de instalar la entrada `.desktop` — se documentará en H12 con el empaquetado.
+- Lint avisa de que el WebView de recursos no implementa `onRenderProcessGone` (un cierre del proceso del renderizador cerraría la app): a resolver en H12.
+
+**Bloqueos**: ninguno.
 
 ---
 
@@ -76,7 +112,7 @@ Documento: [docs/ESTADISTICAS.md](docs/ESTADISTICAS.md).
 
 **Pendiente / notas**
 - El panel de administración en sí queda fuera (la spec pide guardar "para futuro panel"); las vistas son su base.
-- El widget de Android (racha, "hoy toca", continuar) es H11.
+- El widget de Android (racha, "hoy toca", continuar) quedó hecho en H11.
 
 **Bloqueos**: ninguno.
 
