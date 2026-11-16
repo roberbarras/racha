@@ -54,7 +54,7 @@ Home (continuar viendo, hoy toca, novedades, biblioteca por pestañas con la cat
 
 ## Idiomas
 
-`composeResources/values` (inglés, base) y `values-es` (español), mismas claves. Fechas largas con nombres de días y meses traducidos. Siguen el idioma del sistema; el selector de idioma de la app llega con Ajustes (H11).
+`composeResources/values` (inglés, base) y `values-es` (español), mismas claves. Fechas largas con nombres de días y meses traducidos. Siguen el idioma del sistema salvo que se elija otro en Ajustes (se aplica al momento, ver [AJUSTES.md](AJUSTES.md)).
 
 ## Regenerar iconos
 

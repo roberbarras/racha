@@ -24,9 +24,8 @@ class TodayWidgetTest {
     fun layoutRendersWithItsTexts() {
         val views = RemoteViews(context.packageName, R.layout.widget_today).apply {
             setTextViewText(R.id.widget_streak, "Racha de 7 días")
-            setTextViewText(R.id.widget_label, "HOY TOCA")
+            setTextViewText(R.id.widget_label, "HOY TOCA · AWS Certified Solutions Architect")
             setTextViewText(R.id.widget_title, "IAM Introduction: Users, Groups and Roles")
-            setTextViewText(R.id.widget_subtitle, "AWS Certified Solutions Architect")
             setProgressBar(R.id.widget_progress, 100, 42, false)
             setTextViewText(R.id.widget_action, "Continuar")
         }
@@ -34,10 +33,12 @@ class TodayWidgetTest {
             val parent = FrameLayout(context)
             val view = views.apply(context, parent)
             val width = (320 * context.resources.displayMetrics.density).toInt()
-            val height = (170 * context.resources.displayMetrics.density).toInt()
+            val height = (140 * context.resources.displayMetrics.density).toInt() // the provider's minimum height
             view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
             view.layout(0, 0, width, height)
             assertEquals("Continuar", view.findViewById<TextView>(R.id.widget_action).text.toString())
+            val action = view.findViewById<TextView>(R.id.widget_action)
+            kotlin.test.assertTrue(action.height >= action.lineHeight, "the button is not squeezed")
             assertEquals(42, view.findViewById<ProgressBar>(R.id.widget_progress).progress)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             view.draw(Canvas(bitmap))

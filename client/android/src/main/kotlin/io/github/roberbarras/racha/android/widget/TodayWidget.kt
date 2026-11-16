@@ -46,10 +46,9 @@ class TodayWidget : AppWidgetProvider() {
             val text = WidgetTexts.of(card)
             val views = RemoteViews(context.packageName, R.layout.widget_today).apply {
                 setTextViewText(R.id.widget_streak, text.streak)
-                setTextViewText(R.id.widget_label, text.label)
+                // "TODAY · Course" on one line, so the title can take two.
+                setTextViewText(R.id.widget_label, if (text.subtitle.isEmpty()) text.label else "${text.label} · ${text.subtitle}")
                 setTextViewText(R.id.widget_title, text.title)
-                setTextViewText(R.id.widget_subtitle, text.subtitle)
-                setViewVisibility(R.id.widget_subtitle, if (text.subtitle.isEmpty()) View.GONE else View.VISIBLE)
                 setViewVisibility(R.id.widget_progress, if (card.element == null) View.GONE else View.VISIBLE)
                 setProgressBar(R.id.widget_progress, 100, card.itemProgressPct.coerceIn(0, 100), false)
                 setTextViewText(R.id.widget_action, text.action)
