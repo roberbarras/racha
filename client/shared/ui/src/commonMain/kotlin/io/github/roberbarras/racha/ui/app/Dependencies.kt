@@ -97,6 +97,12 @@ interface PlatformHooks {
     /** Lets the user pick a text file (configuration import); null if cancelled. */
     suspend fun openTextFile(): String? = null
 
+    /** Whether notifications can be shown (Android 13+ asks; elsewhere always true). */
+    val notificationsAllowed: Flow<Boolean> get() = flowOf(true)
+
+    /** Asks for notifications (or opens the system screen where they are allowed). */
+    fun requestNotifications() {}
+
     fun openUrl(url: String) {
         resources?.openExternal(url)
     }

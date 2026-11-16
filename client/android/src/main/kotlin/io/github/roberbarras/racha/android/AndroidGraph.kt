@@ -47,6 +47,11 @@ import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.android.notifications.AndroidNotifier
+import io.github.roberbarras.racha.android.notifications.ReminderWorker
+import io.github.roberbarras.racha.application.notifications.NotifyNewContent
+import io.github.roberbarras.racha.application.notifications.NotifySyncFailure
+import io.github.roberbarras.racha.application.notifications.StudyReminder
 import io.github.roberbarras.racha.remote.HttpOptions
 import io.github.roberbarras.racha.application.browse.ManageCategories
 import io.github.roberbarras.racha.application.library.StorageMaintenance
@@ -78,6 +83,10 @@ class AndroidGraph(context: Context) {
         database.categories, database.library, database.progress, NioLibrarySource(), AndroidMediaProbe(), hasher, preferences, clock,
         localDates,
     )
+    private val notifier = AndroidNotifier(context)
+    private val notifyNewContent = NotifyNewContent(database.library, preferences, clock, notifier)
+    val studyReminder = StudyReminder(preferences, database.history, database.progress, localDates, clock, notifier)
+
     val keepLibraryUpToDate = KeepLibraryUpToDate(
         database.categories,
         scanLibrary,
@@ -86,6 +95,7 @@ class AndroidGraph(context: Context) {
         FileObserverLibraryWatcher(),
         preferences,
         indexResourceText = { IndexResourceText(database.categories, database.library, NioResourceFiles(), database.resourceText)() },
+        newContent = notifyNewContent,
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
@@ -102,7 +112,7 @@ class AndroidGraph(context: Context) {
     /** Usage events and client errors for the account's server (§8); nothing is kept while signed out. */
     val telemetry = Telemetry(database.telemetry, preferences, clock, "android", appVersion(context))
     val telemetryUploader = TelemetryUploader(database.telemetry, syncServer, account, preferences, clock)
-    val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry)
+    val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry, NotifySyncFailure(preferences, clock, notifier))
     val syncScheduler = SyncScheduler(syncEngine, preferences) { telemetryUploader.upload() }
     val connectivity = ConnectivityMonitor(context)
     private val syncControls = SyncControls(account, syncEngine, syncScheduler, database.sync)
@@ -116,6 +126,10 @@ class AndroidGraph(context: Context) {
             telemetry.appOpened()
             combine(preferences.observe(Settings.SyncEnabled), preferences.observe(Settings.SyncIntervalMinutes)) { on, minutes -> on to minutes }
                 .collect { (on, minutes) -> SyncWorker.schedule(app, on, minutes) }
+        }
+        appScope.launch {
+            combine(preferences.observe(Settings.DailyReminder), preferences.observe(Settings.DailyReminderTime)) { on, time -> on to time }
+                .collect { (on, time) -> ReminderWorker.schedule(app, on, time) }
         }
     }
 

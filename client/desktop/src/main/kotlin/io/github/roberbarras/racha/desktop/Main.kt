@@ -37,6 +37,7 @@ fun main() {
     val graph = DesktopGraph()
     reportCrashes(graph)
     graph.startSync()
+    graph.startReminder()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     background.launch {
         graph.ensureBuiltInCategories()

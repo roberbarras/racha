@@ -9,6 +9,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import io.github.roberbarras.racha.application.shared.AppLog
+import io.github.roberbarras.racha.application.notifications.NotifyNewContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +45,8 @@ class KeepLibraryUpToDate(
     private val quietPeriod: Duration = 3.seconds,
     /** Search in resource content: kept current after each scan. */
     private val indexResourceText: (suspend () -> Unit)? = null,
+    /** "New episodes detected" after automatic scans. */
+    private val newContent: NotifyNewContent? = null,
 ) {
     private val mutableStatus = MutableStateFlow(ScanStatus())
     val status: StateFlow<ScanStatus> = mutableStatus.asStateFlow()
@@ -70,7 +73,11 @@ class KeepLibraryUpToDate(
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     suspend fun run() {
-        if (preferences.get(Settings.AutoScan)) scanNow()
+        if (preferences.get(Settings.AutoScan)) {
+            val since = newContent?.mark()
+            scanNow()
+            since?.let { newContent?.after(it) }
+        }
         val changes: Flow<CategoryKey> =
             combine(preferences.observe(Settings.FileWatcher), categories.observeAll()) { enabled, all ->
                 if (!enabled) return@combine emptyFlow()
@@ -84,8 +91,10 @@ class KeepLibraryUpToDate(
             .debounce(quietPeriod)
             .collect {
                 val keys = lock.withLock { pending.toSet().also { pending.clear() } }
+                val since = newContent?.mark()
                 tracked { keys.fold(ScanReport()) { report, key -> report + scan.category(key) } }
                 afterScan()
+                since?.let { newContent?.after(it) }
             }
     }
 

@@ -48,6 +48,14 @@ import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
 import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.desktop.notifications.DesktopNotifier
+import io.github.roberbarras.racha.application.notifications.NotifyNewContent
+import io.github.roberbarras.racha.application.notifications.NotifySyncFailure
+import io.github.roberbarras.racha.application.notifications.StudyReminder
+import io.github.roberbarras.racha.files.ReminderTime
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import io.github.roberbarras.racha.remote.HttpOptions
 import io.github.roberbarras.racha.application.browse.ManageCategories
 import io.github.roberbarras.racha.application.library.StorageMaintenance
@@ -87,6 +95,10 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     val scanLibrary = ScanLibrary(
         database.categories, database.library, database.progress, NioLibrarySource(), probe, hasher, preferences, clock, localDates,
     )
+    private val notifier = DesktopNotifier()
+    private val notifyNewContent = NotifyNewContent(database.library, preferences, clock, notifier)
+    private val studyReminder = StudyReminder(preferences, database.history, database.progress, localDates, clock, notifier)
+
     val keepLibraryUpToDate = KeepLibraryUpToDate(
         database.categories,
         scanLibrary,
@@ -95,6 +107,7 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
         WatchServiceLibraryWatcher(),
         preferences,
         indexResourceText = { IndexResourceText(database.categories, database.library, NioResourceFiles(), database.resourceText)() },
+        newContent = notifyNewContent,
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
@@ -111,8 +124,22 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     /** Usage events and client errors for the account's server (§8); nothing is kept while signed out. */
     val telemetry = Telemetry(database.telemetry, preferences, clock, "linux", appVersion)
     private val telemetryUploader = TelemetryUploader(database.telemetry, syncServer, account, preferences, clock)
-    private val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry)
+    private val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry, NotifySyncFailure(preferences, clock, notifier))
     private val syncScheduler = SyncScheduler(syncEngine, preferences) { telemetryUploader.upload() }
+
+    /** The daily reminder (§9) while the app is open: on Linux there is no system scheduler for a closed app. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun startReminder() {
+        graphScope.launch {
+            combine(preferences.observe(Settings.DailyReminder), preferences.observe(Settings.DailyReminderTime)) { on, time -> on to time }
+                .collectLatest { (on, time) ->
+                    while (on) {
+                        delay(ReminderTime.untilNext(time).toMillis())
+                        studyReminder.remindIfDue()
+                    }
+                }
+        }
+    }
 
     /** Restores the session and keeps syncing until the app closes. */
     fun startSync() {

@@ -335,4 +335,20 @@
     <string name="license">Free software under the MIT license.</string>
     <string name="source_code">Source code</string>
     <string name="search_in_content">In the content of resources</string>
+    <string name="notice_new_one">%1$s: %2$d new</string>
+    <string name="notice_new_many">%1$d new lessons and episodes</string>
+    <string name="notice_new_in">In %1$s</string>
+    <string name="notice_sync_title">Sync failed</string>
+    <string name="notice_sync_unreachable">The server has not answered for over a day. Your changes wait on this device.</string>
+    <string name="notice_sync_unauthorized">Your session ended. Sign in again in Account.</string>
+    <string name="notice_sync_other">The server refused the sync (%1$s).</string>
+    <string name="notice_reminder_streak">Keep your %1$d-day streak</string>
+    <string name="notice_reminder_title">Time to study</string>
+    <string name="notice_reminder_next">Continue with %1$s · %2$s</string>
+    <string name="notice_reminder_pick">Pick something to watch today.</string>
+    <string name="channel_new_content">New content</string>
+    <string name="channel_sync">Sync</string>
+    <string name="channel_reminder">Study reminder</string>
+    <string name="notifications_blocked">Notifications are not allowed for Racha.</string>
+    <string name="notifications_allow">Allow</string>
 </resources>

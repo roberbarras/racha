@@ -16,6 +16,7 @@ import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.player.PlayerHooks
 import io.github.roberbarras.racha.ui.resource.ResourceHooks
 import kotlinx.coroutines.CompletableDeferred
+import io.github.roberbarras.racha.android.notifications.AndroidNotifier
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,24 @@ class AndroidPlatform(
     override val resources: ResourceHooks,
     override val appVersion: String,
 ) : PlatformHooks {
+    private val notifications = MutableStateFlow(AndroidNotifier.allowed(activity))
+    private val notificationPermission = activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { refresh() }
+
+    override val notificationsAllowed: StateFlow<Boolean> get() = notifications
+
+    override fun requestNotifications() {
+        // The system asks once per launch at most; after a refusal (or with notifications off) the settings screen.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !asked) {
+            asked = true
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            // Denied before (or turned off in the system): the app's notification settings.
+            activity.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName))
+        }
+    }
+
+    private var asked = false
+
     private var pendingCreate: CompletableDeferred<Uri?>? = null
     private val creator = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         pendingCreate?.complete(uri)
@@ -79,6 +98,7 @@ class AndroidPlatform(
     /** Re-read after returning from the system settings screen. */
     fun refresh() {
         access.value = hasAccess()
+        notifications.value = AndroidNotifier.allowed(activity)
     }
 
     override suspend fun pickFolder(): String? {

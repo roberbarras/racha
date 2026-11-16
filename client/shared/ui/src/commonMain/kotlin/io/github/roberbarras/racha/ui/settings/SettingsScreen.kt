@@ -345,12 +345,21 @@ private fun SyncSection(vm: SettingsViewModel, onAccount: (() -> Unit)?) = Setti
 
 @Composable
 private fun NotificationsSection(vm: SettingsViewModel) = SettingsSection(stringResource(Res.string.section_notifications), RachaIcons.Sparkles) {
+    val platform = vm.deps.platform
+    val allowed by androidx.compose.runtime.remember { platform.notificationsAllowed }.collectAsStateWithLifecycle(true)
+    if (!allowed) {
+        ActionRow(stringResource(Res.string.notifications_blocked), null, stringResource(Res.string.notifications_allow), platform::requestNotifications)
+        Hairline()
+    }
     val newContent by vm.state(Settings.NotifyNewContent)
     SwitchRow(stringResource(Res.string.setting_notifications_newContent), newContent, { vm.set(Settings.NotifyNewContent, it) })
     val syncFailed by vm.state(Settings.NotifySyncFailed)
     SwitchRow(stringResource(Res.string.setting_notifications_syncFailed), syncFailed, { vm.set(Settings.NotifySyncFailed, it) })
     val reminder by vm.state(Settings.DailyReminder)
-    SwitchRow(stringResource(Res.string.setting_notifications_dailyReminder), reminder, { vm.set(Settings.DailyReminder, it) })
+    SwitchRow(stringResource(Res.string.setting_notifications_dailyReminder), reminder, { on ->
+        vm.set(Settings.DailyReminder, on)
+        if (on && !allowed) platform.requestNotifications()
+    })
     if (reminder) {
         val time by vm.state(Settings.DailyReminderTime)
         StepperRow(

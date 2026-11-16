@@ -10,6 +10,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import io.github.roberbarras.racha.application.telemetry.UsageEvents
 import io.github.roberbarras.racha.application.shared.AppLog
+import io.github.roberbarras.racha.application.notifications.NotifySyncFailure
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -36,6 +38,7 @@ class SyncEngine(
     private val preferences: Preferences,
     private val clock: Clock,
     private val usage: UsageEvents = UsageEvents.NONE,
+    private val failures: NotifySyncFailure? = null,
 ) {
     /** Last failure reported as a `sync_failed` event: one event per change of state, not one per retry. */
     private var reportedFailure: String? = null
@@ -53,12 +56,14 @@ class SyncEngine(
             val pulled = authorized { token -> pull(address, token) } ?: return@withLock SyncOutcome.NotSignedIn
             local.recordSuccess(clock.now())
             reportedFailure = null
+            failures?.succeeded()
             AppLog.debug("sync", "pushed=$pushed pulled=$pulled")
             SyncOutcome.Done(pushed, pulled)
         } catch (e: RemoteError) {
             val code = e.reportCode()
             AppLog.warn("sync", "round failed: $code", e)
             local.recordError(code)
+            failures?.failed(code, local.observe().first().lastSuccessAt)
             if (code != reportedFailure) {
                 reportedFailure = code
                 usage.record("sync_failed", buildJsonObject { put("code", code) }) // sent once the server is reachable (§8)
