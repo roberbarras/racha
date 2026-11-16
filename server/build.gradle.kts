@@ -47,4 +47,6 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+    // `./gradlew test -Pracha.updateOpenApi` rewrites docs/api/openapi.json from the running server (OpenApiTest).
+    systemProperty("racha.updateOpenApi", providers.gradleProperty("racha.updateOpenApi").isPresent.toString())
 }

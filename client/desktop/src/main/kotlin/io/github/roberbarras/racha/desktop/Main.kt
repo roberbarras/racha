@@ -35,6 +35,7 @@ import java.awt.GraphicsEnvironment
 
 fun main(args: Array<String>) {
     if ("--self-test" in args) kotlin.system.exitProcess(SelfTest.run())
+    if ("--install" in args || "--uninstall" in args) kotlin.system.exitProcess(integrate(install = "--install" in args))
     // One instance per session: a second launch hands its link (or just "come to the front") to the running one.
     val link = args.firstOrNull { it.startsWith("racha://") }.orEmpty()
     val claim = runCatching { SingleInstance.claim(link) }
@@ -122,3 +123,19 @@ private fun reportCrashes(graph: DesktopGraph) {
         if (previous != null) previous.uncaughtException(thread, error) else error.printStackTrace()
     }
 }
+
+/** `--install` / `--uninstall` from the AppImage (its runtime sets APPIMAGE and APPDIR). */
+private fun integrate(install: Boolean): Int {
+    val integration = DesktopIntegration(DesktopIntegration.dataHome())
+    if (!install) {
+        integration.uninstall()
+        println("Racha removed from the menu.")
+        return 0
+    }
+    val appImage = System.getenv("APPIMAGE")?.let(java.nio.file.Path::of)
+        ?: return 1.also { System.err.println("--install works from the AppImage (APPIMAGE is not set).") }
+    val file = integration.install(appImage, System.getenv("APPDIR")?.let { java.nio.file.Path.of(it, "racha.png") })
+    println("Racha added to the menu ($file); racha:// links open it.")
+    return 0
+}
+
