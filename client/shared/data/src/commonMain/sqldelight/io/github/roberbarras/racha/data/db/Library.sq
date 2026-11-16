@@ -203,3 +203,12 @@ SELECT id FROM playable_element
 WHERE coalesce(title_override, title) LIKE :pattern ESCAPE '\'
 ORDER BY archived, coalesce(title_override, title)
 LIMIT :limit;
+
+-- Settings > Storage: "clear the thumbnail cache" (generated posters only; folder artwork stays).
+forgetPostersUnder:
+UPDATE library_item SET poster_path = NULL WHERE poster_path LIKE :prefix || '%';
+
+-- Settings > Storage: "clear the metadata cache": the next scan probes every file again.
+forgetFileFingerprints:
+UPDATE playable_element SET file_modified_at = 0;
+

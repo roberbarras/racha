@@ -16,6 +16,9 @@ sealed class Setting<T>(val key: String, val scope: SettingScope, val default: T
     /** @throws IllegalArgumentException when [value] is outside the allowed values. */
     open fun validate(value: T) {}
 
+    /** Whether [raw] decodes to an allowed value. */
+    fun accepts(raw: String): Boolean = runCatching { validate(decode(raw)) }.isSuccess
+
     fun decodeOrDefault(raw: String?): T =
         raw?.let { runCatching { decode(it).also(::validate) }.getOrNull() } ?: default
 

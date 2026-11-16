@@ -63,6 +63,12 @@ interface LibraryRepository {
 
     suspend fun sections(item: ContentId): List<Section>
 
+    /** Drops posters whose location starts with [prefix] (generated thumbnails), so they are made again. */
+    suspend fun forgetPostersUnder(prefix: String)
+
+    /** Makes the next scan read every file's metadata again. */
+    suspend fun forgetFileFingerprints()
+
     suspend fun upsertSection(section: Section)
 
     fun observeElements(item: ContentId): Flow<List<PlayableElement>>

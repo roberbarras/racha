@@ -121,6 +121,10 @@ class SqlLibraryRepository(private val db: RachaDatabase, private val io: Corout
     override suspend fun sections(item: ContentId): List<Section> =
         withContext(io) { q.selectSections(item.value).executeAsList().map { it.toDomain() } }
 
+    override suspend fun forgetPostersUnder(prefix: String) = withContext(io) { q.forgetPostersUnder(prefix); Unit }
+
+    override suspend fun forgetFileFingerprints() = withContext(io) { q.forgetFileFingerprints(); Unit }
+
     override suspend fun upsertSection(section: Section) = withContext(io) {
         val r = section.toRow()
         q.transaction {
