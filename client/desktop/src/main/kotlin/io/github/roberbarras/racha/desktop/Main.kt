@@ -34,6 +34,7 @@ import java.awt.Dimension
 import java.awt.GraphicsEnvironment
 
 fun main(args: Array<String>) {
+    if ("--self-test" in args) kotlin.system.exitProcess(SelfTest.run())
     // One instance per session: a second launch hands its link (or just "come to the front") to the running one.
     val link = args.firstOrNull { it.startsWith("racha://") }.orEmpty()
     val claim = runCatching { SingleInstance.claim(link) }

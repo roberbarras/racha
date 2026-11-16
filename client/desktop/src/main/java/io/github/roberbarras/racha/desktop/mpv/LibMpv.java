@@ -240,7 +240,7 @@ public final class LibMpv implements AutoCloseable {
         final MethodHandle wakeup;
 
         private Native() {
-            var lookup = SymbolLookup.libraryLookup("libmpv.so.2", Arena.global());
+            var lookup = SymbolLookup.libraryLookup(library(), Arena.global());
             setLocale = LINKER.downcallHandle(LINKER.defaultLookup().find("setlocale").orElseThrow(),
                     FunctionDescriptor.of(ADDRESS, JAVA_INT, ADDRESS));
             create = fn(lookup, "mpv_create", FunctionDescriptor.of(ADDRESS));
@@ -255,6 +255,15 @@ public final class LibMpv implements AutoCloseable {
             errorString = fn(lookup, "mpv_error_string", FunctionDescriptor.of(ADDRESS, JAVA_INT));
             observeProperty = fn(lookup, "mpv_observe_property", FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_LONG, ADDRESS, JAVA_INT));
             wakeup = fn(lookup, "mpv_wakeup", FunctionDescriptor.ofVoid(ADDRESS));
+        }
+
+        /**
+         * The libmpv bundled in the AppImage (RACHA_MPV_LIB, set by its AppRun; its dependencies sit next to it with
+         * an $ORIGIN run path), else the system's.
+         */
+        static String library() {
+            var bundled = System.getenv("RACHA_MPV_LIB");
+            return bundled != null && !bundled.isBlank() && java.nio.file.Files.isRegularFile(java.nio.file.Path.of(bundled)) ? bundled : "libmpv.so.2";
         }
 
         static Native load() {

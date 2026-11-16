@@ -46,7 +46,7 @@ class ResourceAndroidTest {
         copyTree("Other Course", File(base, "Other Course"))
         val external = mutableListOf<String>()
         val view = main {
-            courseWebView(context, File(base, "AWS Course").path) { external += it }.also {
+            courseWebView(context, File(base, "AWS Course").path, onExternalLink = { external += it }).also {
                 it.loadUrl(coursePageUrl(io.github.roberbarras.racha.domain.library.RelativePath.of("01 - Introduction/003 AWS Account Activation Troubleshooting.html")))
             }
         }

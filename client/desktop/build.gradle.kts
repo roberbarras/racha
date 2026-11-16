@@ -11,7 +11,7 @@ kotlin {
 }
 
 // libmpv and sqlite-jdbc are native; mpv's `wid` needs the X11 window id of an AWT canvas (JDK internals).
-val appVersion = "0.0.1"
+val appVersion = providers.gradleProperty("racha.version").getOrElse("0.0.1") // `-Pracha.version=1.0.0` for releases
 
 val desktopJvmArgs = listOf(
     "--enable-native-access=ALL-UNNAMED",

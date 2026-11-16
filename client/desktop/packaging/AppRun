@@ -1,4 +1,6 @@
 #!/bin/sh
-# Racha AppImage entry point: the jpackage launcher finds its runtime and classpath relative to itself.
+# Racha AppImage entry point: the jpackage launcher finds its runtime and classpath relative to itself; libmpv is the
+# bundled one (its dependencies sit next to it). Arguments (e.g. a racha:// link) go to the app.
 HERE="$(dirname "$(readlink -f "$0")")"
+export RACHA_MPV_LIB="$HERE/usr/lib/libmpv.so.2"
 exec "$HERE/usr/lib/racha/bin/racha" "$@"

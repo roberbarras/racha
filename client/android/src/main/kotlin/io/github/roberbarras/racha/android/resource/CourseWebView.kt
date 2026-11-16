@@ -6,6 +6,12 @@ import android.net.Uri
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.key
+import android.webkit.RenderProcessGoneDetail
+import android.view.ViewGroup
 import android.webkit.WebViewClient
 import android.webkit.MimeTypeMap
 import androidx.compose.runtime.Composable
@@ -52,7 +58,7 @@ internal fun coursePageUrl(page: RelativePath): String =
  * app, and every navigation that leaves the course goes to [onExternalLink] instead.
  */
 @SuppressLint("SetJavaScriptEnabled")
-internal fun courseWebView(context: Context, folder: String, onExternalLink: (String) -> Unit): WebView {
+internal fun courseWebView(context: Context, folder: String, onExternalLink: (String) -> Unit, onRendererGone: () -> Unit = {}): WebView {
     val loader = WebViewAssetLoader.Builder().setDomain(COURSE_HOST).addPathHandler(COURSE_PREFIX, CourseFolderHandler(folder)).build()
     return WebView(context).apply {
         settings.javaScriptEnabled = true
@@ -74,6 +80,14 @@ internal fun courseWebView(context: Context, folder: String, onExternalLink: (St
                 request.url.toString().takeIf(ExternalLinks::isSafe)?.let(onExternalLink)
                 return true
             }
+
+            /** The system killed or lost the page's renderer (memory): drop this view and let the screen make a new one. */
+            override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                (view.parent as? ViewGroup)?.removeView(view)
+                view.destroy()
+                onRendererGone()
+                return true // handled: without this the whole app would be killed with the renderer
+            }
         }
     }
 }
@@ -81,12 +95,23 @@ internal fun courseWebView(context: Context, folder: String, onExternalLink: (St
 @Composable
 internal fun CourseHtmlView(folder: String, page: RelativePath, onExternalLink: (String) -> Unit, modifier: Modifier) {
     val context = LocalContext.current
-    val view = remember(folder, page) { courseWebView(context, folder, onExternalLink).also { it.loadUrl(coursePageUrl(page)) } }
-    AndroidView(factory = { view }, modifier = modifier)
-    DisposableEffect(view) {
-        onDispose {
-            view.stopLoading()
-            view.destroy()
+    // A renderer lost under memory pressure is replaced by a fresh view; a page that keeps killing it is left blank.
+    var restarts by remember(folder, page) { mutableIntStateOf(0) }
+    if (restarts > MAX_RENDERER_RESTARTS) return
+    key(restarts) {
+        val view = remember(folder, page) {
+            courseWebView(context, folder, onExternalLink, onRendererGone = { restarts++ }).also { it.loadUrl(coursePageUrl(page)) }
+        }
+        AndroidView(factory = { view }, modifier = modifier)
+        DisposableEffect(view) {
+            onDispose {
+                runCatching {
+                    view.stopLoading()
+                    view.destroy()
+                }
+            }
         }
     }
 }
+
+private const val MAX_RENDERER_RESTARTS = 2
