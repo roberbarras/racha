@@ -62,6 +62,7 @@ object DemoLibrary {
 
     /** [sync] builds the account and sync controls over the same database (account screen tests). */
     fun dependencies(
+        links: kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.emptyFlow(),
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
@@ -100,6 +101,7 @@ object DemoLibrary {
             keepLibraryUpToDate = keep,
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = null
+                override val deepLinks = links
             },
             resourceViewer = {
                 io.github.roberbarras.racha.application.resource.ResourceViewer(

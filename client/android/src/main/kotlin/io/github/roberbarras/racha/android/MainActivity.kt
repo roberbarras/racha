@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.android
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,9 +33,15 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) { graph.syncScheduler.run(this, graph.connectivity.online()) }
         }
+        if (savedInstanceState == null) platform.handle(intent) // not again after a rotation
         val dependencies = graph.dependencies(platform)
         val coldStart = savedInstanceState == null
         setContent { RachaApp(dependencies, launchAnimation = coldStart) }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        platform.handle(intent)
     }
 
     override fun onDestroy() {

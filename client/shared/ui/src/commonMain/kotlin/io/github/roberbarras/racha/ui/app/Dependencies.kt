@@ -29,6 +29,7 @@ import io.github.roberbarras.racha.ui.player.PlayerHooks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.emptyFlow
 
 /** Use cases the UI drives, wired by each platform's composition root (the UI never sees adapters). */
 class RachaDependencies(
@@ -96,6 +97,9 @@ interface PlatformHooks {
 
     /** Lets the user pick a text file (configuration import); null if cancelled. */
     suspend fun openTextFile(): String? = null
+
+    /** Deep links to open (`racha://…`, see [DeepLink]), each delivered once: from notifications, the widget, other apps. */
+    val deepLinks: Flow<String> get() = emptyFlow()
 
     /** Whether notifications can be shown (Android 13+ asks; elsewhere always true). */
     val notificationsAllowed: Flow<Boolean> get() = flowOf(true)

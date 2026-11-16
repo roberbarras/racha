@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -179,6 +180,19 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                                 navController.navigate(route) { popUpTo<ResourceRoute> { inclusive = true } }
                             },
                         )
+                    }
+                }
+            }
+            // Deep links (notifications, widget, other apps): handled once the navigation graph exists.
+            LaunchedEffect(deps.platform) {
+                deps.platform.deepLinks.collect { uri ->
+                    when (val link = DeepLink.parse(uri)) {
+                        is DeepLink.Item -> navScope.launch(Dispatchers.Main.immediate) { navController.navigate(ItemRoute(link.id.value)) { launchSingleTop = true } }
+                        is DeepLink.Play -> play(link.id, StartMode.RESUME)
+                        DeepLink.Account -> if (deps.sync != null) go(Destination.Account)
+                        DeepLink.Stats -> go(Destination.Stats)
+                        DeepLink.Settings -> go(Destination.Settings)
+                        null -> {}
                     }
                 }
             }

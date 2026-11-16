@@ -8,6 +8,8 @@ import io.github.roberbarras.racha.ui.app.PlatformHooks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -19,6 +21,7 @@ class DesktopPlatform(
     override val player: DesktopPlayerHooks? = null,
     override val resources: ResourceHooks? = DesktopResourceHooks(),
     override val appVersion: String = System.getProperty("racha.version") ?: "dev",
+    override val deepLinks: Flow<String> = emptyFlow(),
 ) : PlatformHooks {
     override val detectedUiScale: Float get() = DesktopUiScale.detected
 

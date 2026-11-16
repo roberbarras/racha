@@ -69,7 +69,12 @@ import io.github.roberbarras.racha.application.telemetry.TelemetryUploader
 import java.net.InetAddress
 
 /** Desktop composition root: wires adapters into use cases by hand (no reflection, no DI container). */
-class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platformOverride: PlatformHooks? = null) : AutoCloseable {
+class DesktopGraph(
+    val database: LocalDatabase = DesktopDatabase.open(),
+    platformOverride: PlatformHooks? = null,
+    /** `racha://` links from the command line and later launches (see [SingleInstance]). */
+    deepLinks: kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.emptyFlow(),
+) : AutoCloseable {
     val clock = Clock.SYSTEM
     private val localDates = SystemLocalDates()
     val preferences = Preferences(database.settings, clock)
@@ -81,7 +86,7 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     /** The player of this app (mpv); also needs the main window, given by [Main]. */
     val playerHooks = DesktopPlayerHooks { hardwareDecoding }
     // Without libmpv (not installed) videos open a screen that says so instead of crashing.
-    private val platform: PlatformHooks = platformOverride ?: DesktopPlatform(playerHooks.takeIf { LibMpv.isAvailable() })
+    private val platform: PlatformHooks = platformOverride ?: DesktopPlatform(playerHooks.takeIf { LibMpv.isAvailable() }, deepLinks = deepLinks)
 
     init {
         graphScope.launch { preferences.observe(Settings.HardwareDecoding).collect { hardwareDecoding = it } }

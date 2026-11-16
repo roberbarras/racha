@@ -20,6 +20,9 @@ import io.github.roberbarras.racha.android.notifications.AndroidNotifier
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 
@@ -33,6 +36,15 @@ class AndroidPlatform(
     override val resources: ResourceHooks,
     override val appVersion: String,
 ) : PlatformHooks {
+    private val links = Channel<String>(Channel.BUFFERED)
+
+    override val deepLinks: Flow<String> get() = links.receiveAsFlow()
+
+    /** From the launching intent and later ones (the activity is single-task). */
+    fun handle(intent: Intent?) {
+        intent?.data?.takeIf { it.scheme == "racha" }?.let { links.trySend(it.toString()) }
+    }
+
     private val notifications = MutableStateFlow(AndroidNotifier.allowed(activity))
     private val notificationPermission = activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { refresh() }
 

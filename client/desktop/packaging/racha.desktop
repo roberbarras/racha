@@ -2,8 +2,9 @@
 Type=Application
 Name=Racha
 Comment=Tus cursos y series locales, sin conexión
-Exec=racha
+Exec=racha %u
 Icon=racha
 Categories=AudioVideo;Video;Player;
+MimeType=x-scheme-handler/racha;
 Terminal=false
 StartupWMClass=io-github-roberbarras-racha-desktop-MainKt

@@ -21,6 +21,9 @@ import io.github.roberbarras.racha.desktop.resource.PdfBoxDocument
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,11 +33,27 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.Dimension
 import java.awt.GraphicsEnvironment
 
-fun main() {
+fun main(args: Array<String>) {
+    // One instance per session: a second launch hands its link (or just "come to the front") to the running one.
+    val link = args.firstOrNull { it.startsWith("racha://") }.orEmpty()
+    val claim = runCatching { SingleInstance.claim(link) }
+    if (claim.isSuccess && claim.getOrNull() == null) return // the running instance has it
+    claim.exceptionOrNull()?.let { AppLog.warn("app", "single-instance socket unavailable; continuing without it", it) }
+    val instance = claim.getOrNull()
+    val links = Channel<String>(Channel.BUFFERED).apply { if (link.isNotEmpty()) trySend(link) }
+    val toFront = Channel<Unit>(Channel.CONFLATED)
+    instance?.let { single ->
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            single.received.collect { message ->
+                toFront.trySend(Unit)
+                if (message.isNotEmpty()) links.trySend(message)
+            }
+        }
+    }
     val pdfFonts = DesktopPaths.cache.resolve("pdfbox")
     PdfBoxDocument.configure(pdfFonts)
     // Composition root: adapters are wired by hand, no reflection-based DI.
-    val graph = DesktopGraph()
+    val graph = DesktopGraph(deepLinks = links.receiveAsFlow())
     reportCrashes(graph)
     graph.startSync()
     graph.startReminder()
@@ -61,6 +80,7 @@ fun main() {
                 runBlocking { withTimeoutOrNull(3_000) { graph.playerHooks.finishOpenSession() } }
                 background.cancel()
                 graph.close()
+                instance?.close()
                 exitApplication()
             },
             state = rememberWindowState(size = initialSize, position = WindowPosition(Alignment.Center)),
@@ -72,6 +92,13 @@ fun main() {
             val scale = remember(chosen) { chosen?.let(DesktopUiScale::apply); DesktopUiScale.current }
             window.minimumSize = Dimension((MIN_WIDTH_DP * scale).toInt(), (MIN_HEIGHT_DP * scale).toInt())
             graph.playerHooks.attach(window)
+            LaunchedEffect(Unit) {
+                for (request in toFront) {
+                    window.isMinimized = false
+                    window.toFront()
+                    window.requestFocus()
+                }
+            }
             val base = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(base.density * scale, base.fontScale)) {
                 RachaApp(graph.dependencies)
