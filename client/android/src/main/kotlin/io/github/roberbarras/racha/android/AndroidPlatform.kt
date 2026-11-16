@@ -16,6 +16,8 @@ import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.player.PlayerHooks
 import io.github.roberbarras.racha.ui.resource.ResourceHooks
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
@@ -28,7 +30,45 @@ class AndroidPlatform(
     private val activity: ComponentActivity,
     override val player: PlayerHooks,
     override val resources: ResourceHooks,
+    override val appVersion: String,
 ) : PlatformHooks {
+    private var pendingCreate: CompletableDeferred<Uri?>? = null
+    private val creator = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        pendingCreate?.complete(uri)
+    }
+    private var pendingOpen: CompletableDeferred<Uri?>? = null
+    private val opener = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> pendingOpen?.complete(uri) }
+
+    override suspend fun saveTextFile(suggestedName: String, text: String): Boolean {
+        val deferred = CompletableDeferred<Uri?>().also { pendingCreate = it }
+        creator.launch(suggestedName)
+        val uri = deferred.await() ?: return false
+        return withContext(Dispatchers.IO) {
+            runCatching { activity.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.encodeToByteArray()) } }.isSuccess
+        }
+    }
+
+    override suspend fun openTextFile(): String? {
+        val deferred = CompletableDeferred<Uri?>().also { pendingOpen = it }
+        opener.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+        val uri = deferred.await() ?: return null
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                activity.contentResolver.openInputStream(uri)!!.use { input ->
+                    // Bounded read (readNBytes needs API 33): a configuration file is small.
+                    val out = java.io.ByteArrayOutputStream()
+                    val buffer = ByteArray(8 * 1024)
+                    while (out.size() <= MAX_IMPORT_BYTES) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        out.write(buffer, 0, n)
+                    }
+                    if (out.size() > MAX_IMPORT_BYTES) null else out.toByteArray().decodeToString()
+                }
+            }.getOrNull()
+        }
+    }
+
     private var pending: CompletableDeferred<Uri?>? = null
     private val picker = activity.registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> pending?.complete(uri) }
     private val legacyPermission = activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { refresh() }
@@ -70,5 +110,9 @@ class AndroidPlatform(
         val relative = documentId.substringAfter(':', "")
         val base = if (volume.equals("primary", ignoreCase = true)) Environment.getExternalStorageDirectory() else File("/storage/$volume")
         return if (relative.isEmpty()) base else File(base, relative)
+    }
+
+    private companion object {
+        const val MAX_IMPORT_BYTES = 1 shl 20
     }
 }

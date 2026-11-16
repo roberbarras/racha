@@ -8,6 +8,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import io.github.roberbarras.racha.application.shared.AppLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -47,7 +49,15 @@ class KeepLibraryUpToDate(
     private suspend fun <T : ScanReport> tracked(block: suspend () -> T): T {
         mutableStatus.update { it.copy(running = true) }
         try {
-            return block().also { report -> mutableStatus.update { ScanStatus(running = false, last = report) } }
+            return block().also { report ->
+                mutableStatus.update { ScanStatus(running = false, last = report) }
+                AppLog.info("scan", "added=${report.added} updated=${report.updated} archived=${report.archived} probed=${report.probed}")
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLog.error("scan", "scan failed", e)
+            throw e
         } finally {
             mutableStatus.update { it.copy(running = false) }
         }

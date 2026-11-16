@@ -47,6 +47,7 @@ import io.github.roberbarras.racha.ui.resources.nav_categories
 import io.github.roberbarras.racha.ui.resources.nav_folders
 import io.github.roberbarras.racha.ui.resources.nav_account
 import io.github.roberbarras.racha.ui.resources.nav_stats
+import io.github.roberbarras.racha.ui.resources.nav_settings
 import io.github.roberbarras.racha.ui.resources.nav_history
 import io.github.roberbarras.racha.ui.resources.nav_home
 import io.github.roberbarras.racha.ui.resources.nav_main
@@ -68,6 +69,7 @@ enum class Destination(val icon: ImageVector, val label: StringResource, val inB
     Stats(RachaIcons.ChartColumn, Res.string.nav_stats),
     Folders(RachaIcons.FolderOpen, Res.string.nav_folders, inBottomBar = false),
     Account(RachaIcons.Cloud, Res.string.nav_account, inBottomBar = false),
+    Settings(RachaIcons.Settings, Res.string.nav_settings, inBottomBar = false),
 }
 
 enum class WindowClass { Compact, Medium, Expanded }

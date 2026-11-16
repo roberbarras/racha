@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -184,6 +185,24 @@ fun SearchField(
             )
         }
         if (shortcutHint != null && value.isEmpty()) Tag(shortcutHint)
+    }
+}
+
+/** On/off switch in the app's style. [onCheckedChange] null: the row around it handles the toggle (bigger target). */
+@Composable
+fun RSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val colors = Racha.colors
+    val offset by androidx.compose.animation.core.animateDpAsState(if (checked) 20.dp else 0.dp, tween(Racha.duration(Racha.motion.fast)))
+    val track = RoundedCornerShape(Racha.radius.pill)
+    Box(
+        modifier
+            .size(width = 44.dp, height = 24.dp)
+            .clip(track)
+            .background(if (checked) colors.accent else colors.borderStrong)
+            .then(if (onCheckedChange != null) Modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange) else Modifier)
+            .padding(2.dp),
+    ) {
+        Box(Modifier.padding(start = offset).size(20.dp).clip(CircleShape).background(if (enabled) colors.surface else colors.surfaceSunken))
     }
 }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import io.github.roberbarras.racha.application.telemetry.UsageEvents
+import io.github.roberbarras.racha.application.shared.AppLog
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -52,9 +53,11 @@ class SyncEngine(
             val pulled = authorized { token -> pull(address, token) } ?: return@withLock SyncOutcome.NotSignedIn
             local.recordSuccess(clock.now())
             reportedFailure = null
+            AppLog.debug("sync", "pushed=$pushed pulled=$pulled")
             SyncOutcome.Done(pushed, pulled)
         } catch (e: RemoteError) {
             val code = e.reportCode()
+            AppLog.warn("sync", "round failed: $code", e)
             local.recordError(code)
             if (code != reportedFailure) {
                 reportedFailure = code

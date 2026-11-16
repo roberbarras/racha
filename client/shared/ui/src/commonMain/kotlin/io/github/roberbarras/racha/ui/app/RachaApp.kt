@@ -37,6 +37,8 @@ import io.github.roberbarras.racha.ui.detail.DetailScreen
 import io.github.roberbarras.racha.ui.folders.FoldersScreen
 import io.github.roberbarras.racha.ui.account.AccountScreen
 import io.github.roberbarras.racha.ui.stats.StatsScreen
+import io.github.roberbarras.racha.ui.settings.SettingsScreen
+import io.github.roberbarras.racha.ui.settings.WithAppLanguage
 import io.github.roberbarras.racha.ui.home.HomeScreen
 import io.github.roberbarras.racha.ui.lists.HistoryScreen
 import io.github.roberbarras.racha.ui.lists.MyListScreen
@@ -59,6 +61,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
         ThemeMode.LIGHT -> false
     }
     val accent = appearance.accent.takeIf { it != Settings.AccentColor.default }?.let(::parseColor)
+    WithAppLanguage(appearance.language) {
     RachaTheme(dark = dark, accent = accent, fontScale = appearance.fontScale.toFloat()) {
         val home by app.home.collectAsStateWithLifecycle()
         var showLaunch by rememberSaveable { mutableStateOf(launchAnimation) }
@@ -74,6 +77,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             destination.hasRoute(FoldersRoute::class) -> Destination.Folders
             destination.hasRoute(AccountRoute::class) -> Destination.Account
             destination.hasRoute(StatsRoute::class) -> Destination.Stats
+            destination.hasRoute(SettingsRoute::class) -> Destination.Settings
             else -> null
         }
         val navScope = rememberCoroutineScope()
@@ -86,6 +90,7 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 Destination.Folders -> FoldersRoute
                 Destination.Account -> AccountRoute
                 Destination.Stats -> StatsRoute
+                Destination.Settings -> SettingsRoute
             }
             // Main explicitly, like [play]: NavController must only be touched from the main thread.
             navScope.launch(Dispatchers.Main.immediate) {
@@ -141,7 +146,13 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                     composable<FoldersRoute> { FoldersScreen(deps, app) }
                     composable<AccountRoute> { deps.sync?.let { AccountScreen(deps, it) } }
                     composable<StatsRoute> {
-                        StatsScreen(deps, onFolders = { go(Destination.Folders) }, onAccount = deps.sync?.let { { go(Destination.Account) } })
+                        StatsScreen(
+                            deps, onFolders = { go(Destination.Folders) }, onAccount = deps.sync?.let { { go(Destination.Account) } },
+                            onSettings = { go(Destination.Settings) },
+                        )
+                    }
+                    composable<SettingsRoute> {
+                        SettingsScreen(deps, onFolders = { go(Destination.Folders) }, onAccount = deps.sync?.let { { go(Destination.Account) } })
                     }
                     composable<PlayerRoute> {
                         val route = it.toRoute<PlayerRoute>()
@@ -173,5 +184,6 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
             }
             if (showLaunch) LaunchAnimation(contentReady = home != null, onFinished = { showLaunch = false })
         }
+    }
     }
 }

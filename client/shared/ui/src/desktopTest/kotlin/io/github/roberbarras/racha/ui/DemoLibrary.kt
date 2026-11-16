@@ -77,6 +77,10 @@ object DemoLibrary {
         }
         val scan = ScanLibrary(db.categories, db.library, db.progress, emptySource, { _, _ -> null }, { _, _ -> "" }, preferences, clock, utc)
         val update = UpdateItemProgress(db.library, db.progress)
+        val keep = KeepLibraryUpToDate(
+            db.categories, scan, HashEngagedElements(db.categories, db.library) { _, _ -> "" },
+            RefreshThumbnails(db.categories, db.library, { _, _, _, _, _ -> null }, preferences), { kotlinx.coroutines.flow.emptyFlow() }, preferences,
+        )
         return RachaDependencies(
             clock = clock,
             localDates = utc,
@@ -93,10 +97,7 @@ object DemoLibrary {
             toggleFavorite = ToggleFavorite(db.favorites, clock),
             manageRoots = ManageRoots(db.categories, db.library, scan, clock),
             setMode = SetMode(preferences),
-            keepLibraryUpToDate = KeepLibraryUpToDate(
-                db.categories, scan, HashEngagedElements(db.categories, db.library) { _, _ -> "" },
-                RefreshThumbnails(db.categories, db.library, { _, _, _, _, _ -> null }, preferences), { kotlinx.coroutines.flow.emptyFlow() }, preferences,
-            ),
+            keepLibraryUpToDate = keep,
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = null
             },
@@ -118,6 +119,16 @@ object DemoLibrary {
             },
             appScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.Default),
             sync = sync?.invoke(db, preferences, clock),
+            manageCategories = io.github.roberbarras.racha.application.browse.ManageCategories(db.categories, scan, clock),
+            storage = io.github.roberbarras.racha.application.library.StorageMaintenance(
+                db.library, db.history,
+                object : io.github.roberbarras.racha.application.library.ThumbnailCache {
+                    override val locationPrefix = "file:///demo-thumbs/"
+                    override suspend fun clear() = 0L
+                },
+                keep,
+            ),
+            configTransfer = io.github.roberbarras.racha.application.preferences.ConfigTransfer(preferences, db.categories, clock, "demo"),
             loadPersonalStats = io.github.roberbarras.racha.application.stats.LoadPersonalStats(
                 db.categories, db.library, db.progress, db.history, db.stats, utc, clock,
             ),

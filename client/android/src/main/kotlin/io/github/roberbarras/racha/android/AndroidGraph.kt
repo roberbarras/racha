@@ -46,6 +46,14 @@ import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.remote.HttpOptions
+import io.github.roberbarras.racha.application.browse.ManageCategories
+import io.github.roberbarras.racha.application.library.StorageMaintenance
+import io.github.roberbarras.racha.application.preferences.ConfigTransfer
+import io.github.roberbarras.racha.application.shared.AppLog
+import io.github.roberbarras.racha.domain.preferences.LogLevel
+import io.github.roberbarras.racha.files.DirectoryThumbnailCache
+import android.util.Log
 import io.github.roberbarras.racha.application.stats.LoadPersonalStats
 import io.github.roberbarras.racha.application.stats.RemoteStatsSource
 import io.github.roberbarras.racha.application.telemetry.Telemetry
@@ -61,6 +69,8 @@ class AndroidGraph(context: Context) {
     private val localDates = SystemLocalDates()
     val preferences = Preferences(database.settings, clock)
     private val hasher = Sha256FileHasher()
+    private val thumbnails = File(context.cacheDir, "thumbs")
+    val appVersion = appVersion(context)
 
     val ensureBuiltInCategories = EnsureBuiltInCategories(database.categories, clock)
     val scanLibrary = ScanLibrary(
@@ -71,7 +81,7 @@ class AndroidGraph(context: Context) {
         database.categories,
         scanLibrary,
         HashEngagedElements(database.categories, database.library, hasher),
-        RefreshThumbnails(database.categories, database.library, AndroidThumbnailRenderer(File(context.cacheDir, "thumbs")), preferences),
+        RefreshThumbnails(database.categories, database.library, AndroidThumbnailRenderer(thumbnails), preferences),
         FileObserverLibraryWatcher(),
         preferences,
     )
@@ -80,7 +90,9 @@ class AndroidGraph(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // Sync (§7.4, opt-in): in the foreground while the app is visible ([MainActivity]), otherwise via WorkManager.
-    private val syncServer = KtorSyncServer()
+    private val syncServer = KtorSyncServer(options = {
+        HttpOptions.of(preferences.get(Settings.Proxy), preferences.get(Settings.UserAgent), appVersion(context), "Android")
+    })
     val account = AccountService(
         syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(context), "android", appVersion(context)) }, clock,
@@ -95,6 +107,8 @@ class AndroidGraph(context: Context) {
 
     init {
         val app = context.applicationContext
+        AppLog.sink = LogcatSink
+        appScope.launch { preferences.observe(Settings.LogLevelSetting).collect { AppLog.level = it } }
         appScope.launch {
             account.restore()
             telemetry.appOpened()
@@ -107,6 +121,19 @@ class AndroidGraph(context: Context) {
     fun flushSyncInBackground(context: Context) {
         appScope.launch {
             if (preferences.get(Settings.SyncEnabled) && database.sync.observe().first().pending > 0) SyncWorker.flushSoon(context)
+        }
+    }
+
+    /** The app log goes to logcat (spec §9 "nivel de log"). */
+    private object LogcatSink : AppLog.Sink {
+        override fun write(level: LogLevel, tag: String, message: String, error: Throwable?) {
+            val t = "Racha/$tag"
+            when (level) {
+                LogLevel.ERROR -> Log.e(t, message, error)
+                LogLevel.WARN -> Log.w(t, message, error)
+                LogLevel.INFO -> Log.i(t, message, error)
+                LogLevel.DEBUG -> Log.d(t, message, error)
+            }
         }
     }
 
@@ -142,6 +169,9 @@ class AndroidGraph(context: Context) {
     },
         appScope = appScope,
         sync = syncControls,
+        manageCategories = ManageCategories(database.categories, scanLibrary, clock),
+        storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(thumbnails.toPath()), keepLibraryUpToDate),
+        configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.util.TimeZone.getDefault().id },

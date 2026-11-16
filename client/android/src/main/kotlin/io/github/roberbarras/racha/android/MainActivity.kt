@@ -23,7 +23,7 @@ class MainActivity : ComponentActivity() {
         val app = application as RachaApplication
         val graph = app.graph
         app.playerHooks.attach(this)
-        platform = AndroidPlatform(this, app.playerHooks, AndroidResourceHooks(app))
+        platform = AndroidPlatform(this, app.playerHooks, AndroidResourceHooks(app), app.graph.appVersion)
         // Scanning and file watching run only while the app is visible: nothing stays awake in the background.
         lifecycleScope.launch {
             graph.ensureBuiltInCategories()

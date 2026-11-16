@@ -18,7 +18,42 @@ import javax.swing.SwingUtilities
 class DesktopPlatform(
     override val player: DesktopPlayerHooks? = null,
     override val resources: ResourceHooks? = DesktopResourceHooks(),
+    override val appVersion: String = System.getProperty("racha.version") ?: "dev",
 ) : PlatformHooks {
+    override val detectedUiScale: Float get() = DesktopUiScale.detected
+
+    override val hardwareDecodingSwitch: Boolean get() = player != null
+
+    override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = withContext(Dispatchers.IO) {
+        val suggested = Path.of(System.getProperty("user.home"), suggestedName).toString()
+        val chosen = native("kdialog", "--getsavefilename", suggested, "*.json")
+            ?: native("zenity", "--file-selection", "--save", "--confirm-overwrite", "--filename=$suggested")
+            ?: swingFile(save = true, suggested)
+            ?: return@withContext false
+        runCatching { Files.writeString(Path.of(chosen), text) }.isSuccess
+    }
+
+    override suspend fun openTextFile(): String? = withContext(Dispatchers.IO) {
+        val home = System.getProperty("user.home")
+        val chosen = native("kdialog", "--getopenfilename", home, "*.json")
+            ?: native("zenity", "--file-selection", "--file-filter=*.json", "--filename=$home/")
+            ?: swingFile(save = false, home)
+            ?: return@withContext null
+        val path = Path.of(chosen)
+        if (!Files.isRegularFile(path) || Files.size(path) > MAX_IMPORT_BYTES) return@withContext null
+        runCatching { Files.readString(path) }.getOrNull()
+    }
+
+    private fun swingFile(save: Boolean, suggested: String): String? {
+        var result: String? = null
+        SwingUtilities.invokeAndWait {
+            val chooser = JFileChooser().apply { selectedFile = java.io.File(suggested) }
+            val answer = if (save) chooser.showSaveDialog(null) else chooser.showOpenDialog(null)
+            if (answer == JFileChooser.APPROVE_OPTION) result = chooser.selectedFile.absolutePath
+        }
+        return result
+    }
+
     override suspend fun pickFolder(): String? = withContext(Dispatchers.IO) {
         val home = System.getProperty("user.home")
         val chosen = native("kdialog", "--getexistingdirectory", home)
@@ -42,5 +77,9 @@ class DesktopPlatform(
             if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) result = chooser.selectedFile.absolutePath
         }
         return result
+    }
+
+    private companion object {
+        const val MAX_IMPORT_BYTES = 1L shl 20
     }
 }

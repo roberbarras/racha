@@ -20,6 +20,9 @@ import io.github.roberbarras.racha.application.preferences.Preferences
 import io.github.roberbarras.racha.application.shared.Clock
 import io.github.roberbarras.racha.application.sync.SyncControls
 import io.github.roberbarras.racha.application.stats.LoadPersonalStats
+import io.github.roberbarras.racha.application.browse.ManageCategories
+import io.github.roberbarras.racha.application.library.StorageMaintenance
+import io.github.roberbarras.racha.application.preferences.ConfigTransfer
 import io.github.roberbarras.racha.application.playback.PlaybackController
 import io.github.roberbarras.racha.application.playback.PlayerEngine
 import io.github.roberbarras.racha.ui.player.PlayerHooks
@@ -56,6 +59,10 @@ class RachaDependencies(
     val sync: SyncControls? = null,
     /** Personal statistics (§2.2). */
     val loadPersonalStats: LoadPersonalStats,
+    /** Settings (§9). */
+    val manageCategories: ManageCategories,
+    val storage: StorageMaintenance,
+    val configTransfer: ConfigTransfer,
 )
 
 /** Platform capabilities the shared UI needs. */
@@ -74,4 +81,23 @@ interface PlatformHooks {
 
     /** Embedded web view, PDF rendering and "open outside" for resources; null where not available. */
     val resources: ResourceHooks? get() = null
+
+    /** Shown in Settings > About. */
+    val appVersion: String get() = "dev"
+
+    /** Linux: the scale the desktop announces ("automatic" in Settings). Null where there is no scale selector. */
+    val detectedUiScale: Float? get() = null
+
+    /** Whether the player offers a hardware-decoding switch (Linux; Android always decodes in hardware). */
+    val hardwareDecodingSwitch: Boolean get() = false
+
+    /** Lets the user save [text] as a file; false if cancelled or it could not be written. */
+    suspend fun saveTextFile(suggestedName: String, text: String): Boolean = false
+
+    /** Lets the user pick a text file (configuration import); null if cancelled. */
+    suspend fun openTextFile(): String? = null
+
+    fun openUrl(url: String) {
+        resources?.openExternal(url)
+    }
 }

@@ -47,6 +47,12 @@ import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
 import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.remote.HttpOptions
+import io.github.roberbarras.racha.application.browse.ManageCategories
+import io.github.roberbarras.racha.application.library.StorageMaintenance
+import io.github.roberbarras.racha.application.preferences.ConfigTransfer
+import io.github.roberbarras.racha.application.shared.AppLog
+import io.github.roberbarras.racha.files.DirectoryThumbnailCache
 import io.github.roberbarras.racha.application.stats.LoadPersonalStats
 import io.github.roberbarras.racha.application.stats.RemoteStatsSource
 import io.github.roberbarras.racha.application.telemetry.Telemetry
@@ -70,6 +76,8 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
 
     init {
         graphScope.launch { preferences.observe(Settings.HardwareDecoding).collect { hardwareDecoding = it } }
+        AppLog.sink = FileLogSink(DesktopPaths.cache.resolve("racha.log"))
+        graphScope.launch { preferences.observe(Settings.LogLevelSetting).collect { AppLog.level = it } }
     }
     private val probe = MpvMediaProbe()
     private val hasher = Sha256FileHasher()
@@ -91,7 +99,9 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
 
     // Sync (§7.4, opt-in): runs while the app is open; the session's refresh token lives in the secret service.
     private val appVersion = System.getProperty("racha.version") ?: "dev"
-    private val syncServer = KtorSyncServer()
+    private val syncServer = KtorSyncServer(options = {
+        HttpOptions.of(preferences.get(Settings.Proxy), preferences.get(Settings.UserAgent), appVersion, "Linux")
+    })
     val account = AccountService(
         syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(), "linux", appVersion) }, clock,
@@ -144,6 +154,9 @@ class DesktopGraph(val database: LocalDatabase = DesktopDatabase.open(), platfor
     },
         appScope = appScope,
         sync = SyncControls(account, syncEngine, syncScheduler, database.sync),
+        manageCategories = ManageCategories(database.categories, scanLibrary, clock),
+        storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(DesktopPaths.thumbnails), keepLibraryUpToDate),
+        configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.time.ZoneId.systemDefault().id },

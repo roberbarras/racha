@@ -22,6 +22,11 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.UserAgent
+import io.ktor.client.engine.ProxyBuilder
+import io.ktor.http.Url
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
@@ -45,40 +50,61 @@ import kotlin.time.Instant
  * Network failures become [RemoteError.Unreachable] (retry later); a rejected access token
  * [RemoteError.Unauthorized] (refresh); anything else the server refuses [RemoteError.Rejected] with its code.
  */
-class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, SyncServer, TelemetryServer, StatsServer, AutoCloseable {
+class KtorSyncServer(
+    private val engineFactory: (HttpOptions) -> HttpClientEngine = ::okHttp,
+    private val options: suspend () -> HttpOptions = { HttpOptions() },
+) : AuthServer, SyncServer, TelemetryServer, StatsServer, AutoCloseable {
+    /** Tests: a fixed engine (e.g. MockEngine). */
+    constructor(engine: HttpClientEngine) : this({ engine })
+
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
     }
 
-    private val client = HttpClient(engine) {
+    private val clientLock = Mutex()
+    private var current: Pair<HttpOptions, HttpClient>? = null
+
+    /** The client for the current proxy and User-Agent (§9 "Avanzado"); rebuilt only when they change. */
+    private suspend fun client(): HttpClient {
+        val wanted = options()
+        return clientLock.withLock {
+            current?.takeIf { it.first == wanted }?.second ?: build(wanted).also { fresh ->
+                current?.second?.close()
+                current = wanted to fresh
+            }
+        }
+    }
+
+    private fun build(options: HttpOptions) = HttpClient(engineFactory(options)) {
         expectSuccess = false
         install(ContentNegotiation) { json(json) }
         install(HttpTimeout) {
             connectTimeoutMillis = 10_000
             requestTimeoutMillis = 60_000
         }
+        install(UserAgent) { agent = options.userAgent }
     }
 
     override suspend fun register(address: ServerAddress, email: String, password: String, displayName: String?, device: DeviceDescriptor): Tokens =
-        tokens(call { client.post(address.baseUrl + "/auth/register") { jsonBody(RegisterDto(email, password, displayName, device.dto())) } })
+        tokens(call { client().post(address.baseUrl + "/auth/register") { jsonBody(RegisterDto(email, password, displayName, device.dto())) } })
 
     override suspend fun login(address: ServerAddress, email: String, password: String, device: DeviceDescriptor): Tokens =
-        tokens(call { client.post(address.baseUrl + "/auth/login") { jsonBody(LoginDto(email, password, device.dto())) } })
+        tokens(call { client().post(address.baseUrl + "/auth/login") { jsonBody(LoginDto(email, password, device.dto())) } })
 
     override suspend fun refresh(address: ServerAddress, refreshToken: String): Tokens {
-        val response = call { client.post(address.baseUrl + "/auth/refresh") { jsonBody(RefreshDto(refreshToken)) } }
+        val response = call { client().post(address.baseUrl + "/auth/refresh") { jsonBody(RefreshDto(refreshToken)) } }
         if (response.status.value == 401) throw RemoteError.Unauthorized()
         return tokens(response)
     }
 
     override suspend fun logout(address: ServerAddress, refreshToken: String) {
-        call { client.post(address.baseUrl + "/auth/logout") { jsonBody(RefreshDto(refreshToken)) } }
+        call { client().post(address.baseUrl + "/auth/logout") { jsonBody(RefreshDto(refreshToken)) } }
     }
 
     override suspend fun push(address: ServerAddress, accessToken: String, changes: List<SyncChange>): List<PushResult> {
         val response = authorized(call {
-            client.post(address.baseUrl + "/sync/push") {
+            client().post(address.baseUrl + "/sync/push") {
                 bearerAuth(accessToken)
                 jsonBody(PushDto(changes.map { ChangeDto(it.entity, it.id, it.updatedAt.toString(), it.deleted, it.data) }))
             }
@@ -90,7 +116,7 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
 
     override suspend fun pull(address: ServerAddress, accessToken: String, since: Long, limit: Int): PullPage {
         val response = authorized(call {
-            client.get(address.baseUrl + "/sync/pull") {
+            client().get(address.baseUrl + "/sync/pull") {
                 bearerAuth(accessToken)
                 parameter("since", since)
                 parameter("limit", limit)
@@ -102,7 +128,7 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
 
     override suspend fun sendEvents(baseUrl: String, accessToken: String, events: List<TelemetryEvent>) {
         authorized(call {
-            client.post("$baseUrl/analytics/events") {
+            client().post("$baseUrl/analytics/events") {
                 bearerAuth(accessToken)
                 jsonBody(events.map { EventDto(it.id, it.type, it.occurredAt.toString(), it.properties) })
             }
@@ -111,7 +137,7 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
 
     override suspend fun sendErrors(baseUrl: String, accessToken: String, errors: List<ClientError>) {
         authorized(call {
-            client.post("$baseUrl/errors") {
+            client().post("$baseUrl/errors") {
                 bearerAuth(accessToken)
                 jsonBody(errors.map { ErrorDto(it.id, it.platform, it.appVersion, it.message, it.stackTrace, it.occurredAt.toString(), it.context) })
             }
@@ -120,7 +146,7 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
 
     override suspend fun personalStats(address: ServerAddress, accessToken: String, zone: String): RemoteStats {
         val response = authorized(call {
-            client.get(address.baseUrl + "/stats/me") {
+            client().get(address.baseUrl + "/stats/me") {
                 bearerAuth(accessToken)
                 parameter("zone", zone)
             }
@@ -133,7 +159,9 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
         )
     }
 
-    override fun close() = client.close()
+    override fun close() {
+        current?.second?.close()
+    }
 
     private suspend fun call(block: suspend () -> HttpResponse): HttpResponse = try {
         block()
@@ -174,3 +202,29 @@ class KtorSyncServer(engine: HttpClientEngine = OkHttp.create()) : AuthServer, S
         fun RecordDto.record() = SyncRecord(entity, id, Instant.parse(updatedAt), deleted, seq, data)
     }
 }
+
+/** Connection options from the advanced settings (§9): proxy (`http://host:port`, `socks5://host:port`) and User-Agent. */
+data class HttpOptions(val proxy: String? = null, val userAgent: String = "Racha") {
+    companion object {
+        /** `Racha/<version> (<platform>)` unless the user set one; a malformed proxy is ignored (direct connection). */
+        fun of(proxy: String, userAgent: String, appVersion: String, platform: String) = HttpOptions(
+            proxy = proxy.trim().takeIf { it.isNotEmpty() },
+            userAgent = userAgent.trim().ifEmpty { "Racha/$appVersion ($platform)" },
+        )
+    }
+}
+
+internal fun okHttp(options: HttpOptions): HttpClientEngine = OkHttp.create {
+    proxy = options.proxy?.let(::proxyOf)
+}
+
+internal fun proxyOf(text: String): java.net.Proxy? = runCatching {
+    val withScheme = if ("://" in text) text else "http://$text"
+    val url = Url(withScheme)
+    if (url.host.isEmpty() || url.port <= 0) return null
+    when (url.protocol.name) {
+        "socks", "socks5" -> ProxyBuilder.socks(url.host, url.port)
+        else -> ProxyBuilder.http(url)
+    }
+}.getOrNull()
+

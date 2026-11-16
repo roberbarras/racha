@@ -7,13 +7,19 @@ import io.github.roberbarras.racha.application.library.scan.ScanStatus
 import io.github.roberbarras.racha.domain.library.Mode
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.domain.preferences.ThemeMode
+import io.github.roberbarras.racha.domain.preferences.AppLanguage
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class Appearance(val theme: ThemeMode = ThemeMode.SYSTEM, val accent: String = Settings.AccentColor.default, val fontScale: Double = 1.0)
+data class Appearance(
+    val theme: ThemeMode = ThemeMode.SYSTEM,
+    val accent: String = Settings.AccentColor.default,
+    val fontScale: Double = 1.0,
+    val language: AppLanguage = AppLanguage.SYSTEM,
+)
 
 /** App-wide state shared by the shell (streak, categories, scan status) and the Home screen. */
 class AppViewModel(private val deps: RachaDependencies) : ViewModel() {
@@ -27,7 +33,8 @@ class AppViewModel(private val deps: RachaDependencies) : ViewModel() {
         deps.preferences.observe(Settings.Theme),
         deps.preferences.observe(Settings.AccentColor),
         deps.preferences.observe(Settings.FontScale),
-    ) { theme, accent, scale -> Appearance(theme, accent, scale) }
+        deps.preferences.observe(Settings.Language),
+    ) { theme, accent, scale, language -> Appearance(theme, accent, scale, language) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, Appearance())
 
     fun setMode(mode: Mode) = viewModelScope.launch { deps.setMode(mode) }

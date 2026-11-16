@@ -66,6 +66,7 @@ import io.github.roberbarras.racha.ui.resources.completed_title
 import io.github.roberbarras.racha.ui.resources.more_title
 import io.github.roberbarras.racha.ui.resources.nav_account
 import io.github.roberbarras.racha.ui.resources.nav_folders
+import io.github.roberbarras.racha.ui.resources.nav_settings
 import io.github.roberbarras.racha.ui.resources.stat_active_days
 import io.github.roberbarras.racha.ui.resources.stat_best_streak
 import io.github.roberbarras.racha.ui.resources.stat_completed
@@ -99,7 +100,7 @@ class StatsViewModel(private val deps: RachaDependencies) : ViewModel() {
  * it also leads to Folders and Account, which do not fit in the bottom bar.
  */
 @Composable
-fun StatsScreen(deps: RachaDependencies, onFolders: () -> Unit, onAccount: (() -> Unit)?) {
+fun StatsScreen(deps: RachaDependencies, onFolders: () -> Unit, onAccount: (() -> Unit)?, onSettings: () -> Unit = {}) {
     val vm = viewModel { StatsViewModel(deps) }
     val stats by vm.stats.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { vm.load() }
@@ -123,7 +124,7 @@ fun StatsScreen(deps: RachaDependencies, onFolders: () -> Unit, onAccount: (() -
                 if (s.completedItems.isNotEmpty()) item(key = "completed") { CompletedCard(s) }
             }
         }
-        if (compact) item(key = "more") { MoreLinks(onFolders, onAccount) }
+        if (compact) item(key = "more") { MoreLinks(onFolders, onAccount, onSettings) }
     }
 }
 
@@ -281,12 +282,13 @@ private fun CompletedCard(s: PersonalStats) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun MoreLinks(onFolders: () -> Unit, onAccount: (() -> Unit)?) {
+private fun MoreLinks(onFolders: () -> Unit, onAccount: (() -> Unit)?, onSettings: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
         SectionHeader(stringResource(Res.string.more_title))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.s), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
             RButton(stringResource(Res.string.nav_folders), onFolders, kind = ButtonKind.Secondary, icon = RachaIcons.FolderOpen)
             if (onAccount != null) RButton(stringResource(Res.string.nav_account), onAccount, kind = ButtonKind.Secondary, icon = RachaIcons.Cloud)
+            RButton(stringResource(Res.string.nav_settings), onSettings, kind = ButtonKind.Secondary, icon = RachaIcons.Settings)
         }
     }
 }

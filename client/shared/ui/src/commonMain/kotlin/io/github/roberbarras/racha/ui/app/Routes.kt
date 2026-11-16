@@ -31,6 +31,9 @@ data object AccountRoute
 data object StatsRoute
 
 @Serializable
+data object SettingsRoute
+
+@Serializable
 data class PlayerRoute(val elementId: String, private val start: String = StartMode.ASK.name) {
     constructor(elementId: String, mode: StartMode) : this(elementId, mode.name)
 

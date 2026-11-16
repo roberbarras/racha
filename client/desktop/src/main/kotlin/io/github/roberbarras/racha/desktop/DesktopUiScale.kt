@@ -14,8 +14,17 @@ import java.util.concurrent.TimeUnit
  * `GDK_SCALE` → 1. Read once at start-up: the X11 protocol has a single scale for every screen.
  */
 object DesktopUiScale {
-    /** Detected once per process. */
-    val current: Float by lazy { detect() }
+    /** Detected once per process (what "automatic" means in Settings). */
+    val detected: Float by lazy { detect() }
+
+    /** The scale in use: the one chosen in Settings (0 = automatic) once read at start-up and on every change. */
+    @Volatile var current: Float = 1f
+        private set
+
+    /** [chosen] is the setting (0 = automatic). */
+    fun apply(chosen: Double) {
+        current = if (chosen <= 0.0) detected else (chosen.toFloat() / awtScale()).coerceIn(MIN_SCALE, MAX_SCALE)
+    }
 
     private fun detect(): Float {
         val target = System.getenv("RACHA_SCALE")?.toFloatOrNull()

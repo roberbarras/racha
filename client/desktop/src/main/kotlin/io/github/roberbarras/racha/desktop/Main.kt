@@ -21,6 +21,11 @@ import io.github.roberbarras.racha.desktop.resource.PdfBoxDocument
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import io.github.roberbarras.racha.application.shared.AppLog
+import io.github.roberbarras.racha.domain.preferences.Settings
 import kotlinx.coroutines.withTimeoutOrNull
 import java.awt.Dimension
 import java.awt.GraphicsEnvironment
@@ -44,7 +49,7 @@ fun main() {
             runCatching { PdfBoxDocument.buildFontIndex() }
         }
     }
-    val scale = DesktopUiScale.current
+    DesktopUiScale.apply(runBlocking { graph.preferences.get(Settings.UiScale) })
     // Initial window: a comfortable share of the screen it opens on, whatever its size or density.
     val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
     val initialSize = DpSize((screen.width * INITIAL_SHARE).dp, (screen.height * INITIAL_SHARE).dp)
@@ -61,6 +66,9 @@ fun main() {
             title = "Racha",
             icon = rememberVectorPainter(RachaLogo),
         ) {
+            // Settings > General > Interface size: applied at once (0 = what the desktop announces).
+            val chosen by graph.preferences.observe(Settings.UiScale).collectAsState(null)
+            val scale = remember(chosen) { chosen?.let(DesktopUiScale::apply); DesktopUiScale.current }
             window.minimumSize = Dimension((MIN_WIDTH_DP * scale).toInt(), (MIN_HEIGHT_DP * scale).toInt())
             graph.playerHooks.attach(window)
             val base = LocalDensity.current
@@ -80,6 +88,7 @@ private const val PDF_FONT_INDEX_DELAY_MS = 30_000L
 private fun reportCrashes(graph: DesktopGraph) {
     val previous = Thread.getDefaultUncaughtExceptionHandler()
     Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+        AppLog.error("crash", "uncaught on ${thread.name}", error)
         runCatching { runBlocking { withTimeoutOrNull(2_000) { graph.telemetry.error(error, mapOf("thread" to thread.name)) } } }
         if (previous != null) previous.uncaughtException(thread, error) else error.printStackTrace()
     }

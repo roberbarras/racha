@@ -6,6 +6,7 @@ import io.github.roberbarras.racha.application.sync.AccountService
 import io.github.roberbarras.racha.application.sync.RemoteError
 import io.github.roberbarras.racha.application.sync.ServerAddress
 import io.github.roberbarras.racha.domain.preferences.Settings
+import io.github.roberbarras.racha.application.shared.AppLog
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration
@@ -51,6 +52,7 @@ class TelemetryUploader(
         } catch (e: RemoteError) {
             failures++
             notBefore = clock.now() + backoff(failures)
+            AppLog.warn("telemetry", "upload failed ($failures in a row), next try after $notBefore", e)
         }
         sent
     }
