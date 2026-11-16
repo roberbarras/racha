@@ -47,6 +47,9 @@ import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.android.widget.TodayWidget
+import io.github.roberbarras.racha.application.browse.ObserveTodayCard
+import kotlinx.coroutines.flow.debounce
 import io.github.roberbarras.racha.android.notifications.AndroidNotifier
 import io.github.roberbarras.racha.android.notifications.ReminderWorker
 import io.github.roberbarras.racha.application.notifications.NotifyNewContent
@@ -85,6 +88,9 @@ class AndroidGraph(context: Context) {
     )
     private val notifier = AndroidNotifier(context)
     private val notifyNewContent = NotifyNewContent(database.library, preferences, clock, notifier)
+    val observeTodayCard = ObserveTodayCard(
+        ObserveHome(database.categories, database.library, database.progress, database.history, preferences, clock, localDates),
+    )
     val studyReminder = StudyReminder(preferences, database.history, database.progress, localDates, clock, notifier)
 
     val keepLibraryUpToDate = KeepLibraryUpToDate(
@@ -126,6 +132,11 @@ class AndroidGraph(context: Context) {
             telemetry.appOpened()
             combine(preferences.observe(Settings.SyncEnabled), preferences.observe(Settings.SyncIntervalMinutes)) { on, minutes -> on to minutes }
                 .collect { (on, minutes) -> SyncWorker.schedule(app, on, minutes) }
+        }
+        // The widget follows the streak and today's turn while the app process lives (quiet: emits on change only).
+        appScope.launch {
+            @OptIn(kotlinx.coroutines.FlowPreview::class)
+            observeTodayCard().debounce(WIDGET_DEBOUNCE_MS).collect { TodayWidget.render(app, it) }
         }
         appScope.launch {
             combine(preferences.observe(Settings.DailyReminder), preferences.observe(Settings.DailyReminderTime)) { on, time -> on to time }
@@ -195,6 +206,8 @@ class AndroidGraph(context: Context) {
     )
 
     private companion object {
+        const val WIDGET_DEBOUNCE_MS = 2_000L
+
         fun deviceName(context: Context): String =
             android.provider.Settings.Global.getString(context.contentResolver, android.provider.Settings.Global.DEVICE_NAME)
                 ?.takeIf { it.isNotBlank() } ?: "${Build.MANUFACTURER} ${Build.MODEL}"

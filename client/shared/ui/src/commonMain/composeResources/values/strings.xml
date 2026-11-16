@@ -351,4 +351,8 @@
     <string name="channel_reminder">Study reminder</string>
     <string name="notifications_blocked">Notifications are not allowed for Racha.</string>
     <string name="notifications_allow">Allow</string>
+    <string name="widget_continue">Continue</string>
+    <string name="widget_empty">Add a folder to start.</string>
+    <string name="widget_open">Open Racha</string>
+    <string name="widget_description">Your streak and what to study today</string>
 </resources>

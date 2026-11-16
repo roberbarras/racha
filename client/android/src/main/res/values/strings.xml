@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts the system shows outside the app (widget picker); the app's own texts are in shared/ui composeResources. -->
+<resources>
+    <string name="widget_name">Racha · Today</string>
+    <string name="widget_description">Your streak and what to study today</string>
+</resources>

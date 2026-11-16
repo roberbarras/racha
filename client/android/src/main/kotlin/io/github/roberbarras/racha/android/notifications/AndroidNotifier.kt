@@ -53,7 +53,6 @@ class AndroidNotifier(private val context: Context) : Notifier {
     }
 
     private suspend fun ensureChannel(channel: NoticeChannel) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val system = context.getSystemService(NotificationManager::class.java)
         if (system.getNotificationChannel(channel.id) != null) return
         val importance = if (channel == NoticeChannel.SYNC) NotificationManager.IMPORTANCE_LOW else NotificationManager.IMPORTANCE_DEFAULT

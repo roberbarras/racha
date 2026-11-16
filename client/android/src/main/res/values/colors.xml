@@ -3,4 +3,6 @@
     <!-- Brand background of the Racha icon (design/brand) and paper background of the app (design/tokens.json). -->
     <color name="racha_navy">#212A41</color>
     <color name="racha_paper">#F6F1E9</color>
+    <color name="racha_paper_muted">#A6F6F1E9</color>
+    <color name="racha_accent">#E8812A</color>
 </resources>

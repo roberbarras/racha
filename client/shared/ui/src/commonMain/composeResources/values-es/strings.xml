@@ -351,4 +351,8 @@
     <string name="channel_reminder">Recordatorio de estudio</string>
     <string name="notifications_blocked">Las notificaciones de Racha no están permitidas.</string>
     <string name="notifications_allow">Permitir</string>
+    <string name="widget_continue">Continuar</string>
+    <string name="widget_empty">Añade una carpeta para empezar.</string>
+    <string name="widget_open">Abrir Racha</string>
+    <string name="widget_description">Tu racha y qué toca estudiar hoy</string>
 </resources>
