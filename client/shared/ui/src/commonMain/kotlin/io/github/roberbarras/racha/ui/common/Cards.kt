@@ -77,7 +77,8 @@ fun RecommendationCard(recommendation: Recommendation, width: Dp, onClick: () ->
                 Box(Modifier.weight(1f))
                 RText(stringResource(Res.string.today), style = Racha.type.caption, color = Racha.colors.inkSubtle)
             }
-            RText(recommendation.element.displayTitle, style = Racha.type.heading, maxLines = 2)
+            // Two lines reserved: every card in the row has the same height.
+            RText(recommendation.element.displayTitle, style = Racha.type.heading, maxLines = 2, minLines = 2)
             RText(recommendation.item.displayTitle, style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 1)
         }
     }

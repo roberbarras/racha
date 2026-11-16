@@ -25,8 +25,15 @@ crashes=$($adb logcat -d -b crash | grep -c "Process: $pkg" || true)
 anrs=$($adb logcat -d | grep -c "ANR in $pkg" || true)
 monkey_crash=$(grep -c "CRASH: $pkg" /tmp/racha-monkey.log || true)
 running=$($adb shell pidof "$pkg" >/dev/null && echo yes || echo no)
-echo "release smoke: crashes=$crashes anrs=$anrs monkey_crash=$monkey_crash still_running=$running"
+summary="release smoke: crashes=$crashes anrs=$anrs monkey_crash=$monkey_crash still_running=$running"
+echo "$summary"
+report=${SMOKE_REPORT:-/tmp/racha-release-smoke.txt}
+{
+  echo "$summary"
+  $adb logcat -d -b crash | grep -A12 "Process: $pkg" | head -40
+  $adb logcat -d | grep -A12 "ANR in $pkg" | head -30
+} >"$report"
 if [ "$crashes" != 0 ] || [ "$anrs" != 0 ] || [ "$monkey_crash" != 0 ]; then
-  $adb logcat -d -b crash | tail -40
+  cat "$report"
   exit 1
 fi

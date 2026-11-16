@@ -40,6 +40,7 @@ fun RText(
     color: Color = Racha.colors.ink,
     maxLines: Int = Int.MAX_VALUE,
     textAlign: TextAlign? = null,
+    minLines: Int = 1,
 ) {
     BasicText(
         text = text,
@@ -47,6 +48,7 @@ fun RText(
         style = style.merge(TextStyle(color = color, textAlign = textAlign ?: TextAlign.Unspecified)),
         overflow = TextOverflow.Ellipsis,
         maxLines = maxLines,
+        minLines = minLines,
     )
 }
 

@@ -225,6 +225,20 @@ jobs:
           disable-animations: true
           working-directory: client
           script: ./gradlew :android:connectedDebugAndroidTest :android:assembleRelease --console=plain && android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk
+      - name: Failing Android tests and release smoke (public annotations; logs need a login)
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, html, re
+          for path in glob.glob("android/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
+              text = open(path, encoding="utf-8").read()
+              for m in re.finditer(r'<testcase name="([^"]*)" classname="([^"]*)"[^>]*>\s*<failure>(.*?)</failure>', text, re.S):
+                  lines = [l.strip() for l in html.unescape(m.group(3)).splitlines() if l.strip() and not l.strip().startswith("at ")]
+                  print(f"::error title={m.group(2)}.{m.group(1)}::{' / '.join(lines[:4])[:900]}")
+          PY
+          if [ -f /tmp/racha-release-smoke.txt ]; then
+            echo "::error title=Release smoke::$(head -c 1800 /tmp/racha-release-smoke.txt | tr '\n' ' ')"
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: racha-android-release-apk
