@@ -1,0 +1,20 @@
+-- Text of HTML, TXT and link resources for search in their content (spec §2.2). [folded]: lower case without
+-- accents, same length as [text] so a match position quotes the original. Rebuilt when the file changes.
+CREATE TABLE resource_text (
+    element_id TEXT NOT NULL PRIMARY KEY REFERENCES playable_element(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    folded TEXT NOT NULL,
+    file_modified_at INTEGER NOT NULL
+);
+
+resourceTextVersion:
+SELECT file_modified_at FROM resource_text WHERE element_id = ?;
+
+putResourceText:
+INSERT OR REPLACE INTO resource_text(element_id, text, folded, file_modified_at) VALUES (?, ?, ?, ?);
+
+searchResourceText:
+SELECT resource_text.element_id, resource_text.text, resource_text.folded FROM resource_text
+JOIN playable_element ON playable_element.id = resource_text.element_id
+WHERE resource_text.folded LIKE :pattern ESCAPE '\' AND playable_element.archived = 0
+LIMIT :limit;

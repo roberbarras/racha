@@ -19,6 +19,7 @@ import io.github.roberbarras.racha.application.browse.ObserveHome
 import io.github.roberbarras.racha.application.browse.ObserveItemDetail
 import io.github.roberbarras.racha.application.browse.ObserveMyList
 import io.github.roberbarras.racha.application.browse.SearchLibrary
+import io.github.roberbarras.racha.application.library.search.IndexResourceText
 import io.github.roberbarras.racha.application.browse.SetMode
 import io.github.roberbarras.racha.application.browse.ToggleFavorite
 import io.github.roberbarras.racha.application.browse.UpdateItemProgress
@@ -84,6 +85,7 @@ class AndroidGraph(context: Context) {
         RefreshThumbnails(database.categories, database.library, AndroidThumbnailRenderer(thumbnails), preferences),
         FileObserverLibraryWatcher(),
         preferences,
+        indexResourceText = { IndexResourceText(database.categories, database.library, NioResourceFiles(), database.resourceText)() },
     )
 
     private val updateItemProgress = UpdateItemProgress(database.library, database.progress)
@@ -148,7 +150,7 @@ class AndroidGraph(context: Context) {
         observeItemDetail = ObserveItemDetail(database.categories, database.library, database.progress, database.favorites),
         observeHistory = ObserveHistory(database.history, database.library),
         observeMyList = ObserveMyList(database.favorites, database.library),
-        searchLibrary = SearchLibrary(database.library),
+        searchLibrary = SearchLibrary(database.library, database.resourceText),
         markProgress = MarkProgress(database.library, database.progress, updateItemProgress, clock),
         getElement = GetElement(database.library, database.progress),
         toggleFavorite = ToggleFavorite(database.favorites, clock),

@@ -50,6 +50,24 @@ fun RText(
     )
 }
 
+/** [RText] with styled spans (e.g. a search match in bold). */
+@Composable
+fun RText(
+    text: androidx.compose.ui.text.AnnotatedString,
+    modifier: Modifier = Modifier,
+    style: TextStyle = Racha.type.body,
+    color: Color = Racha.colors.ink,
+    maxLines: Int = Int.MAX_VALUE,
+) {
+    BasicText(
+        text = text,
+        modifier = modifier,
+        style = style.merge(TextStyle(color = color)),
+        overflow = TextOverflow.Ellipsis,
+        maxLines = maxLines,
+    )
+}
+
 /** A Lucide stroke icon tinted with [tint]. [contentDescription] null for decorative icons. */
 @Composable
 fun RIcon(icon: ImageVector, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = Racha.colors.ink, size: Dp = 20.dp) {

@@ -91,7 +91,7 @@ object DemoLibrary {
             observeItemDetail = ObserveItemDetail(db.categories, db.library, db.progress, db.favorites),
             observeHistory = ObserveHistory(db.history, db.library),
             observeMyList = ObserveMyList(db.favorites, db.library),
-            searchLibrary = SearchLibrary(db.library),
+            searchLibrary = SearchLibrary(db.library, db.resourceText),
             markProgress = MarkProgress(db.library, db.progress, update, clock),
             getElement = GetElement(db.library, db.progress),
             toggleFavorite = ToggleFavorite(db.favorites, clock),

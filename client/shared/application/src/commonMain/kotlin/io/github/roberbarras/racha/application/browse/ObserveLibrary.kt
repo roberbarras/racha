@@ -6,6 +6,9 @@ import io.github.roberbarras.racha.application.learning.ProgressRepository
 import io.github.roberbarras.racha.application.library.CategoryRepository
 import io.github.roberbarras.racha.application.library.ElementInItem
 import io.github.roberbarras.racha.application.library.LibraryRepository
+import io.github.roberbarras.racha.application.library.search.ResourceTextIndex
+import io.github.roberbarras.racha.application.library.search.TextHit
+import io.github.roberbarras.racha.domain.library.SearchText
 import io.github.roberbarras.racha.domain.learning.FavoriteTarget
 import io.github.roberbarras.racha.domain.learning.HistoryEntry
 import io.github.roberbarras.racha.domain.learning.Progress
@@ -111,16 +114,48 @@ class ObserveMyList(private val favorites: FavoriteRepository, private val libra
     }
 }
 
-data class SearchResults(val query: String, val items: List<LibraryItem>, val elements: List<ElementInItem>) {
-    val isEmpty: Boolean get() = items.isEmpty() && elements.isEmpty()
+/** A resource found by what it says, with the words around the match. */
+data class ContentMatch(val element: ElementInItem, val snippet: String)
+
+data class SearchResults(
+    val query: String,
+    val items: List<LibraryItem>,
+    val elements: List<ElementInItem>,
+    val inContent: List<ContentMatch> = emptyList(),
+) {
+    val isEmpty: Boolean get() = items.isEmpty() && elements.isEmpty() && inContent.isEmpty()
 }
 
-/** Global search by title across categories (spec §2.2). Queries shorter than 2 characters return nothing. */
-class SearchLibrary(private val library: LibraryRepository) {
+/**
+ * Global search (spec §2.2): titles of courses/series and elements, and the text of HTML/TXT/link resources, ignoring
+ * case and accents. Queries shorter than 2 characters return nothing.
+ */
+class SearchLibrary(private val library: LibraryRepository, private val content: ResourceTextIndex? = null) {
     suspend operator fun invoke(query: String): SearchResults {
         val text = query.trim()
         if (text.length < 2) return SearchResults(text, emptyList(), emptyList())
-        return SearchResults(text, library.searchItems(text, 20), library.searchElements(text, 40))
+        val elements = library.searchElements(text, 40)
+        val byTitle = elements.map { it.element.id }.toSet()
+        val folded = SearchText.fold(text)
+        val hits = content?.search(folded, 30).orEmpty().filter { it.elementId !in byTitle }
+        val found = library.elementsInItems(hits.map { it.elementId }).associateBy { it.element.id }
+        val inContent = hits.mapNotNull { hit -> found[hit.elementId]?.let { ContentMatch(it, snippet(hit, folded)) } }
+        return SearchResults(text, library.searchItems(text, 20), elements, inContent)
+    }
+
+    /** About [SNIPPET] characters of the original text around the match, cut at word boundaries. */
+    private fun snippet(hit: TextHit, foldedQuery: String): String {
+        val at = SearchText.indexIn(hit.folded, foldedQuery).coerceAtLeast(0)
+        var start = (at - SNIPPET / 2).coerceAtLeast(0)
+        var end = (at + foldedQuery.length + SNIPPET / 2).coerceAtMost(hit.text.length)
+        if (start > 0) start = hit.text.indexOf(' ', start).takeIf { it in start until at }?.plus(1) ?: start
+        if (end < hit.text.length) end = hit.text.lastIndexOf(' ', end).takeIf { it > at + foldedQuery.length } ?: end
+        val body = hit.text.substring(start, end).replace('\n', ' ')
+        return (if (start > 0) "…" else "") + body + (if (end < hit.text.length) "…" else "")
+    }
+
+    private companion object {
+        const val SNIPPET = 120
     }
 }
 

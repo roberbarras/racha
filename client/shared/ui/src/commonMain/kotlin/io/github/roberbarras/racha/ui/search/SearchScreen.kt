@@ -16,6 +16,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.roberbarras.racha.application.browse.SearchResults
+import io.github.roberbarras.racha.application.browse.ContentMatch
+import io.github.roberbarras.racha.domain.library.SearchText
+import io.github.roberbarras.racha.ui.design.RCard
+import io.github.roberbarras.racha.ui.design.RIcon
+import io.github.roberbarras.racha.ui.resources.search_in_content
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import io.github.roberbarras.racha.ui.common.ElementList
@@ -77,7 +90,35 @@ fun SearchScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
                         ElementList(r.elements, trailing = { it.element.media.durationSec?.let(::timecode) }) { onOpenItem(it.item.id) }
                     }
                 }
+                if (r.inContent.isNotEmpty()) item {
+                    Column(verticalArrangement = Arrangement.spacedBy(Racha.space.m)) {
+                        SectionHeader(stringResource(Res.string.search_in_content))
+                        r.inContent.forEach { match -> ContentMatchRow(match, query.trim()) { onOpenItem(match.element.item.id) } }
+                    }
+                }
             }
         }
     }
+}
+
+/** A resource found by its text: title, course and the words around the match, the match in bold. */
+@Composable
+private fun ContentMatchRow(match: ContentMatch, query: String, onOpen: () -> Unit) {
+    RCard(Modifier.fillMaxWidth(), onClick = onOpen, onClickLabel = match.element.item.displayTitle) {
+        Column(Modifier.padding(Racha.space.l), verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+                RIcon(RachaIcons.FileText, null, tint = Racha.colors.inkMuted, size = 18.dp)
+                RText(match.element.element.displayTitle, style = Racha.type.bodyStrong, maxLines = 1)
+            }
+            RText(match.element.item.displayTitle, style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 1)
+            RText(highlight(match.snippet, query), style = Racha.type.body, color = Racha.colors.inkMuted, maxLines = 3)
+        }
+    }
+}
+
+/** The snippet with the (accent-insensitive) match in bold. */
+private fun highlight(snippet: String, query: String): AnnotatedString = buildAnnotatedString {
+    append(snippet)
+    val at = SearchText.indexIn(SearchText.fold(snippet), SearchText.fold(query))
+    if (at >= 0) addStyle(SpanStyle(fontWeight = FontWeight.SemiBold), at, at + query.length)
 }

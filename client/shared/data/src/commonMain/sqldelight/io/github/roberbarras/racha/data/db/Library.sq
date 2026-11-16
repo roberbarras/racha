@@ -192,17 +192,12 @@ SELECT category_key, count(*) AS total FROM library_item WHERE archived = 0 GROU
 selectNewElementIds:
 SELECT id FROM playable_element WHERE archived = 0 AND first_seen_at > :since ORDER BY first_seen_at DESC, id LIMIT :limit;
 
-searchItems:
-SELECT * FROM library_item
-WHERE coalesce(title_override, title) LIKE :pattern ESCAPE '\'
-ORDER BY archived, coalesce(title_override, title)
-LIMIT :limit;
+-- Search folds accents and case in Kotlin (SQLite's LIKE only ignores ASCII case): titles are matched in memory.
+itemTitles:
+SELECT id, coalesce(title_override, title) AS title, archived FROM library_item;
 
-searchElementIds:
-SELECT id FROM playable_element
-WHERE coalesce(title_override, title) LIKE :pattern ESCAPE '\'
-ORDER BY archived, coalesce(title_override, title)
-LIMIT :limit;
+elementTitles:
+SELECT id, coalesce(title_override, title) AS title, archived FROM playable_element;
 
 -- Settings > Storage: "clear the thumbnail cache" (generated posters only; folder artwork stays).
 forgetPostersUnder:

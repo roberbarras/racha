@@ -1,0 +1,7 @@
+-- v6 (H11): resource text for search in content.
+CREATE TABLE resource_text (
+    element_id TEXT NOT NULL PRIMARY KEY REFERENCES playable_element(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    folded TEXT NOT NULL,
+    file_modified_at INTEGER NOT NULL
+);

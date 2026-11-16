@@ -42,6 +42,8 @@ class KeepLibraryUpToDate(
     private val watcher: LibraryWatcher,
     private val preferences: Preferences,
     private val quietPeriod: Duration = 3.seconds,
+    /** Search in resource content: kept current after each scan. */
+    private val indexResourceText: (suspend () -> Unit)? = null,
 ) {
     private val mutableStatus = MutableStateFlow(ScanStatus())
     val status: StateFlow<ScanStatus> = mutableStatus.asStateFlow()
@@ -89,6 +91,7 @@ class KeepLibraryUpToDate(
 
     private suspend fun afterScan() {
         hashEngaged()
+        indexResourceText?.invoke()
         refreshThumbnails()
     }
 }

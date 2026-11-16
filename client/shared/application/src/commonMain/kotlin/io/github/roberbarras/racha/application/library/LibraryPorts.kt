@@ -57,6 +57,9 @@ interface LibraryRepository {
 
     suspend fun searchElements(text: String, limit: Int): List<ElementInItem>
 
+    /** The elements with these ids and their items, in the same order (missing ones left out). */
+    suspend fun elementsInItems(ids: List<ContentId>): List<ElementInItem>
+
     suspend fun item(id: ContentId): LibraryItem?
 
     suspend fun upsertItem(item: LibraryItem)

@@ -26,7 +26,7 @@
     <string name="up_next">Up next</string>
     <string name="next_lesson">Next lesson</string>
     <string name="discover">Discover</string>
-    <string name="search_placeholder">Search courses, series, lessons…</string>
+    <string name="search_placeholder">Search courses, series, lessons and the text of resources…</string>
     <string name="search_hint">Type at least two characters</string>
     <string name="search_no_results">Nothing matches “%1$s”</string>
     <string name="search_items">Courses and series</string>
@@ -334,4 +334,5 @@
     <string name="version">Version %1$s</string>
     <string name="license">Free software under the MIT license.</string>
     <string name="source_code">Source code</string>
+    <string name="search_in_content">In the content of resources</string>
 </resources>
