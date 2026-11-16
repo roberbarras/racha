@@ -14,7 +14,10 @@ appdir="$build/appimage/Racha.AppDir"
 mpv_lib=${MPV_LIB:-$("$(command -v ldconfig || echo /sbin/ldconfig)" -p | awk '/libmpv\.so\.2 / && !found { print $NF; found = 1 }')}
 [ -f "$mpv_lib" ] || { echo "libmpv.so.2 not found (install libmpv2 or set MPV_LIB)" >&2; exit 2; }
 
-"$client_dir/gradlew" -q -p "$client_dir" :desktop:packageAppImage :desktop:testClasses
+# jpackage needs a numeric MAJOR.MINOR.PATCH; anything else (e.g. 0.0.1-ab12cd3) only names the file.
+gradle_version=()
+[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && gradle_version=("-Pracha.version=$version")
+"$client_dir/gradlew" -q -p "$client_dir" "${gradle_version[@]}" :desktop:packageAppImage :desktop:testClasses
 rm -rf "$appdir"
 mkdir -p "$appdir/usr/lib"
 cp -a "$build/compose/binaries/main/app/racha" "$appdir/usr/lib/racha"
