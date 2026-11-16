@@ -376,4 +376,17 @@
     <string name="onboarding_start">Empezar</string>
     <string name="onboarding_step">Paso %1$d de %2$d</string>
     <string name="onboarding_adding">Indexando…</string>
+    <string name="cover_generate">Generar portada con IA</string>
+    <string name="cover_generating">Generando…</string>
+    <string name="cover_failed">No se pudo generar la portada (%1$s).</string>
+    <string name="ai_covers_title">Portadas con IA</string>
+    <string name="ai_covers_hint">Añade un botón al detalle de cada curso o serie. Solo se envía su título al servicio que indiques.</string>
+    <string name="ai_endpoint">Endpoint</string>
+    <string name="ai_endpoint_hint">Con {prompt} se pide por GET (p. ej. https://image.pollinations.ai/prompt/{prompt}); sin él, se envía por POST como {"inputs": …} (Hugging Face).</string>
+    <string name="ai_prompt">Prompt base</string>
+    <string name="ai_prompt_hint">{title} se sustituye por el título del curso o serie. Vacío usa uno por defecto.</string>
+    <string name="ai_key">API key</string>
+    <string name="ai_key_hint">Se guarda en el llavero del sistema; nunca se exporta ni se sincroniza.</string>
+    <string name="ai_key_saved">Hay una clave guardada</string>
+    <string name="ai_key_remove">Quitar clave</string>
 </resources>

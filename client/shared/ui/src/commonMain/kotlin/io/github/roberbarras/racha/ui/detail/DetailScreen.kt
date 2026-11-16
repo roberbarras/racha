@@ -41,6 +41,11 @@ import io.github.roberbarras.racha.application.browse.ElementView
 import io.github.roberbarras.racha.application.browse.ItemDetailView
 import io.github.roberbarras.racha.application.browse.SectionView
 import io.github.roberbarras.racha.domain.learning.FavoriteTarget
+import io.github.roberbarras.racha.application.library.CoverResult
+import io.github.roberbarras.racha.ui.resources.cover_failed
+import io.github.roberbarras.racha.ui.resources.cover_generate
+import io.github.roberbarras.racha.ui.resources.cover_generating
+import kotlinx.coroutines.flow.MutableStateFlow
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.domain.library.ElementKind
@@ -105,6 +110,21 @@ class DetailViewModel(private val deps: RachaDependencies, private val id: Conte
     fun markSection(section: ContentId) = viewModelScope.launch { deps.markProgress.section(id, section, watched = true) }
     fun markElement(element: ContentId, watched: Boolean) = viewModelScope.launch { deps.markProgress.element(element, watched) }
     fun markUpTo(element: ContentId) = viewModelScope.launch { deps.markProgress.upTo(id, element) }
+
+    /** AI cover (spec §3, optional): offered only when configured in Settings. */
+    val coverAvailable = MutableStateFlow(false)
+    val cover = MutableStateFlow<CoverResult?>(null)
+    val generating = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch { coverAvailable.value = deps.generateCover?.available() == true }
+    }
+
+    fun generateCover() = viewModelScope.launch {
+        val generate = deps.generateCover ?: return@launch
+        generating.value = true
+        cover.value = try { generate(id) } finally { generating.value = false }
+    }
 }
 
 /** Course/series/channel detail (spec §2.2): sections, per-element progress, manual marks, my list. */
@@ -144,6 +164,8 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
                     }
                 }
                 ProgressBar((view.item.progressPct / 100).toFloat(), Modifier.widthIn(max = 420.dp), height = 6.dp, completed = view.item.progressPct >= 100)
+                val coverResult by vm.cover.collectAsStateWithLifecycle()
+                (coverResult as? CoverResult.Failed)?.let { RText(stringResource(Res.string.cover_failed, it.code), style = Racha.type.caption, color = Racha.colors.danger) }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.s), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
                     view.nextUp?.let { next ->
                         val position = next.progress?.positionSec ?: 0
@@ -159,6 +181,14 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
                         kind = ButtonKind.Secondary,
                         icon = if (view.isFavorite) RachaIcons.BookmarkCheck else RachaIcons.Bookmark,
                     )
+                    val coverAvailable by vm.coverAvailable.collectAsStateWithLifecycle()
+                    val generating by vm.generating.collectAsStateWithLifecycle()
+                    if (coverAvailable) {
+                        RButton(
+                            stringResource(if (generating) Res.string.cover_generating else Res.string.cover_generate),
+                            onClick = { vm.generateCover() }, enabled = !generating, kind = ButtonKind.Ghost, icon = RachaIcons.Sparkles,
+                        )
+                    }
                     val allWatched = view.totalCount > 0 && view.watchedCount == view.totalCount
                     RButton(
                         stringResource(if (allWatched) Res.string.mark_all_unwatched else Res.string.mark_all_watched),

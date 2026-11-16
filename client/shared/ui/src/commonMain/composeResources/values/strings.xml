@@ -376,4 +376,17 @@
     <string name="onboarding_start">Start</string>
     <string name="onboarding_step">Step %1$d of %2$d</string>
     <string name="onboarding_adding">Indexing…</string>
+    <string name="cover_generate">Generate a cover with AI</string>
+    <string name="cover_generating">Generating…</string>
+    <string name="cover_failed">The cover could not be generated (%1$s).</string>
+    <string name="ai_covers_title">AI covers</string>
+    <string name="ai_covers_hint">Adds a button to the detail of each course/series. Only its title is sent to the service you set.</string>
+    <string name="ai_endpoint">Endpoint</string>
+    <string name="ai_endpoint_hint">With {prompt} it is fetched (e.g. https://image.pollinations.ai/prompt/{prompt}); without it, the prompt is POSTed as {"inputs": …} (Hugging Face).</string>
+    <string name="ai_prompt">Base prompt</string>
+    <string name="ai_prompt_hint">{title} is replaced by the course or series title. Empty uses a default.</string>
+    <string name="ai_key">API key</string>
+    <string name="ai_key_hint">Kept in the system\'s keychain; never exported or synced.</string>
+    <string name="ai_key_saved">A key is saved</string>
+    <string name="ai_key_remove">Remove key</string>
 </resources>

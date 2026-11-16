@@ -23,6 +23,8 @@ import io.github.roberbarras.racha.application.stats.LoadPersonalStats
 import io.github.roberbarras.racha.application.browse.ManageCategories
 import io.github.roberbarras.racha.application.library.StorageMaintenance
 import io.github.roberbarras.racha.application.preferences.ConfigTransfer
+import io.github.roberbarras.racha.application.library.GenerateCover
+import io.github.roberbarras.racha.application.shared.SecretStore
 import io.github.roberbarras.racha.application.playback.PlaybackController
 import io.github.roberbarras.racha.application.playback.PlayerEngine
 import io.github.roberbarras.racha.ui.player.PlayerHooks
@@ -64,6 +66,9 @@ class RachaDependencies(
     val manageCategories: ManageCategories,
     val storage: StorageMaintenance,
     val configTransfer: ConfigTransfer,
+    /** Optional AI covers (spec §3) and the key they use; null where not offered. */
+    val generateCover: GenerateCover? = null,
+    val aiApiKey: SecretStore? = null,
 )
 
 /** Platform capabilities the shared UI needs. */

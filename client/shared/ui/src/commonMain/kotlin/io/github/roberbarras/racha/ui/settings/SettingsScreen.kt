@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -330,6 +331,45 @@ private fun ScanSection(vm: SettingsViewModel) = SettingsSection(stringResource(
         listOf(stringResource(Res.string.change_mtime) to ChangeDetection.MTIME, stringResource(Res.string.change_hash) to ChangeDetection.HASH),
         detection, { vm.set(Settings.ChangeDetectionMode, it) },
     )
+    vm.deps.aiApiKey?.let { key ->
+        Hairline()
+        val ai by vm.state(Settings.AiCoverEnabled)
+        SwitchRow(stringResource(Res.string.ai_covers_title), ai, { vm.set(Settings.AiCoverEnabled, it) }, stringResource(Res.string.ai_covers_hint))
+        if (ai) {
+            val endpoint by vm.state(Settings.AiCoverEndpoint)
+            TextRow(
+                stringResource(Res.string.ai_endpoint), endpoint, { vm.set(Settings.AiCoverEndpoint, it) }, stringResource(Res.string.ai_endpoint_hint), KeyboardType.Uri,
+                validate = { it.isBlank() || it.trim().startsWith("https://") || it.trim().startsWith("http://") },
+            )
+            val prompt by vm.state(Settings.AiCoverPrompt)
+            TextRow(stringResource(Res.string.ai_prompt), prompt, { vm.set(Settings.AiCoverPrompt, it) }, stringResource(Res.string.ai_prompt_hint))
+            ApiKeyRow(vm, key)
+        }
+    }
+}
+
+/** The key is written to the keychain on "Save" and never shown back: only whether one is saved. */
+@Composable
+private fun ApiKeyRow(vm: SettingsViewModel, key: io.github.roberbarras.racha.application.shared.SecretStore) {
+    var saved by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Boolean?>(null) }
+    androidx.compose.runtime.LaunchedEffect(key) { saved = key.read() != null }
+    var draft by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
+            io.github.roberbarras.racha.ui.design.RTextField(
+                draft, { draft = it }, stringResource(Res.string.ai_key), Modifier.weight(1f), password = true,
+            )
+            RButton(stringResource(Res.string.save), { scope.launch { key.write(draft.trim()); draft = ""; saved = true } }, kind = ButtonKind.Secondary, enabled = draft.isNotBlank())
+        }
+        RText(stringResource(Res.string.ai_key_hint), style = Racha.type.caption, color = Racha.colors.inkMuted)
+        if (saved == true) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
+                RText(stringResource(Res.string.ai_key_saved), style = Racha.type.body, color = Racha.colors.success, modifier = Modifier.weight(1f))
+                RButton(stringResource(Res.string.ai_key_remove), { scope.launch { key.clear(); saved = false } }, kind = ButtonKind.Ghost)
+            }
+        }
+    }
 }
 
 @Composable

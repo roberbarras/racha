@@ -48,6 +48,10 @@ import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
 import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.remote.KtorImageGenerator
+import io.github.roberbarras.racha.application.library.GenerateCover
+import io.github.roberbarras.racha.desktop.sync.LibSecretStore
+import io.github.roberbarras.racha.files.DirectoryCoverFiles
 import io.github.roberbarras.racha.desktop.notifications.DesktopNotifier
 import io.github.roberbarras.racha.application.notifications.NotifyNewContent
 import io.github.roberbarras.racha.application.notifications.NotifySyncFailure
@@ -119,9 +123,11 @@ class DesktopGraph(
 
     // Sync (§7.4, opt-in): runs while the app is open; the session's refresh token lives in the secret service.
     private val appVersion = System.getProperty("racha.version") ?: "dev"
-    private val syncServer = KtorSyncServer(options = {
+    private val httpOptions: suspend () -> HttpOptions = {
         HttpOptions.of(preferences.get(Settings.Proxy), preferences.get(Settings.UserAgent), appVersion, "Linux")
-    })
+    }
+    private val syncServer = KtorSyncServer(options = httpOptions)
+    private val aiApiKey = LibSecretStore(DesktopPaths.data.resolve("ai-key"), "racha-image-ai-key", "Racha image AI key")
     val account = AccountService(
         syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(), "linux", appVersion) }, clock,
@@ -191,6 +197,8 @@ class DesktopGraph(
         manageCategories = ManageCategories(database.categories, scanLibrary, clock),
         storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(DesktopPaths.thumbnails), keepLibraryUpToDate),
         configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),
+        generateCover = GenerateCover(database.library, preferences, aiApiKey, KtorImageGenerator(options = httpOptions), DirectoryCoverFiles(DesktopPaths.data.resolve("covers"))),
+        aiApiKey = aiApiKey,
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.time.ZoneId.systemDefault().id },

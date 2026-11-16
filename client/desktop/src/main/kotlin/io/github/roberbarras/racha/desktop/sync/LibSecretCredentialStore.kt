@@ -3,6 +3,7 @@ package io.github.roberbarras.racha.desktop.sync
 import io.github.roberbarras.racha.application.sync.CredentialStore
 import io.github.roberbarras.racha.application.sync.SessionCodec
 import io.github.roberbarras.racha.application.sync.StoredSession
+import io.github.roberbarras.racha.application.shared.SecretStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.lang.foreign.Arena
@@ -18,25 +19,35 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 
-/**
- * The sync session in the desktop's secret service (KWallet, GNOME Keyring…) through libsecret, called with FFM.
- * Without libsecret or a secret service (minimal systems), a file readable only by the user is the fallback.
- */
-class LibSecretCredentialStore(private val fallback: Path, useSecretService: Boolean = true) : CredentialStore {
-    /** Tests pass false: they must never touch the user's real keyring. */
-    private val secret: LibSecret? = if (useSecretService) runCatching { LibSecret() }.getOrNull() else null
+/** The sync session, kept with [LibSecretStore] under the entry it has always used. */
+class LibSecretCredentialStore(fallback: Path, useSecretService: Boolean = true) : CredentialStore {
+    private val store = LibSecretStore(fallback, "racha", "Racha sync session", useSecretService)
 
-    override suspend fun read(): StoredSession? = withContext(Dispatchers.IO) {
-        secret?.runCatching { lookup() }?.getOrNull()?.let(SessionCodec::decode)
-            ?: runCatching { Files.readString(fallback) }.getOrNull()?.let(SessionCodec::decode)
+    override suspend fun read(): StoredSession? = store.read()?.let(SessionCodec::decode)
+
+    override suspend fun write(session: StoredSession) = store.write(SessionCodec.encode(session))
+
+    override suspend fun clear() = store.clear()
+}
+
+/**
+ * One secret in the desktop's secret service (KWallet, GNOME Keyring…) through libsecret, called with FFM: the entry
+ * is the attribute `app` = [entry]. Without libsecret or a secret service (minimal systems), a file readable only by
+ * the user is the fallback.
+ */
+class LibSecretStore(private val fallback: Path, entry: String, label: String, useSecretService: Boolean = true) : SecretStore {
+    /** Tests pass false: they must never touch the user's real keyring. */
+    private val secret: LibSecret? = if (useSecretService) runCatching { LibSecret(entry, label) }.getOrNull() else null
+
+    override suspend fun read(): String? = withContext(Dispatchers.IO) {
+        secret?.runCatching { lookup() }?.getOrNull() ?: runCatching { Files.readString(fallback) }.getOrNull()
     }
 
-    override suspend fun write(session: StoredSession): Unit = withContext(Dispatchers.IO) {
-        val text = SessionCodec.encode(session)
-        if (secret?.runCatching { store(text) }?.getOrDefault(false) == true) {
+    override suspend fun write(value: String): Unit = withContext(Dispatchers.IO) {
+        if (secret?.runCatching { store(value) }?.getOrDefault(false) == true) {
             Files.deleteIfExists(fallback)
         } else {
-            writePrivate(text)
+            writePrivate(value)
         }
     }
 
@@ -55,8 +66,8 @@ class LibSecretCredentialStore(private val fallback: Path, useSecretService: Boo
         Files.move(temp, fallback, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
     }
 
-    /** `secret_password_{store,lookup,clear}_sync` with a one-attribute schema (`app` = racha). */
-    private class LibSecret {
+    /** `secret_password_{store,lookup,clear}_sync` with a one-attribute schema (`app` = the entry). */
+    private class LibSecret(private val entry: String, private val label: String) {
         private val linker = Linker.nativeLinker()
         private val lib = SymbolLookup.libraryLookup("libsecret-1.so.0", Arena.global())
         private val schema: MemorySegment = Arena.global().allocate(SCHEMA_BYTES).also { s ->
@@ -72,14 +83,14 @@ class LibSecretCredentialStore(private val fallback: Path, useSecretService: Boo
         private val free = linker.downcallHandle(lib.find("secret_password_free").orElseThrow(), FunctionDescriptor.ofVoid(ADDRESS))
 
         fun store(value: String): Boolean = Arena.ofConfined().use { a ->
-            val ok = store.invokeWithArguments(schema, MemorySegment.NULL, a.allocateFrom("Racha sync session"), a.allocateFrom(value),
-                MemorySegment.NULL, MemorySegment.NULL, a.allocateFrom(ATTRIBUTE), a.allocateFrom(APP), MemorySegment.NULL) as Int
+            val ok = store.invokeWithArguments(schema, MemorySegment.NULL, a.allocateFrom(label), a.allocateFrom(value),
+                MemorySegment.NULL, MemorySegment.NULL, a.allocateFrom(ATTRIBUTE), a.allocateFrom(entry), MemorySegment.NULL) as Int
             ok != 0
         }
 
         fun lookup(): String? = Arena.ofConfined().use { a ->
             val result = lookup.invokeWithArguments(schema, MemorySegment.NULL, MemorySegment.NULL,
-                a.allocateFrom(ATTRIBUTE), a.allocateFrom(APP), MemorySegment.NULL) as MemorySegment
+                a.allocateFrom(ATTRIBUTE), a.allocateFrom(entry), MemorySegment.NULL) as MemorySegment
             if (result == MemorySegment.NULL) return null
             try {
                 result.reinterpret(Long.MAX_VALUE).getString(0)
@@ -90,7 +101,7 @@ class LibSecretCredentialStore(private val fallback: Path, useSecretService: Boo
 
         fun clear() {
             Arena.ofConfined().use { a ->
-                clear.invokeWithArguments(schema, MemorySegment.NULL, MemorySegment.NULL, a.allocateFrom(ATTRIBUTE), a.allocateFrom(APP), MemorySegment.NULL)
+                clear.invokeWithArguments(schema, MemorySegment.NULL, MemorySegment.NULL, a.allocateFrom(ATTRIBUTE), a.allocateFrom(entry), MemorySegment.NULL)
             }
         }
 
@@ -99,7 +110,6 @@ class LibSecretCredentialStore(private val fallback: Path, useSecretService: Boo
 
         private companion object {
             const val ATTRIBUTE = "app"
-            const val APP = "racha"
             // SecretSchema: name, flags, attributes[32] {name, type}, reserved int, 7 reserved pointers.
             const val SCHEMA_BYTES = 8L + 8 + 32 * 16 + 8 + 7 * 8
         }

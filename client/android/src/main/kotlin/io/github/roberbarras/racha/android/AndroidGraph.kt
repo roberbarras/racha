@@ -47,6 +47,10 @@ import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
+import io.github.roberbarras.racha.remote.KtorImageGenerator
+import io.github.roberbarras.racha.application.library.GenerateCover
+import io.github.roberbarras.racha.android.sync.KeystoreSecretStore
+import io.github.roberbarras.racha.files.DirectoryCoverFiles
 import io.github.roberbarras.racha.android.widget.TodayWidget
 import io.github.roberbarras.racha.application.browse.ObserveTodayCard
 import kotlinx.coroutines.flow.debounce
@@ -108,9 +112,12 @@ class AndroidGraph(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // Sync (§7.4, opt-in): in the foreground while the app is visible ([MainActivity]), otherwise via WorkManager.
-    private val syncServer = KtorSyncServer(options = {
-        HttpOptions.of(preferences.get(Settings.Proxy), preferences.get(Settings.UserAgent), appVersion(context), "Android")
-    })
+    private val httpOptions: suspend () -> HttpOptions = {
+        HttpOptions.of(preferences.get(Settings.Proxy), preferences.get(Settings.UserAgent), appVersion, "Android")
+    }
+    private val syncServer = KtorSyncServer(options = httpOptions)
+    private val aiApiKey = KeystoreSecretStore(context, "ai-key.bin")
+    private val covers = DirectoryCoverFiles(File(context.filesDir, "covers").toPath())
     val account = AccountService(
         syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(context), "android", appVersion(context)) }, clock,
@@ -199,6 +206,8 @@ class AndroidGraph(context: Context) {
         manageCategories = ManageCategories(database.categories, scanLibrary, clock),
         storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(thumbnails.toPath()), keepLibraryUpToDate),
         configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),
+        generateCover = GenerateCover(database.library, preferences, aiApiKey, KtorImageGenerator(options = httpOptions), covers),
+        aiApiKey = aiApiKey,
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.util.TimeZone.getDefault().id },
