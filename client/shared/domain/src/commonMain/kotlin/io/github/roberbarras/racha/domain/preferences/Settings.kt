@@ -28,6 +28,9 @@ object Settings {
     val AccentColor = StringSetting("general.accentColor", USER, "#E8812A", Regex("#[0-9A-Fa-f]{6}"))
     val FontScale = DoubleSetting("general.fontScale", USER, 1.0, 0.85..1.3)
 
+    /** First-run guide finished (or skipped) on this device. */
+    val OnboardingDone = BooleanSetting("general.onboardingDone", DEVICE, false)
+
     /** Interface size on desktop; 0 = what the desktop announces (Xft.dpi). Per device: screens differ. */
     val UiScale = DoubleSetting("general.uiScale", DEVICE, 0.0, 0.0..3.0)
 
@@ -100,7 +103,7 @@ object Settings {
     val UserAgent = StringSetting("advanced.userAgent", DEVICE, "")
 
     val all: List<Setting<*>> = listOf(
-        Language, Theme, AccentColor, FontScale, UiScale, Mode,
+        Language, Theme, AccentColor, FontScale, UiScale, OnboardingDone, Mode,
         DefaultSpeed, SpeedSteps, SubtitlesEnabled, SubtitleLanguage, SeekStepSeconds,
         GestureTapEdges, GestureDoubleTap, GestureSwipeSeek, GestureSwipeBrightness, GestureSwipeVolume,
         GesturePinchZoom, GestureLongPressSpeed, LongPressSpeed, AutoplayNext, SkipIntroSeconds, SkipOutroSeconds,

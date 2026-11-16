@@ -63,6 +63,8 @@ object DemoLibrary {
     /** [sync] builds the account and sync controls over the same database (account screen tests). */
     fun dependencies(
         links: kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.emptyFlow(),
+        /** A first run: built-in categories only, nothing indexed (onboarding shows). */
+        empty: Boolean = false,
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
@@ -70,7 +72,7 @@ object DemoLibrary {
         val db = LocalDatabase(driver, Dispatchers.IO)
         val clock = Clock { now }
         val preferences = Preferences(db.settings, clock)
-        runBlocking { seed(db, clock) }
+        runBlocking { if (empty) EnsureBuiltInCategories(db.categories, clock)() else seed(db, clock) }
         val emptySource = object : LibrarySource {
             override fun displayName(location: String) = location
             override suspend fun list(location: String, descend: (RelativePath) -> Boolean) = emptyList<FileEntry>()

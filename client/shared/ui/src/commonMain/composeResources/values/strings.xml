@@ -355,4 +355,25 @@
     <string name="widget_empty">Add a folder to start.</string>
     <string name="widget_open">Open Racha</string>
     <string name="widget_description">Your streak and what to study today</string>
+    <string name="onboarding_welcome_title">Welcome to Racha</string>
+    <string name="onboarding_welcome_message">Your courses and series from your own folders, offline. Racha remembers where you left off and helps you keep the pace.</string>
+    <string name="onboarding_mode_title">What will you use it for?</string>
+    <string name="onboarding_mode_message">You can switch at any time from Home.</string>
+    <string name="onboarding_mode_study">Study</string>
+    <string name="onboarding_mode_study_hint">Courses first, with streaks and today\'s lesson.</string>
+    <string name="onboarding_mode_leisure">Leisure</string>
+    <string name="onboarding_mode_leisure_hint">Series and the rest, without pressure.</string>
+    <string name="onboarding_folders_title">Choose your folders</string>
+    <string name="onboarding_folders_message">Racha only reads them: nothing is moved or uploaded. You can add more later in Folders.</string>
+    <string name="onboarding_reminder_title">A daily nudge</string>
+    <string name="onboarding_reminder_message">A reminder on the days you have not studied yet, with your streak.</string>
+    <string name="onboarding_sync_title">Several devices?</string>
+    <string name="onboarding_sync_message">Progress, bookmarks and settings can follow you between your phone and your computer through your own server. Optional: everything works without it.</string>
+    <string name="onboarding_sync_now">Set it up now</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_start">Start</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_adding">Indexing…</string>
 </resources>

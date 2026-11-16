@@ -9,6 +9,9 @@ import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.domain.preferences.ThemeMode
 import io.github.roberbarras.racha.domain.preferences.AppLanguage
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -36,6 +39,27 @@ class AppViewModel(private val deps: RachaDependencies) : ViewModel() {
         deps.preferences.observe(Settings.Language),
     ) { theme, accent, scale, language -> Appearance(theme, accent, scale, language) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, Appearance())
+
+    private val mutableOnboarding = MutableStateFlow<Boolean?>(null)
+
+    /**
+     * Whether to show the first-run guide: decided once at start (not done yet and nothing indexed), so adding the first
+     * folder does not end it halfway. An existing library counts as done.
+     */
+    val onboarding: StateFlow<Boolean?> = mutableOnboarding.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val done = deps.preferences.get(Settings.OnboardingDone)
+            val empty = !done && deps.observeHome().first().libraryIsEmpty
+            if (!done && !empty) deps.preferences.set(Settings.OnboardingDone, true)
+            mutableOnboarding.value = !done && empty
+        }
+    }
+
+    fun finishOnboarding() {
+        mutableOnboarding.value = false
+    }
 
     fun setMode(mode: Mode) = viewModelScope.launch { deps.setMode(mode) }
 

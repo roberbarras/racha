@@ -39,6 +39,7 @@ import io.github.roberbarras.racha.ui.folders.FoldersScreen
 import io.github.roberbarras.racha.ui.account.AccountScreen
 import io.github.roberbarras.racha.ui.stats.StatsScreen
 import io.github.roberbarras.racha.ui.settings.SettingsScreen
+import io.github.roberbarras.racha.ui.onboarding.OnboardingScreen
 import io.github.roberbarras.racha.ui.settings.WithAppLanguage
 import io.github.roberbarras.racha.ui.home.HomeScreen
 import io.github.roberbarras.racha.ui.lists.HistoryScreen
@@ -126,6 +127,16 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 }
             },
         ) {
+            // The first-run guide replaces the app (nothing behind it can be reached); null while it is being decided.
+            val onboarding by app.onboarding.collectAsStateWithLifecycle()
+            var accountAfterOnboarding by remember { mutableStateOf(false) }
+            if (onboarding == true) {
+                OnboardingScreen(deps) { openAccount ->
+                    accountAfterOnboarding = openAccount
+                    app.finishOnboarding()
+                }
+            }
+            if (onboarding == false) {
             RachaShell(
                 current = current,
                 onNavigate = ::go,
@@ -196,7 +207,14 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                     }
                 }
             }
-            if (showLaunch) LaunchAnimation(contentReady = home != null, onFinished = { showLaunch = false })
+            LaunchedEffect(accountAfterOnboarding) {
+                if (accountAfterOnboarding) {
+                    accountAfterOnboarding = false
+                    go(Destination.Account)
+                }
+            }
+            }
+            if (showLaunch) LaunchAnimation(contentReady = home != null && onboarding != null, onFinished = { showLaunch = false })
         }
     }
     }

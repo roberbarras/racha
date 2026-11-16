@@ -355,4 +355,25 @@
     <string name="widget_empty">Añade una carpeta para empezar.</string>
     <string name="widget_open">Abrir Racha</string>
     <string name="widget_description">Tu racha y qué toca estudiar hoy</string>
+    <string name="onboarding_welcome_title">Te damos la bienvenida a Racha</string>
+    <string name="onboarding_welcome_message">Tus cursos y series desde tus propias carpetas, sin conexión. Racha recuerda por dónde ibas y te ayuda a mantener el ritmo.</string>
+    <string name="onboarding_mode_title">¿Para qué la vas a usar?</string>
+    <string name="onboarding_mode_message">Puedes cambiarlo cuando quieras desde Inicio.</string>
+    <string name="onboarding_mode_study">Estudiar</string>
+    <string name="onboarding_mode_study_hint">Primero los cursos, con rachas y la lección de hoy.</string>
+    <string name="onboarding_mode_leisure">Ocio</string>
+    <string name="onboarding_mode_leisure_hint">Series y lo demás, sin presión.</string>
+    <string name="onboarding_folders_title">Elige tus carpetas</string>
+    <string name="onboarding_folders_message">Racha solo las lee: no mueve ni sube nada. Puedes añadir más después en Carpetas.</string>
+    <string name="onboarding_reminder_title">Un empujón diario</string>
+    <string name="onboarding_reminder_message">Un recordatorio los días que aún no hayas estudiado, con tu racha.</string>
+    <string name="onboarding_sync_title">¿Varios dispositivos?</string>
+    <string name="onboarding_sync_message">El progreso, los marcadores y los ajustes pueden seguirte entre el móvil y el ordenador a través de tu propio servidor. Opcional: todo funciona sin él.</string>
+    <string name="onboarding_sync_now">Configurarla ahora</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_back">Atrás</string>
+    <string name="onboarding_skip">Saltar</string>
+    <string name="onboarding_start">Empezar</string>
+    <string name="onboarding_step">Paso %1$d de %2$d</string>
+    <string name="onboarding_adding">Indexando…</string>
 </resources>
