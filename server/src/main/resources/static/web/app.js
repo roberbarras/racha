@@ -370,6 +370,7 @@ async function account() {
   h("div", {}, button));
   return [
     pageHead(T.accountTitle, T.accountIntro),
+    yourData(),
     h("div", { class: "grid two" },
       card(null, h("div", { class: "stack" },
         h("div", {}, h("span", { class: "caption muted" }, T.email), h("p", {}, h("strong", {}, me.email))),
@@ -377,6 +378,55 @@ async function account() {
         h("div", {}, h("span", { class: "caption muted" }, T.since), h("p", {}, date(me.createdAt))))),
       card(T.changePassword, form)),
   ];
+}
+
+/** Download everything as a racha-backup file, or import one (H16, ADR-0015). */
+function yourData() {
+  const message = h("p", { class: "message", role: "status" });
+  const download = h("button", {
+    class: "btn secondary",
+    onclick: async () => {
+      download.disabled = true;
+      try {
+        const data = await api("/account/export");
+        const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+        const link = h("a", { href: URL.createObjectURL(blob), download: `racha-${new Date().toISOString().slice(0, 10)}.json` });
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+      } catch (e) {
+        message.className = "message danger";
+        message.textContent = errorText(e);
+      } finally {
+        download.disabled = false;
+      }
+    },
+  }, T.download);
+  const file = h("input", { type: "file", accept: "application/json,.json", hidden: true });
+  const choose = h("button", { class: "btn secondary", onclick: () => file.click() }, T.importData);
+  file.addEventListener("change", async () => {
+    const chosen = file.files?.[0];
+    file.value = "";
+    if (!chosen) return;
+    message.className = "message";
+    message.textContent = T.importing;
+    choose.disabled = true;
+    try {
+      let body;
+      try { body = JSON.parse(await chosen.text()); } catch { throw new ApiError(400, "invalid_input", T.notBackup); }
+      if (body?.format !== "racha-backup") throw new ApiError(400, "invalid_input", T.notBackup);
+      const report = await api("/account/import", { method: "POST", body });
+      message.className = "message ok";
+      message.textContent = T.imported(report);
+    } catch (e) {
+      message.className = "message danger";
+      message.textContent = errorText(e);
+    } finally {
+      choose.disabled = false;
+    }
+  });
+  return card(T.yourData, h("div", { class: "stack" }, h("p", { class: "muted" }, T.yourDataHint), h("div", { class: "row" }, download, choose, file), message));
 }
 
 // ---------- Admin ----------
