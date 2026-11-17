@@ -1,0 +1,16 @@
+-- What the user chose while watching (H15), per course or series; "*" holds the last choice anywhere. This device only.
+-- subtitles: NULL never chosen, "off", or a language code.
+CREATE TABLE playback_memory (
+    item_key TEXT NOT NULL PRIMARY KEY,
+    speed REAL,
+    audio_language TEXT,
+    audio_index INTEGER,
+    subtitles TEXT,
+    updated_at INTEGER NOT NULL
+);
+
+selectMemory:
+SELECT * FROM playback_memory WHERE item_key = ?;
+
+upsertMemory:
+INSERT OR REPLACE INTO playback_memory(item_key, speed, audio_language, audio_index, subtitles, updated_at) VALUES (?, ?, ?, ?, ?, ?);

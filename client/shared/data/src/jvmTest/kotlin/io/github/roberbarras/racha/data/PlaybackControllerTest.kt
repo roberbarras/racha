@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.data
 
+import io.github.roberbarras.racha.application.playback.AudioTrack
 import io.github.roberbarras.racha.application.browse.UpdateItemProgress
 import io.github.roberbarras.racha.application.library.EnsureBuiltInCategories
 import io.github.roberbarras.racha.application.library.scan.LibrarySource
@@ -73,7 +74,7 @@ class PlaybackControllerTest {
     }
     private val controller = PlaybackController(
         engine, scope, db.library, db.categories, uriSource, db.progress, db.bookmarks, db.history, db.stats, preferences,
-        UpdateItemProgress(db.library, db.progress), clock, LocalDates { CalendarDate(2026, 11, 13) }, usage, { "es" },
+        UpdateItemProgress(db.library, db.progress), clock, LocalDates { CalendarDate(2026, 11, 13) }, usage, db.playbackMemory, { "es" },
     )
 
     @AfterTest
@@ -234,6 +235,54 @@ class PlaybackControllerTest {
         eventually { engine.currentSpeed == 1.5f }
     }
 
+    @Test
+    fun speedAudioAndSubtitlesChosenOnceStayForTheNextVideosAndTheNextTime() = runBlocking {
+        seed()
+        listOf(first, second).forEach { video ->
+            listOf("en", "es").forEach { lang ->
+                val path = RelativePath.of(video.relativePath.withoutExtension().value + "_$lang.srt")
+                db.library.upsertSubtitle(Subtitle(ContentId.forSubtitle(CategoryKey.COURSES, root, path), video.id, LanguageCode(lang), path, now))
+            }
+        }
+        engine.audioTracks = listOf(AudioTrack("1", "spa", "Español"), AudioTrack("2", "eng", "English"))
+
+        // Nothing chosen yet: default speed, first audio, no subtitles.
+        controller.open(first.id, StartMode.RESUME)
+        eventually { engine.audio == "1" }
+        assertEquals(1f, engine.currentSpeed)
+        assertNull(engine.subtitle)
+
+        controller.setSpeed(1.5)
+        val english = controller.state.value.subtitles.first { it.language.value == "en" }
+        controller.selectSubtitle(english)
+        controller.selectAudio("2")
+        eventually { db.playbackMemory.get(item.id.value)?.let { it.speed == 1.5 && it.audioLanguage == "eng" && it.subtitles != null } == true }
+
+        // The next lesson starts with them…
+        controller.open(second.id, StartMode.RESUME)
+        eventually { engine.audio == "2" }
+        assertEquals(1.5f, engine.currentSpeed)
+        assertEquals(controller.state.value.subtitles.first { it.language.value == "en" }.id.value, engine.subtitle)
+
+        // …and so does the app the next time (a fresh controller over the same database).
+        val again = PlaybackController(
+            engine, scope, db.library, db.categories, uriSource, db.progress, db.bookmarks, db.history, db.stats, preferences,
+            UpdateItemProgress(db.library, db.progress), clock, LocalDates { CalendarDate(2026, 11, 13) }, usage, db.playbackMemory, { "es" },
+        )
+        engine.audio = null
+        again.open(first.id, StartMode.RESUME)
+        eventually { engine.audio == "2" }
+        assertEquals(1.5f, engine.currentSpeed)
+
+        // Turning subtitles off is remembered too, as off.
+        again.selectSubtitle(null)
+        eventually { db.playbackMemory.get(item.id.value)?.subtitles == io.github.roberbarras.racha.domain.playback.SubtitleChoice.Off }
+        again.open(second.id, StartMode.RESUME)
+        assertNull(engine.subtitle)
+        // A course never watched starts with the last choices anywhere.
+        assertEquals(1.5, db.playbackMemory.get(io.github.roberbarras.racha.application.playback.PlaybackMemoryRepository.LAST)?.speed)
+    }
+
     private suspend fun SqlHistoryRepository.observeRecentOnce() = observeRecent(10).first()
 
     private class FakeEngine : PlayerEngine {
@@ -244,6 +293,9 @@ class PlaybackControllerTest {
         val seeks = mutableListOf<Long>()
         var currentSpeed = 1f
         var subtitle: String? = null
+        /** Tracks every loaded video reports (H15: the remembered audio is applied once they are known). */
+        var audioTracks: List<AudioTrack> = emptyList()
+        var audio: String? = null
         val playing get() = snapshot.value.playing
 
         fun emit(state: EngineState, playing: Boolean) {
@@ -256,14 +308,19 @@ class PlaybackControllerTest {
         override fun load(source: MediaSource, startMs: Long, playWhenReady: Boolean) {
             loaded = Triple(source, startMs, playWhenReady)
             position = startMs
-            snapshot.value = EngineSnapshot(state = EngineState.READY, playing = playWhenReady, durationMs = durationMs)
+            audio = audioTracks.firstOrNull()?.id
+            snapshot.value = EngineSnapshot(state = EngineState.READY, playing = playWhenReady, durationMs = durationMs, audioTracks = audioTracks,
+                selectedAudio = audio)
         }
         override fun play() = emitPlaying(true)
         override fun pause() = emitPlaying(false)
         override fun seekTo(positionMs: Long) { seeks += positionMs; position = positionMs }
         override fun setSpeed(speed: Float) { currentSpeed = speed }
         override fun selectSubtitle(id: String?) { subtitle = id }
-        override fun selectAudio(id: String?) = Unit
+        override fun selectAudio(id: String?) {
+            audio = id
+            snapshot.value = snapshot.value.copy(selectedAudio = id)
+        }
         override fun release() = Unit
     }
 }

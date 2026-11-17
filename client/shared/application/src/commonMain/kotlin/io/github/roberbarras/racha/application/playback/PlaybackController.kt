@@ -20,7 +20,10 @@ import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.LibraryItem
 import io.github.roberbarras.racha.domain.library.PlayableElement
 import io.github.roberbarras.racha.domain.library.Subtitle
+import io.github.roberbarras.racha.domain.playback.PlaybackChoice
 import io.github.roberbarras.racha.domain.playback.PlaybackRules
+import io.github.roberbarras.racha.domain.playback.SubtitleChoice
+import io.github.roberbarras.racha.domain.playback.TrackChoice
 import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.domain.preferences.Settings
 import kotlinx.coroutines.CoroutineScope
@@ -77,7 +80,8 @@ fun interface SystemLanguage {
 /**
  * Shared playback logic for every platform (spec §4.2–§4.3), driving a [PlayerEngine]:
  * resume prompt, periodic and on-pause progress saving, completion and autoplay (also at the outro), A-B loop,
- * bookmarks, speed, external subtitles, history and daily watch time. Runs in the caller's [scope] (the player
+ * bookmarks, speed, external subtitles, history and daily watch time; remembers speed, audio and subtitles per course or
+ * series (H15). Runs in the caller's [scope] (the player
  * screen's view model); the periodic work only exists while something is playing.
  */
 class PlaybackController(
@@ -95,6 +99,8 @@ class PlaybackController(
     private val clock: Clock,
     private val localDates: LocalDates,
     private val usage: UsageEvents = UsageEvents.NONE,
+    /** Speed, audio and subtitles chosen per course or series, and the last ones anywhere (H15). */
+    private val memory: PlaybackMemoryRepository = PlaybackMemoryRepository.NONE,
     private val systemLanguage: SystemLanguage,
 ) {
     private val mutableState = MutableStateFlow(PlaybackState())
@@ -107,9 +113,14 @@ class PlaybackController(
     private var ticker: Job? = null
     private var bookmarksJob: Job? = null
     private var finishing = false
+    /** What this course or series (or, failing that, the last one anywhere) was watched with. */
+    private var remembered = PlaybackChoice()
+    /** The audio choice is applied once per video, as soon as its tracks are known. */
+    private var audioApplied = true
 
     /** Progress is read-modified-written from several coroutines (pause, ticker, end): one at a time. */
     private val progressLock = Mutex()
+    private val memoryLock = Mutex()
 
     init {
         scope.launch {
@@ -118,6 +129,7 @@ class PlaybackController(
                 mutableState.update { it.copy(engine = snapshot) }
                 if (snapshot.playing != before.playing) onPlayingChanged(snapshot.playing)
                 if (snapshot.state == EngineState.ENDED && before.state != EngineState.ENDED) onEnded()
+                if (!audioApplied && snapshot.audioTracks.isNotEmpty()) applyRememberedAudio(snapshot)
             }
         }
     }
@@ -136,7 +148,8 @@ class PlaybackController(
         val resume = PlaybackRules.resumePosition(saved)
         val ask = mode == StartMode.ASK && resume != null && resume > intro
         val start = PlaybackRules.startPosition(if (ask) StartMode.RESUME else mode, saved, intro)
-        val speed = preferences.get(Settings.DefaultSpeed)
+        remembered = (memory.get(item.id.value) ?: PlaybackChoice()).orElse(memory.get(PlaybackMemoryRepository.LAST))
+        val speed = remembered.speed ?: preferences.get(Settings.DefaultSpeed)
         mutableState.update {
             it.copy(
                 item = item,
@@ -162,11 +175,34 @@ class PlaybackController(
             uri = source.uri(location, element.relativePath),
             subtitles = subtitles.map { s -> SubtitleSource(s.id.value, source.uri(location, s.relativePath), s.language.value, s.language.value) },
         )
+        audioApplied = false
         engine.load(media, start * 1000, playWhenReady = !ask)
         engine.setSpeed(speed.toFloat())
-        engine.selectSubtitle(defaultSubtitle(subtitles)?.id?.value)
+        val subtitle = remembered.subtitles?.let { choice -> TrackChoice.subtitle(subtitles, { it.language.value }, choice) }
+            ?: if (remembered.subtitles == null) defaultSubtitle(subtitles) else null
+        engine.selectSubtitle(subtitle?.id?.value)
         sessionStart = clock.now()
         sessionSeconds = 0
+    }
+
+    /** The remembered audio language (or position), once the video's tracks are known; otherwise the file's default. */
+    private fun applyRememberedAudio(snapshot: EngineSnapshot) {
+        audioApplied = true
+        val track = TrackChoice.audio(snapshot.audioTracks, AudioTrack::language, remembered) ?: return
+        if (track.id != snapshot.selectedAudio) engine.selectAudio(track.id)
+    }
+
+    /** Stores a choice for this course or series and as the last one anywhere, so the next videos keep it. */
+    private fun remember(change: (PlaybackChoice) -> PlaybackChoice) {
+        val item = mutableState.value.item ?: return
+        remembered = change(remembered)
+        scope.launch {
+            memoryLock.withLock { // read-modify-write: two quick changes must not overwrite each other
+                val now = clock.now()
+                memory.save(item.id.value, change(memory.get(item.id.value) ?: PlaybackChoice()), now)
+                memory.save(PlaybackMemoryRepository.LAST, change(memory.get(PlaybackMemoryRepository.LAST) ?: PlaybackChoice()), now)
+            }
+        }
     }
 
     /** Subtitles are off by default (spec §4.2); when enabled, the preferred language, else the app language. */
@@ -207,6 +243,7 @@ class PlaybackController(
     fun setSpeed(speed: Double) {
         mutableState.update { it.copy(speed = speed) }
         if (!mutableState.value.holdingSpeed) engine.setSpeed(speed.toFloat())
+        remember { it.copy(speed = speed) }
         feature("speed", mapOf("speed" to speed.toString()))
     }
 
@@ -222,11 +259,15 @@ class PlaybackController(
 
     fun selectSubtitle(subtitle: Subtitle?) {
         engine.selectSubtitle(subtitle?.id?.value)
+        remember { it.copy(subtitles = subtitle?.let { s -> SubtitleChoice.Language(s.language.value) } ?: SubtitleChoice.Off) }
         feature("subtitles", mapOf("language" to (subtitle?.language?.value ?: "off")))
     }
 
     fun selectAudio(id: String?) {
         engine.selectAudio(id)
+        val tracks = mutableState.value.engine.audioTracks
+        val index = tracks.indexOfFirst { it.id == id }
+        if (index >= 0) remember { it.copy(audioLanguage = tracks[index].language, audioIndex = index) }
         feature("audio_track")
     }
 

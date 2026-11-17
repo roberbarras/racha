@@ -190,7 +190,7 @@ class DesktopGraph(
         playbackController = { engine, scope ->
         PlaybackController(
             engine, scope, database.library, database.categories, NioLibrarySource(), database.progress, database.bookmarks,
-            database.history, database.stats, preferences, updateItemProgress, clock, localDates, telemetry,
+            database.history, database.stats, preferences, updateItemProgress, clock, localDates, telemetry, database.playbackMemory,
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,

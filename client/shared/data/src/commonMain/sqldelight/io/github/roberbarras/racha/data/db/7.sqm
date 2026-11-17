@@ -1,0 +1,9 @@
+-- v8 (H15): what the user chose while watching, per course or series ("*" = the last choice anywhere).
+CREATE TABLE playback_memory (
+    item_key TEXT NOT NULL PRIMARY KEY,
+    speed REAL,
+    audio_language TEXT,
+    audio_index INTEGER,
+    subtitles TEXT,
+    updated_at INTEGER NOT NULL
+);
