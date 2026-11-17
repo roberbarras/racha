@@ -53,6 +53,14 @@ public final class JdbcSessions implements IdentityPorts.Sessions {
                 .param("now", Sql.time(now)).param("family", familyId).update();
     }
 
+    @Override
+    public void revokeAllOfUser(UUID userId, UUID keepDevice, Instant now) {
+        jdbc.sql("""
+                update sessions set revoked_at = :now
+                where user_id = :user and revoked_at is null and (cast(:keep as uuid) is null or device_id is distinct from :keep)""")
+                .param("now", Sql.time(now)).param("user", userId).param("keep", keepDevice).update();
+    }
+
     private static RefreshSession session(ResultSet rs, int row) throws SQLException {
         return new RefreshSession(rs.getObject("id", UUID.class), rs.getObject("user_id", UUID.class), rs.getObject("device_id", UUID.class),
                 rs.getObject("family_id", UUID.class), rs.getBytes("token_hash"), Sql.instant(rs, "created_at"), Sql.instant(rs, "expires_at"),

@@ -3,6 +3,7 @@ package io.github.roberbarras.racha.identity.adapter.web;
 import io.github.roberbarras.racha.identity.application.AuthService;
 import io.github.roberbarras.racha.identity.application.AuthTokens;
 import io.github.roberbarras.racha.identity.application.DeviceInfo;
+import io.github.roberbarras.racha.identity.application.PasswordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** §7.2: `/auth/register`, `/auth/login`, `/auth/refresh` and `/auth/logout` (OAuth callback deferred, ADR-0006). */
+/**
+ * §7.2: `/auth/register`, `/auth/login`, `/auth/refresh` and `/auth/logout` (OAuth callback deferred, ADR-0006), and
+ * password recovery by e-mail.
+ */
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Auth", description = "Accounts and sessions: email + password, JWT access token, rotating refresh token")
@@ -31,6 +35,10 @@ public class AuthController {
 
     public record RefreshRequest(String refreshToken) {}
 
+    public record ForgotPasswordRequest(String email) {}
+
+    public record ResetPasswordRequest(String email, String code, String newPassword) {}
+
     public record TokenResponse(UUID userId, UUID deviceId, String accessToken, String tokenType, long expiresIn, String refreshToken) {
         static TokenResponse of(AuthTokens t) {
             return new TokenResponse(t.userId(), t.deviceId(), t.accessToken(), "Bearer", t.expiresInSeconds(), t.refreshToken());
@@ -38,9 +46,11 @@ public class AuthController {
     }
 
     private final AuthService auth;
+    private final PasswordService passwords;
 
-    public AuthController(AuthService auth) {
+    public AuthController(AuthService auth, PasswordService passwords) {
         this.auth = auth;
+        this.passwords = passwords;
     }
 
     @PostMapping("/register")
@@ -67,6 +77,20 @@ public class AuthController {
     @Operation(summary = "End this device's session")
     public void logout(@RequestBody RefreshRequest body) {
         auth.logout(body.refreshToken());
+    }
+
+    @PostMapping("/password/forgot")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "E-mail a recovery code (same answer whether the account exists or not; 503 if the server cannot send mail)")
+    public void forgotPassword(@RequestBody ForgotPasswordRequest body, HttpServletRequest request) {
+        passwords.requestCode(body.email(), request.getHeader("Accept-Language"), request.getRemoteAddr());
+    }
+
+    @PostMapping("/password/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Set a new password with the e-mailed code; every session of the account ends")
+    public void resetPassword(@RequestBody ResetPasswordRequest body, HttpServletRequest request) {
+        passwords.reset(body.email(), body.code(), body.newPassword(), request.getRemoteAddr());
     }
 
     private static DeviceInfo device(DeviceRequest device) {

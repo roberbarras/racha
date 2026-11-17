@@ -131,4 +131,10 @@ class AuthApiTest {
     private Api.Response login(String email, String password, String from) {
         return api.call("POST", "/auth/login", Map.of("email", email, "password", password, "device", Api.device("x")), null, from);
     }
+    @Test
+    void withoutMailSettingsRecoverySaysSoWithoutRevealingAccounts() {
+        var r = api.post("/auth/password/forgot", Map.of("email", "anyone@example.com"), null);
+        assertThat(r.status()).isEqualTo(503);
+        assertThat(r.body().get("code").asString()).isEqualTo("mail_not_configured");
+    }
 }

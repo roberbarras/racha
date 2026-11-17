@@ -2,11 +2,14 @@ package io.github.roberbarras.racha.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import io.github.roberbarras.racha.identity.adapter.security.JwtAccessTokens;
+import io.github.roberbarras.racha.identity.application.AuthService;
 import io.github.roberbarras.racha.shared.adapter.web.ClientAddressFilter;
 import io.github.roberbarras.racha.shared.adapter.web.TrustedProxies;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
@@ -15,6 +18,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,24 +30,64 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** Stateless API: public auth and docs endpoints, a valid access token for everything else. */
+/** Stateless API: public auth and docs endpoints, admin-only `/admin`, a valid access token for everything else. */
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfiguration.class);
     private static final int MIN_KEY_BYTES = 32;
 
+    /**
+     * Prometheus scrapes `/actuator/prometheus` with `Authorization: Bearer <RACHA_METRICS_TOKEN>` (it cannot sign in);
+     * without that setting the endpoint is closed. Admins see the same figures in the admin screen.
+     */
     @Bean
-    SecurityFilterChain api(HttpSecurity http) throws Exception {
+    @Order(1)
+    SecurityFilterChain metrics(HttpSecurity http, RachaProperties properties) throws Exception {
+        var token = properties.metricsToken();
+        var expected = token == null || token.isBlank() ? null : ("Bearer " + token.strip()).getBytes(StandardCharsets.UTF_8);
+        return http
+                .securityMatcher("/actuator/prometheus")
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().access((authentication, context) -> {
+                    var header = context.getRequest().getHeader("Authorization");
+                    var given = header == null ? new byte[0] : header.getBytes(StandardCharsets.UTF_8);
+                    return new AuthorizationDecision(expected != null && MessageDigest.isEqual(expected, given));
+                }))
+                .build();
+    }
+
+    @Bean
+    @Order(2)
+    SecurityFilterChain api(HttpSecurity http, AuthService accounts) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable()) // bearer tokens only, no cookies: CSRF does not apply
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/actuator/health/**", "/v3/api-docs/**", "/docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/reset-password", "/reset-password.html").permitAll()
+                        // Checked against the database on every call: taking the role away works at once.
+                        .requestMatchers("/admin/**").access((authentication, context) -> new AuthorizationDecision(
+                                authentication.get() instanceof JwtAuthenticationToken jwt && accounts.isAdmin(UUID.fromString(jwt.getName()))))
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()))
                 .build();
+    }
+
+    /** The password recovery page at `/reset-password` (the link in recovery e-mails). */
+    @Bean
+    WebMvcConfigurer pages() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addViewControllers(ViewControllerRegistry registry) {
+                registry.addViewController("/reset-password").setViewName("forward:/reset-password.html");
+            }
+        };
     }
 
     /** Real client addresses behind a trusted proxy, before anything else (security, throttling, logs) reads them. */

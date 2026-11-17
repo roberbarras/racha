@@ -28,6 +28,21 @@ public sealed class AuthErrors extends RuntimeException {
         public InvalidRefreshToken() { super("session expired, log in again"); }
     }
 
+    /** The current password given to change it is wrong (not 401: the caller's token is fine). */
+    public static final class WrongPassword extends AuthErrors {
+        public WrongPassword() { super("the current password is not correct"); }
+    }
+
+    /** Unknown, expired or already used recovery code. */
+    public static final class InvalidRecoveryCode extends AuthErrors {
+        public InvalidRecoveryCode() { super("the recovery code is wrong or has expired"); }
+    }
+
+    /** The server has no mail settings, so it cannot send recovery codes. */
+    public static final class MailNotConfigured extends AuthErrors {
+        public MailNotConfigured() { super("this server cannot send e-mail; ask its administrator"); }
+    }
+
     public static final class InvalidInput extends AuthErrors {
         public InvalidInput(String message) { super(message); }
     }

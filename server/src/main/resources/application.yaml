@@ -37,12 +37,31 @@ racha:
     refresh-token-days: ${RACHA_REFRESH_TOKEN_DAYS:60}
     # open: anyone who reaches the server can create an account; closed: only existing users (self-hosted server).
     registration: ${RACHA_REGISTRATION:open}
+    # This account administers the server (users, metrics, logs, backups). Empty: the first account to register.
+    admin-email: ${RACHA_ADMIN_EMAIL:}
   limits:
     max-batch: 1000
     max-change-bytes: 65536
     login-failures-per-account-and-client: 10
     login-failures-per-client: 50
     registrations-per-client: 20
+  # Address of this server as users reach it (https://racha.example.com): links in e-mails. Empty: codes only.
+  public-url: ${RACHA_PUBLIC_URL:}
+  # Bearer token Prometheus uses for /actuator/prometheus; empty: the endpoint is closed.
+  metrics-token: ${RACHA_METRICS_TOKEN:}
+  # The log file shown in the admin screen (the same file logging writes).
+  log-file: ${RACHA_LOG_FILE:}
+  # Where the backup service leaves its dumps (listed in the admin screen).
+  backup-dir: ${RACHA_BACKUP_DIR:}
+  # SMTP for password recovery. No host: the server sends no mail and recovery is unavailable.
+  mail:
+    host: ${RACHA_MAIL_HOST:}
+    port: ${RACHA_MAIL_PORT:587}
+    username: ${RACHA_MAIL_USERNAME:}
+    password: ${RACHA_MAIL_PASSWORD:}
+    security: ${RACHA_MAIL_SECURITY:starttls}
+    from: ${RACHA_MAIL_FROM:}
+    from-name: ${RACHA_MAIL_FROM_NAME:Racha}
   network:
     # Proxies allowed to tell the client's address (X-Forwarded-For, CF-Connecting-IP): `local` (same machine or LAN,
     # e.g. Cloudflare Tunnel, nginx, Caddy), `cloudflare` (Cloudflare's proxy pointing at this server), `none`, or CIDRs.
@@ -60,8 +79,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+
+logging:
+  # In Docker: /app/logs/racha.log (Dockerfile). JSON lines (ECS) so the admin screen can filter them; the console
+  # stays readable for `docker compose logs`.
+  file:
+    name: ${RACHA_LOG_FILE:}
+  structured:
+    format:
+      file: ecs
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 14
+      total-size-cap: 200MB

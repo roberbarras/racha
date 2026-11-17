@@ -6,13 +6,16 @@
     "version" : "1"
   },
   "servers" : [ {
-    "url" : "http://localhost:39515",
+    "url" : "http://localhost:36709",
     "description" : "Generated server url"
   } ],
   "security" : [ {
     "bearer" : [ ]
   } ],
   "tags" : [ {
+    "name" : "Admin",
+    "description" : "Server state, users, backups, logs and mail; admins only"
+  }, {
     "name" : "Auth",
     "description" : "Accounts and sessions: email + password, JWT access token, rotating refresh token"
   }, {
@@ -951,6 +954,50 @@
         }
       }
     },
+    "/auth/password/reset" : {
+      "post" : {
+        "tags" : [ "Auth" ],
+        "summary" : "Set a new password with the e-mailed code; every session of the account ends",
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/auth/password/forgot" : {
+      "post" : {
+        "tags" : [ "Auth" ],
+        "summary" : "E-mail a recovery code (same answer whether the account exists or not; 503 if the server cannot send mail)",
+        "operationId" : "forgotPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        }
+      }
+    },
     "/auth/logout" : {
       "post" : {
         "tags" : [ "Auth" ],
@@ -1030,6 +1077,112 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/role" : {
+      "post" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Make an account admin or user (the last active admin cannot stop being one)",
+        "operationId" : "role",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/disabled" : {
+      "post" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Disable (signs every device out) or enable an account; never your own",
+        "operationId" : "disabled",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisabledRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/admin/mail/test" : {
+      "post" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Send a test e-mail to your own address now (the error, if the mail server refuses it)",
+        "operationId" : "testMail",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/password" : {
+      "post" : {
+        "tags" : [ "Account" ],
+        "summary" : "Change the password (403 wrong_password); the account's other devices are signed out",
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1153,6 +1306,128 @@
                   "items" : {
                     "$ref" : "#/components/schemas/DeviceResponse"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users" : {
+      "get" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Every account with its role, devices, sessions and last activity",
+        "operationId" : "users",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/overview" : {
+      "get" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Version, uptime, configuration status, counts, runtime metrics, latest backups",
+        "operationId" : "overview",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Overview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/logs" : {
+      "get" : {
+        "tags" : [ "Admin" ],
+        "summary" : "The newest log events at this level or above (TRACE, DEBUG, INFO, WARN, ERROR)",
+        "operationId" : "logs",
+        "parameters" : [ {
+          "name" : "lines",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 200
+          }
+        }, {
+          "name" : "level",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "INFO"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/LogEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/backups" : {
+      "get" : {
+        "tags" : [ "Admin" ],
+        "summary" : "The backup service's dumps, newest first",
+        "operationId" : "backups",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BackupFile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/me" : {
+      "get" : {
+        "tags" : [ "Account" ],
+        "summary" : "The signed-in account (role: user or admin)",
+        "operationId" : "me_1",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MeResponse"
                 }
               }
             }
@@ -1421,6 +1696,28 @@
           }
         }
       },
+      "ResetPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "newPassword" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ForgotPasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          }
+        }
+      },
       "LoginRequest" : {
         "type" : "object",
         "properties" : {
@@ -1452,6 +1749,33 @@
           "properties" : {
             "type" : "object",
             "additionalProperties" : { }
+          }
+        }
+      },
+      "RoleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "role" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DisabledRequest" : {
+        "type" : "object",
+        "properties" : {
+          "disabled" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string"
+          },
+          "newPassword" : {
+            "type" : "string"
           }
         }
       },
@@ -1540,6 +1864,220 @@
             "items" : {
               "$ref" : "#/components/schemas/CategoryWatch"
             }
+          }
+        }
+      },
+      "UserSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "disabled" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lastSeenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "devices" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "activeSessions" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "BackupFile" : {
+        "type" : "object",
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "bytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "Counts" : {
+        "type" : "object",
+        "properties" : {
+          "users" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "admins" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "disabledUsers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "activeUsers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "devices" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "activeDevices" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "activeSessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "progressRows" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "historyRows" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "recentEvents" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "recentErrors" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "databaseBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "Overview" : {
+        "type" : "object",
+        "properties" : {
+          "server" : {
+            "$ref" : "#/components/schemas/ServerInfo"
+          },
+          "uptime" : {
+            "type" : "string",
+            "format" : "duration"
+          },
+          "counts" : {
+            "$ref" : "#/components/schemas/Counts"
+          },
+          "metrics" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "number",
+              "format" : "double"
+            }
+          },
+          "backupsLocation" : {
+            "type" : "string"
+          },
+          "recentBackups" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/BackupFile"
+            }
+          },
+          "backupsBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "logLocation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ServerInfo" : {
+        "type" : "object",
+        "properties" : {
+          "version" : {
+            "type" : "string"
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "registrationOpen" : {
+            "type" : "boolean"
+          },
+          "mailConfigured" : {
+            "type" : "boolean"
+          },
+          "publicUrlSet" : {
+            "type" : "boolean"
+          },
+          "metricsTokenSet" : {
+            "type" : "boolean"
+          },
+          "trustedProxies" : {
+            "type" : "string"
+          }
+        }
+      },
+      "LogEntry" : {
+        "type" : "object",
+        "properties" : {
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "level" : {
+            "type" : "string"
+          },
+          "logger" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "error" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       }

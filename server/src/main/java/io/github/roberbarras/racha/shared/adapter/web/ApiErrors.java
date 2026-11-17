@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.shared.adapter.web;
 
+import io.github.roberbarras.racha.admin.application.AdminErrors;
 import io.github.roberbarras.racha.identity.application.AuthErrors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -20,6 +21,21 @@ public class ApiErrors {
             case AuthErrors.RegistrationClosed e -> HttpStatus.FORBIDDEN;
             case AuthErrors.TooManyAttempts e -> HttpStatus.TOO_MANY_REQUESTS;
             case AuthErrors.InvalidInput e -> HttpStatus.BAD_REQUEST;
+            case AuthErrors.WrongPassword e -> HttpStatus.FORBIDDEN;
+            case AuthErrors.InvalidRecoveryCode e -> HttpStatus.BAD_REQUEST;
+            case AuthErrors.MailNotConfigured e -> HttpStatus.SERVICE_UNAVAILABLE;
+            default -> HttpStatus.BAD_REQUEST;
+        };
+        return problem(status, code(error), error.getMessage());
+    }
+
+    @ExceptionHandler(AdminErrors.class)
+    ProblemDetail admin(AdminErrors error) {
+        var status = switch (error) {
+            case AdminErrors.UnknownUser e -> HttpStatus.NOT_FOUND;
+            case AdminErrors.LastAdmin e -> HttpStatus.CONFLICT;
+            case AdminErrors.MailFailed e -> HttpStatus.BAD_GATEWAY;
+            case AdminErrors.InvalidInput e -> HttpStatus.BAD_REQUEST;
             default -> HttpStatus.BAD_REQUEST;
         };
         return problem(status, code(error), error.getMessage());
@@ -41,7 +57,7 @@ public class ApiErrors {
         return problem;
     }
 
-    private static String code(AuthErrors error) {
+    private static String code(RuntimeException error) {
         // InvalidCredentials -> invalid_credentials
         return error.getClass().getSimpleName().replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT);
     }

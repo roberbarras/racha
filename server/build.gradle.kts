@@ -6,7 +6,6 @@ plugins {
 }
 
 group = "io.github.roberbarras.racha"
-version = "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
@@ -28,6 +27,8 @@ dependencies {
     implementation(libs.springdoc.openapi)
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+    implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
@@ -38,6 +39,13 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation(libs.archunit.junit5)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// Version shown in the admin screen (`-Pracha.version=1.0.0` for releases).
+version = providers.gradleProperty("racha.version").getOrElse("0.0.1-SNAPSHOT")
+
+springBoot {
+    buildInfo()
 }
 
 tasks.withType<JavaCompile>().configureEach {

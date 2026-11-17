@@ -6,6 +6,7 @@ import io.github.roberbarras.racha.identity.domain.IdentityPorts;
 import io.github.roberbarras.racha.identity.domain.LearningMode;
 import io.github.roberbarras.racha.identity.domain.PasswordPolicy;
 import io.github.roberbarras.racha.identity.domain.RefreshSession;
+import io.github.roberbarras.racha.identity.domain.Role;
 import io.github.roberbarras.racha.identity.domain.User;
 import java.time.Clock;
 import java.time.Duration;
@@ -26,13 +27,15 @@ public final class AuthService {
     private final Clock clock;
     private final Duration refreshLifetime;
     private final boolean registrationOpen;
+    /** `RACHA_ADMIN_EMAIL`: that account administers the server; null: the first account to register does. */
+    private final Email adminEmail;
     /** Compared against when the email is unknown, so both cases cost the same time. */
     private final String dummyHash;
 
     public AuthService(
             IdentityPorts.Users users, IdentityPorts.Devices devices, IdentityPorts.Sessions sessions,
             IdentityPorts.PasswordHasher passwords, IdentityPorts.AccessTokens accessTokens, IdentityPorts.AttemptLimiter limiter,
-            Clock clock, Duration refreshLifetime, boolean registrationOpen) {
+            Clock clock, Duration refreshLifetime, boolean registrationOpen, Email adminEmail) {
         this.users = users;
         this.devices = devices;
         this.sessions = sessions;
@@ -42,6 +45,7 @@ public final class AuthService {
         this.clock = clock;
         this.refreshLifetime = refreshLifetime;
         this.registrationOpen = registrationOpen;
+        this.adminEmail = adminEmail;
         this.dummyHash = passwords.hash(RefreshTokens.generate());
     }
 
@@ -56,7 +60,9 @@ public final class AuthService {
         }
         if (displayName != null && displayName.length() > 100) throw new AuthErrors.InvalidInput("display name too long");
         limiter.failed(limitKey, now); // counts every registration from this client, successful or not
-        var user = new User(UUID.randomUUID(), email, passwords.hash(password), blankToNull(displayName), LearningMode.STUDY, now, false);
+        var admin = adminEmail != null ? adminEmail.equals(email) : !users.hasAdmin();
+        var user = new User(UUID.randomUUID(), email, passwords.hash(password), blankToNull(displayName), LearningMode.STUDY, now, false,
+                admin ? Role.ADMIN : Role.USER);
         if (!users.insert(user, now)) throw new AuthErrors.EmailTaken();
         return startSession(user, device, now, null);
     }
@@ -112,6 +118,15 @@ public final class AuthService {
         var user = users.byId(session.userId()).filter(u -> !u.disabled()).orElseThrow(AuthErrors.InvalidRefreshToken::new);
         if (session.deviceId() != null) devices.touch(session.deviceId(), now);
         return issue(user.id(), session.deviceId(), session.familyId(), now);
+    }
+
+    /** At start-up: `RACHA_ADMIN_EMAIL`'s account, if it exists already, becomes an admin. */
+    public void promoteConfiguredAdmin() {
+        if (adminEmail != null) users.promote(adminEmail, clock.instant());
+    }
+
+    public boolean isAdmin(UUID userId) {
+        return users.byId(userId).filter(u -> !u.disabled()).map(User::isAdmin).orElse(false);
     }
 
     /** Ends this device's session (the token and every token rotated from the same login). */

@@ -25,6 +25,9 @@ class HexagonalArchitectureTest {
             .adapter("web", "..adapter.web..")
             .adapter("persistence", "..adapter.persistence..")
             .adapter("security", "..adapter.security..")
+            .adapter("mail", "..adapter.mail..")
+            .adapter("files", "..adapter.files..")
+            .adapter("metrics", "..adapter.metrics..")
             .withOptionalLayers(true)
             // The composition root wires adapters into ports by design; it is not part of any layer.
             .ignoreDependency(resideInAPackage("io.github.roberbarras.racha.config.."), DescribedPredicate.alwaysTrue());

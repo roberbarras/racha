@@ -16,6 +16,13 @@ public final class IdentityPorts {
         Optional<User> byEmail(Email email);
 
         Optional<User> byId(UUID id);
+
+        void updatePassword(UUID id, String passwordHash, Instant now);
+
+        boolean hasAdmin();
+
+        /** Makes the account with this email an admin; false if there is none. */
+        boolean promote(Email email, Instant now);
     }
 
     public interface Devices {
@@ -37,6 +44,29 @@ public final class IdentityPorts {
         boolean markUsed(UUID id, Instant now);
 
         void revokeFamily(UUID familyId, Instant now);
+
+        /** Ends every session of the user except those of [keepDevice] (null: all of them). */
+        void revokeAllOfUser(UUID userId, UUID keepDevice, Instant now);
+    }
+
+    /** Password recovery codes (hashes only). */
+    public interface PasswordResets {
+        /** Stores [reset] and voids the user's earlier codes. */
+        void replace(PasswordReset reset, String requestedFrom);
+
+        /** The user's newest code, if any. */
+        Optional<PasswordReset> latestOf(UUID userId);
+
+        /** Marks it used; false if it was used meanwhile. */
+        boolean markUsed(UUID id, Instant now);
+    }
+
+    /** Outgoing e-mail (SMTP); [configured] is false when the server has no mail settings. */
+    public interface Mailer {
+        boolean configured();
+
+        /** Sends a plain-text message; throws if the mail server refuses it. */
+        void send(String to, String subject, String body);
     }
 
     public interface PasswordHasher {
