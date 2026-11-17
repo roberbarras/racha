@@ -159,8 +159,13 @@ jobs:
         env:
           RACHA_PORT: "18080"
         run: |
+          set -o pipefail
           export RACHA_JWT_SECRET=$(openssl rand -base64 48)
-          docker compose -p racha-e2e up -d --build
+          if ! docker compose -p racha-e2e up -d --build 2>&1 | tee "$RUNNER_TEMP/compose.log"; then
+            # Logs need a login: the end of the build output as a public annotation.
+            echo "::error title=docker compose up::$(tail -15 "$RUNNER_TEMP/compose.log" | tr '\n' ' ' | cut -c1-1500)"
+            exit 1
+          fi
           for i in $(seq 1 60); do
             curl -sf http://localhost:18080/actuator/health && exit 0
             sleep 2
