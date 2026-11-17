@@ -18,7 +18,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H9 | Sync extremo a extremo y conflictos | ✅ Cerrado |
 | H10 | Estadísticas y telemetría | ✅ Cerrado |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | ✅ Cerrado |
-| H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | Pendiente |
+| H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
 
 ## Criterios de aceptación (§12)
 
@@ -35,7 +35,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 9 | Auth (email/password + JWT; OAuth aplazado, ADR-0006) | H8, H9 | ✅ Servidor (H8) y registro/login/refresh desde las apps (H9); OAuth aplazado (ADR-0006) |
 | 10 | Idiomas es/en y subtítulos por idioma | H4, H5 | ✅ UI es/en (H4) con selector de idioma de la app (H11); subtítulos por idioma, apagados por defecto (H5) |
 | 11 | Modo Estudio/Ocio | H4 | ✅ H4 (caso de uso + UI) |
-| 12 | Diseño con identidad propia | H4, H12 | 🟡 Home y Detalle (H4), reproductores Android (H5) y Linux (H6), interfaz adaptada a la escala y al ancho (H6) ✅; pulido → H12 |
+| 12 | Diseño con identidad propia | H4, H12 | ✅ Identidad propia en todas las pantallas (Home, Detalle, reproductores, visor, Ajustes, Progreso, onboarding, widget), adaptada a escala y ancho; revisión de pantallas en H12 ([evidencias](docs/evidence/h12)) |
 
 ## Alcance añadido o ajustado por el usuario (2026-11-11)
 
@@ -47,6 +47,43 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H12 · Pulido, empaquetado y entrega — ✅ cerrado
+
+Guías: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) (servidor, Android, Linux, firma y versiones), [README](README.md) (usuarios y desarrolladores), [ARCHITECTURE.md](docs/ARCHITECTURE.md) (revisado contra el código, con las decisiones de §13), [api/openapi.json](docs/api/openapi.json). Precisión en [ADR-0009](docs/adr/0009-empaquetado-y-distribucion.md). Evidencias: [docs/evidence/h12](docs/evidence/h12).
+
+**Hecho**
+- **AppImage** con libmpv y sus bibliotecas dentro (linuxdeploy, dejando fuera lo que debe ser del sistema), construido en CI sobre Ubuntu 24.04; `--self-test` comprueba el motor de vídeo sin ventana ni sonido y CI lo ejecuta sobre el AppImage; `--install`/`--uninstall` añaden la entrada del menú y el manejador de `racha://` en `~/.local/share`.
+- **APK de release** con R8, versión desde Gradle y firma desde variables de entorno (secretos de CI; nunca en el repositorio). CI la prueba con un *smoke test* sobre el APK minificado (deep links y 1 500 eventos de interfaz sin cierres ni ANR) y publica AppImage y APK como *release* de GitHub al subir un tag `vX.Y.Z`.
+- **Robustez**: el visor HTML de Android se recupera si el sistema mata el proceso del renderizador (antes cerraba la app); el estado del idioma de la app ya no se arrastra entre ventanas o pruebas; corregida una carrera en el test de notificaciones.
+- **Pulido**: revisión de todas las pantallas en capturas; tarjetas de "Hoy toca" con la misma altura; Historial guarda sus filas en un view model y las carga con una sola consulta (antes, dos por entrada en cada cambio, dentro de la composición; en los tests a veces no llegaban a mostrarse); capturas nuevas de Búsqueda, Mi lista, Categoría e Historial.
+- **Entregables §15**: README para usuarios y desarrolladores, guía de despliegue, arquitectura con las decisiones de §13, OpenAPI versionado (un test comprueba que la copia del repositorio coincide con el servidor), tokens y sistema de componentes ([DISENO.md](docs/DISENO.md)).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| AppImage local: `--self-test` (libmpv incluido, `RUNPATH $ORIGIN`) y arranque aislado en Xvfb 25 s sin errores | ✅ |
+| AppImage en CI (Ubuntu 24.04): construcción y `--self-test` | ✅ |
+| APK de release (R8, 3,1 MB): *smoke test* en el emulador local y en CI | ✅ |
+| Android en el emulador (debug): 42 tests | ✅ |
+| Servidor: OpenAPI publicado y comprobado; resto de la batería | ✅ |
+| Escritorio: toda la batería de UI y de datos | ✅ |
+| CI (servidor + cliente + AppImage + e2e de sync + emulador y *smoke* de la release) | CI_LINK |
+
+**Criterios §12**: ✅ **12**. Todos los criterios cumplidos salvo **9** en su parte de OAuth (aplazado por tu decisión, ADR-0006).
+
+**Pendiente / notas**
+- **Firma de la release**: hasta que añadas los secretos `RACHA_KEYSTORE_BASE64`, `RACHA_KEYSTORE_PASSWORD`, `RACHA_KEY_ALIAS` y `RACHA_KEY_PASSWORD` (guía en DESPLIEGUE.md), CI firma la release con la clave de depuración y lo avisa.
+- **Primera versión publicada**: no he subido ningún tag `v*`; publicar es decisión tuya (`git tag v1.0.0 && git push origin v1.0.0`).
+- El AppImage requiere glibc 2.39 o posterior (distribuciones de 2024 en adelante).
+- JavaFX sigue en 26.0.2: no hay versión posterior a 27.0.1, la que rompía el pintado de JFXPanel.
+- La release de Android no se prueba con la batería instrumentada completa (la infraestructura de tests choca con R8), sino con el *smoke test* sobre el APK real.
+- Las capturas de pantallas con datos de la base de datos se hacen renderizando cada pantalla directamente: a través de la navegación, el reloj virtual del arnés de tests de Compose hace la temporización poco fiable.
+- Durante la prueba del AppImage, un primer arranque usó por error tu carpeta real de datos (Java ignora `$HOME`): migró tu base de datos al esquema actual, sin pérdida y compatible con AppImages anteriores. Las pruebas posteriores van aisladas con `-Duser.home`.
+
+**Bloqueos**: ninguno.
 
 ---
 
@@ -79,8 +116,8 @@ Documento: [docs/AJUSTES.md](docs/AJUSTES.md). Precisión en [ADR-0010](docs/adr
 
 **Pendiente / notas**
 - En Linux el recordatorio diario solo llega con la app abierta (no hay planificador del sistema para una app cerrada).
-- El AppImage ya declara `x-scheme-handler/racha`; registrarlo en el escritorio depende de la integración del AppImage (AppImageLauncher, appimaged) o de instalar la entrada `.desktop` — se documentará en H12 con el empaquetado.
-- Lint avisa de que el WebView de recursos no implementa `onRenderProcessGone` (un cierre del proceso del renderizador cerraría la app): a resolver en H12.
+- El AppImage declara `x-scheme-handler/racha`; desde H12, `Racha.AppImage --install` lo registra.
+- Lint avisa de que el WebView de recursos no implementa `onRenderProcessGone`: resuelto en H12.
 
 **Bloqueos**: ninguno.
 
