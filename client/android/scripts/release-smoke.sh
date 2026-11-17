@@ -20,6 +20,7 @@ package_service_ready() {
   [ "$($adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && $adb shell pm path android >/dev/null 2>&1
 }
 installed=no
+$adb shell pm trim-caches 64G >/dev/null 2>&1 || true
 for attempt in 1 2 3 4; do
   for _ in $(seq 60); do package_service_ready && break; sleep 5; done
   $adb shell df -h /data >>"$report" 2>&1 || true
@@ -28,7 +29,11 @@ for attempt in 1 2 3 4; do
   $adb shell pm trim-caches 64G >/dev/null 2>&1 || true
   sleep 20
 done
-[ "$installed" = yes ]
+if [ "$installed" != yes ]; then
+  # What fills /data (the emulator runs as root on google_apis images).
+  { $adb root >/dev/null 2>&1 && sleep 3 && $adb shell 'du -xsk /data/* /data/media/0/* /data/local/tmp 2>/dev/null | sort -rn | head -15'; } >>"$report" 2>&1 || true
+  exit 1
+fi
 $adb logcat -c
 $adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
 sleep 5

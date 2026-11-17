@@ -222,8 +222,7 @@ jobs:
           target: google_apis
           arch: x86_64
           ram-size: 2048M
-          # The default data partition (774 MB) is full after boot: room to install the release for its smoke test.
-          disk-size: 2048M
+          # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
@@ -243,7 +242,7 @@ jobs:
                   print(f"::error title={m.group(2)}.{m.group(1)}::{' / '.join(lines[:4])[:900]}")
           PY
           if [ -f /tmp/racha-release-smoke.txt ]; then
-            echo "::error title=Release smoke::$(head -c 1800 /tmp/racha-release-smoke.txt | tr '\n' ' ')"
+            echo "::error title=Release smoke::$(tail -c 2500 /tmp/racha-release-smoke.txt | tr '\n' ' ')"
           fi
       - uses: actions/upload-artifact@v7
         with:
