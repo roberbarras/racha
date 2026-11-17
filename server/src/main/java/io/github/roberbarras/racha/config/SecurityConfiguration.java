@@ -32,6 +32,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -70,22 +73,33 @@ public class SecurityConfiguration {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/actuator/health/**", "/v3/api-docs/**", "/docs/**", "/swagger-ui/**").permitAll()
-                        .requestMatchers("/reset-password", "/reset-password.html").permitAll()
+                        .requestMatchers("/reset-password", "/reset-password.html", "/", "/web", "/web/**").permitAll()
                         // Checked against the database on every call: taking the role away works at once.
                         .requestMatchers("/admin/**").access((authentication, context) -> new AuthorizationDecision(
                                 authentication.get() instanceof JwtAuthenticationToken jwt && accounts.isAdmin(UUID.fromString(jwt.getName()))))
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()))
+                // The web panel runs only its own code and styles, cannot be framed, and talks only to this server.
+                .headers(headers -> headers.addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                        PathPatternRequestMatcher.withDefaults().matcher("/web/**"),
+                        new StaticHeadersWriter("Content-Security-Policy", WEB_CSP))))
                 .build();
     }
 
-    /** The password recovery page at `/reset-password` (the link in recovery e-mails). */
+    static final String WEB_CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+            + "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+
+    /** The password recovery page at `/reset-password` (the link in recovery e-mails) and the web panel at `/web/`. */
     @Bean
     WebMvcConfigurer pages() {
         return new WebMvcConfigurer() {
             @Override
             public void addViewControllers(ViewControllerRegistry registry) {
                 registry.addViewController("/reset-password").setViewName("forward:/reset-password.html");
+                // The web panel (H14) is the server's home page.
+                registry.addViewController("/").setViewName("redirect:web/");
+                registry.addViewController("/web").setViewName("redirect:web/");
+                registry.addViewController("/web/").setViewName("forward:/web/index.html");
             }
         };
     }
