@@ -24,7 +24,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
 | H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | ✅ Cerrado |
-| H17 | Resúmenes con IA a partir de subtítulos, con varios proveedores en el orden que elijas | 🔄 En CI |
+| H17 | Resúmenes con IA a partir de subtítulos, con varios proveedores en el orden que elijas | ✅ Cerrado · publicado en **v1.1.0** |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
 | H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
 
@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H17 · Resúmenes con IA — 🔄 en CI
+## H17 · Resúmenes con IA — ✅ cerrado
 
 Decisión: [ADR-0016](docs/adr/0016-resumenes-con-ia.md). Guía: [docs/RESUMENES-IA.md](docs/RESUMENES-IA.md). Evidencias: [docs/evidence/h17](docs/evidence/h17).
 
@@ -67,6 +67,7 @@ Decisión: [ADR-0016](docs/adr/0016-resumenes-con-ia.md). Guía: [docs/RESUMENES
 - **Varios proveedores** (Gemini, Groq, NVIDIA, OpenRouter, Mistral, Cerebras, DeepSeek, Ollama o cualquiera compatible con OpenAI). Se prueban en el **orden que elijas** y, si uno falla (sin cuota gratuita, clave, modelo, caído), lo intenta el siguiente. Clave por proveedor en el llavero o el Keystore; «Probar» y «Cargar modelos».
 - Clases **sin `.srt`**: opción desactivada (y sin botón en el reproductor).
 - Clases largas por partes. Los resúmenes se guardan con los datos de la app (esquema v9), **se sincronizan** (servidor: Flyway V8, `/summaries`) y entran en la copia completa.
+- **Release v1.1.0** (con tu OK): incluye H13–H17; el servidor usa 1.1.0 por defecto en `docker-compose.yml`.
 - Corrección: los apóstrofos de algunos textos en inglés se veían con una barra (`system\'s`).
 
 **Verificación**
@@ -77,7 +78,7 @@ Decisión: [ADR-0016](docs/adr/0016-resumenes-con-ia.md). Guía: [docs/RESUMENES
 | Cliente HTTP compatible con OpenAI contra un servidor simulado (petición, modelos, errores, «pensamiento») | ✅ |
 | Servidor: resúmenes entre dispositivos, `/summaries`, validación; OpenAPI regenerado | ✅ |
 | UI escritorio: Markdown, opción desactivada sin `.srt`, generar y guardar `.md`, añadir proveedor (capturas) | ✅ |
-| CI | ⏳ |
+| CI | ✅ [run 44196768481](https://github.com/roberbarras/racha/actions/runs/44196768481) (una ejecución anterior se colgó en el emulador; el smoke de la release tiene ahora límites de tiempo por fase y deja informe) |
 
 ---
 
