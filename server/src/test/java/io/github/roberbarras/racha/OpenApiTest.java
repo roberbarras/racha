@@ -24,7 +24,7 @@ class OpenApiTest {
         assertThat(docs.status()).isEqualTo(200);
         var paths = docs.body().get("paths");
         for (var path : new String[] {"/auth/register", "/auth/login", "/auth/refresh", "/categories", "/library-items", "/elements",
-                "/progress", "/bookmarks", "/favorites", "/history", "/settings", "/sync/push", "/sync/pull", "/devices/register",
+                "/progress", "/bookmarks", "/favorites", "/history", "/settings", "/summaries", "/sync/push", "/sync/pull", "/devices/register",
                 "/analytics/events", "/errors", "/stats/me"}) {
             assertThat(paths.has(path)).as(path).isTrue();
         }

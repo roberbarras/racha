@@ -4,7 +4,7 @@ import io.github.roberbarras.racha.sync.domain.EntityType;
 import java.util.List;
 import java.util.Map;
 
-/** Where each entity lives and which of its fields are copied into typed columns (V3__synced_entities.sql). */
+/** Where each entity lives and which of its fields are copied into typed columns (V3__synced_entities.sql, V8__summaries.sql). */
 final class Tables {
     enum Kind { TEXT, BIGINT, BOOLEAN, TIMESTAMP }
 
@@ -25,6 +25,7 @@ final class Tables {
             Map.entry(EntityType.HISTORY, new Table("history", List.of(
                     text("element_id", "elementId"), new Column("watched_at", "watchedAt", Kind.TIMESTAMP), bigint("position_sec", "positionSec")))),
             Map.entry(EntityType.FAVORITE, new Table("favorites", List.of())),
+            Map.entry(EntityType.SUMMARY, new Table("summaries", List.of(text("target", "target")))),
             Map.entry(EntityType.SETTING, new Table("app_settings", List.of())));
 
     private Tables() {}

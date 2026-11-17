@@ -15,6 +15,7 @@ public enum EntityType {
     BOOKMARK("bookmark"),
     HISTORY("history"),
     FAVORITE("favorite"),
+    SUMMARY("summary"),
     SETTING("setting");
 
     private final String wire;

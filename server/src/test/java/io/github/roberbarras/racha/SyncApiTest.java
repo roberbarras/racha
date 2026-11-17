@@ -155,6 +155,22 @@ class SyncApiTest {
     }
 
     @Test
+    void summariesTravelBetweenDevicesAndAreListed() {
+        var markdown = "## Resumen\nIAM controla quién puede hacer qué.";
+        pushOk(phone, List.of(change("summary", "el-1", T1,
+                Map.of("target", "element", "markdown", markdown, "provider", "Google Gemini", "model", "gemini-2.5-flash", "language", "es"))));
+        var pulled = pull(laptop, 0).get("changes").get(0);
+        assertThat(pulled.get("entity").asString()).isEqualTo("summary");
+        assertThat(pulled.get("data").get("markdown").asString()).isEqualTo(markdown);
+        assertThat(api.get("/summaries", laptop.access()).body().get("changes")).hasSize(1);
+
+        var invalid = pushOk(phone, List.of(
+                change("summary", "el-2", T1, Map.of("target", "element")), // no markdown
+                change("summary", "el-3", T1, Map.of("target", "course", "markdown", "x"))));
+        assertThat(invalid.get("invalid").asInt()).isEqualTo(2);
+    }
+
+    @Test
     void invalidChangesAreReportedNotStored() {
         var r = pushOk(phone, List.of(
                 change("progress", "el-x", T1, Map.of("completed", true)), // positionSec missing

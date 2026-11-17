@@ -6,7 +6,7 @@
     "version" : "1"
   },
   "servers" : [ {
-    "url" : "http://localhost:46795",
+    "url" : "http://localhost:42247",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -430,9 +430,9 @@
         }
       }
     },
-    "/progress" : {
+    "/summaries" : {
       "get" : {
-        "tags" : [ "Progress" ],
+        "tags" : [ "Summaries" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
         "operationId" : "list",
         "parameters" : [ {
@@ -468,7 +468,7 @@
         }
       },
       "post" : {
-        "tags" : [ "Progress" ],
+        "tags" : [ "Summaries" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
         "operationId" : "post",
         "requestBody" : {
@@ -498,9 +498,9 @@
         }
       }
     },
-    "/library-items" : {
+    "/progress" : {
       "get" : {
-        "tags" : [ "Library items" ],
+        "tags" : [ "Progress" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
         "operationId" : "list_1",
         "parameters" : [ {
@@ -536,7 +536,7 @@
         }
       },
       "post" : {
-        "tags" : [ "Library items" ],
+        "tags" : [ "Progress" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
         "operationId" : "post_1",
         "requestBody" : {
@@ -566,9 +566,9 @@
         }
       }
     },
-    "/favorites" : {
+    "/library-items" : {
       "get" : {
-        "tags" : [ "Favorites" ],
+        "tags" : [ "Library items" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
         "operationId" : "list_2",
         "parameters" : [ {
@@ -604,9 +604,77 @@
         }
       },
       "post" : {
-        "tags" : [ "Favorites" ],
+        "tags" : [ "Library items" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
         "operationId" : "post_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/ItemDto"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favorites" : {
+      "get" : {
+        "tags" : [ "Favorites" ],
+        "summary" : "Items changed after `since` (0 = all), oldest change first",
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "name" : "since",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "default" : 0
+          }
+        }, {
+          "name" : "limit",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 500
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Favorites" ],
+        "summary" : "Create or update a batch (last writer wins by updatedAt)",
+        "operationId" : "post_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -670,7 +738,7 @@
       "get" : {
         "tags" : [ "Elements" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "name" : "since",
           "in" : "query",
@@ -706,7 +774,7 @@
       "post" : {
         "tags" : [ "Elements" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
-        "operationId" : "post_3",
+        "operationId" : "post_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -788,7 +856,7 @@
       "get" : {
         "tags" : [ "Categories" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "name" : "since",
           "in" : "query",
@@ -824,7 +892,7 @@
       "post" : {
         "tags" : [ "Categories" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
-        "operationId" : "post_4",
+        "operationId" : "post_5",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -856,7 +924,7 @@
       "get" : {
         "tags" : [ "Bookmarks" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "name" : "since",
           "in" : "query",
@@ -892,7 +960,7 @@
       "post" : {
         "tags" : [ "Bookmarks" ],
         "summary" : "Create or update a batch (last writer wins by updatedAt)",
-        "operationId" : "post_5",
+        "operationId" : "post_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1398,7 +1466,7 @@
       "get" : {
         "tags" : [ "History" ],
         "summary" : "Items changed after `since` (0 = all), oldest change first",
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "name" : "since",
           "in" : "query",
@@ -1436,7 +1504,7 @@
       "get" : {
         "tags" : [ "Devices" ],
         "summary" : "The signed-in user's devices, with their active sessions and which one is calling",
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "responses" : {
           "200" : {
             "description" : "OK",

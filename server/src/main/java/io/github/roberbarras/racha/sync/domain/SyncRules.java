@@ -38,6 +38,7 @@ public final class SyncRules {
             case PROGRESS -> nonNegative(data, "positionSec", true).or(() -> nonNegative(data, "durationSec", false)).or(() -> bool(data, "completed"));
             case HISTORY -> text(data, "elementId").or(() -> instant(data, "watchedAt")).or(() -> nonNegative(data, "positionSec", false));
             case SETTING -> data.containsKey("value") ? Optional.empty() : Optional.of("data.value is required");
+            case SUMMARY -> text(data, "markdown").or(() -> oneOf(data, "target", "element", "section"));
             case CATEGORY, FAVORITE -> Optional.empty();
         };
     }
@@ -53,6 +54,11 @@ public final class SyncRules {
 
     private static Optional<String> text(Map<String, Object> data, String field) {
         return data.get(field) instanceof String s && !s.isBlank() ? Optional.empty() : Optional.of("data." + field + " is required");
+    }
+
+    private static Optional<String> oneOf(Map<String, Object> data, String field, String... values) {
+        return java.util.Arrays.asList(values).contains(data.get(field)) ? Optional.empty()
+                : Optional.of("data." + field + " must be one of " + String.join(", ", values));
     }
 
     private static Optional<String> nonNegative(Map<String, Object> data, String field, boolean required) {
