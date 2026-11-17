@@ -16,6 +16,7 @@ import io.github.roberbarras.racha.domain.library.PlayableElement
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.domain.library.ResourceType
 import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.Section
 import io.github.roberbarras.racha.domain.library.SectionKind
 import io.github.roberbarras.racha.domain.library.StructureKind
@@ -67,9 +68,12 @@ internal fun Category.toRow() = CategoryRow(
 )
 
 internal fun CategoryRootRow.toDomain() =
-    CategoryRoot(RootKey(key), CategoryKey(category_key), location, sort_order.toInt())
+    CategoryRoot(RootKey(key), CategoryKey(category_key), location, sort_order.toInt(), rootLayout(layout))
 
-internal fun CategoryRoot.toRow() = CategoryRootRow(key.value, categoryKey.value, location, order.toLong())
+internal fun CategoryRoot.toRow() = CategoryRootRow(key.value, categoryKey.value, location, order.toLong(), layout.name)
+
+/** Unknown or missing (a newer app version, an older device): the name-based guess. */
+internal fun rootLayout(name: String?): RootLayout = RootLayout.entries.firstOrNull { it.name == name } ?: RootLayout.AUTO
 
 internal fun LibraryItemRow.toDomain() = LibraryItem(
     id = ContentId(id),

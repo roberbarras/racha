@@ -18,7 +18,8 @@ CREATE TABLE remote_root (
     key TEXT NOT NULL PRIMARY KEY,
     category_key TEXT NOT NULL,
     name TEXT NOT NULL,
-    updated_at INTEGER NOT NULL
+    updated_at INTEGER NOT NULL,
+    layout TEXT
 );
 
 -- Settings that changed both here and on another device (§6.3): the user decides.
@@ -62,7 +63,10 @@ resetSync:
 UPDATE sync_state SET cursor = 0, last_success_at = NULL, last_error = NULL WHERE id = 1;
 
 upsertRemoteRoot:
-INSERT OR REPLACE INTO remote_root(key, category_key, name, updated_at) VALUES (?, ?, ?, ?);
+INSERT OR REPLACE INTO remote_root(key, category_key, name, updated_at, layout) VALUES (?, ?, ?, ?, ?);
+
+selectRemoteRoot:
+SELECT * FROM remote_root WHERE key = ?;
 
 deleteRemoteRoot:
 DELETE FROM remote_root WHERE key = ?;

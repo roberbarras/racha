@@ -14,7 +14,10 @@ import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.LibraryItem
 import io.github.roberbarras.racha.domain.library.MediaInfo
 import io.github.roberbarras.racha.domain.library.PlayableElement
+import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.Section
+import io.github.roberbarras.racha.domain.library.StructureKind
 import io.github.roberbarras.racha.domain.library.Subtitle
 import io.github.roberbarras.racha.domain.library.scan.DetectedElement
 import io.github.roberbarras.racha.domain.library.scan.DetectedItem
@@ -74,6 +77,20 @@ class ScanLibrary(
         categories.get(key)?.let { scanCategory(it) } ?: ScanReport()
     }
 
+    /**
+     * What [location] would become in [category] as a library and as a single course or series (ADR-0013), without
+     * storing anything: the user sees it before adding the folder. Null for an unknown category.
+     */
+    suspend fun preview(key: CategoryKey, location: String): FolderPreview? {
+        val category = categories.get(key) ?: return null
+        val exclusions = ExclusionRules(category.excludePatterns)
+        val entries = source.list(location) { dir -> !exclusions.excludes(dir, isDirectory = true) }
+        val name = source.displayName(location)
+        fun summary(layout: RootLayout) = LibraryLayout.detect(key, PREVIEW_ROOT, name, entries, exclusions, localDates::dateOf, layout)
+            .items.map { PreviewItem(it.title, it.kind, it.sections.size, it.elements.size) }
+        return FolderPreview(name, LibraryLayout.guess(entries, exclusions), summary(RootLayout.LIBRARY), summary(RootLayout.SINGLE_ITEM))
+    }
+
     private suspend fun scanCategory(category: Category): ScanReport =
         categories.roots(category.key).fold(ScanReport()) { report, root -> report + scanRoot(category, root) }
 
@@ -83,7 +100,7 @@ class ScanLibrary(
         val exclusions = ExclusionRules(category.excludePatterns)
         val entries = source.list(root.location) { dir -> !exclusions.excludes(dir, isDirectory = true) }
         val detected = LibraryLayout.detect(
-            category.key, root.key, source.displayName(root.location), entries, exclusions, localDates::dateOf,
+            category.key, root.key, source.displayName(root.location), entries, exclusions, localDates::dateOf, root.layout,
         )
         val oldItems = library.itemsInRoot(category.key, root.key).associateBy { it.id }
         val oldElements = library.elementsInRoot(category.key, root.key).associateBy { it.id }
@@ -230,8 +247,22 @@ class ScanLibrary(
             totalDurationSec = elements.sumOf { it.media.durationSec ?: 0 },
             progressPct = ItemProgress.percent(elements, progressById),
             archived = false,
-            firstSeenAt = old?.firstSeenAt ?: now,
+            // A course that only regroups videos already known (its folder's layout changed) is not news.
+            firstSeenAt = old?.firstSeenAt ?: elements.minOfOrNull { it.firstSeenAt } ?: now,
             updatedAt = now,
         )
     }
+
+    private companion object {
+        /** Ids in a preview are never stored: any root key will do. */
+        val PREVIEW_ROOT = RootKey("00000000-0000-4000-8000-000000000000")
+    }
 }
+
+/** What adding a folder would make (ADR-0013); [guess] is what its subfolders' names suggest. */
+data class FolderPreview(val name: String, val guess: RootLayout, val asLibrary: List<PreviewItem>, val asSingleItem: List<PreviewItem>) {
+    fun items(layout: RootLayout): List<PreviewItem> = if (layout == RootLayout.SINGLE_ITEM) asSingleItem else asLibrary
+}
+
+/** One course, series or channel of a preview; [title] is empty for the "Loose files" item. */
+data class PreviewItem(val title: String, val kind: StructureKind, val sections: Int, val elements: Int)

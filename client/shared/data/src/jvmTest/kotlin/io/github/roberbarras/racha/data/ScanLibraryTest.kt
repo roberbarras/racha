@@ -21,6 +21,7 @@ import io.github.roberbarras.racha.domain.library.LanguageCode
 import io.github.roberbarras.racha.domain.library.MediaInfo
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.StructureKind
 import io.github.roberbarras.racha.domain.library.scan.CalendarDate
 import io.github.roberbarras.racha.domain.library.scan.FileEntry
@@ -242,6 +243,63 @@ class ScanLibraryTest {
         db.library.upsertItem(course().copy(posterPath = null))
         preferences.set(Settings.Thumbnails, false)
         assertEquals(0, RefreshThumbnails(db.categories, db.library, renderer, preferences)())
+    }
+
+    // ADR-0013: the user says whether a folder is a library or one course or series.
+
+    private val manageRoots = io.github.roberbarras.racha.application.browse.ManageRoots(db.categories, db.library, scan, Clock { now })
+    private val courseLocation = "file:///media/Python desde cero"
+
+    /** A course whose sections have plain names: the name-based guess would make one course per section. */
+    private fun putPlainNamedCourse() {
+        listOf(
+            "Introducción/01 Bienvenida.mp4", "Introducción/02 Cómo usar el curso.mp4",
+            "Fundamentos/01 Variables.mp4", "Fundamentos/02 Funciones.mp4", "Proyecto final/01 Enunciado.mp4",
+        ).forEach { files.put(it, content = "content of $it") }
+    }
+
+    @Test
+    fun thePreviewShowsBothLayoutsAndStoresNothing() = runBlocking {
+        EnsureBuiltInCategories(db.categories, Clock { now })()
+        putPlainNamedCourse()
+
+        val preview = assertNotNull(manageRoots.preview(CategoryKey.COURSES, courseLocation))
+
+        assertEquals("Python desde cero", preview.name)
+        assertEquals(RootLayout.LIBRARY, preview.guess)
+        assertEquals(listOf("Fundamentos", "Introducción", "Proyecto final"), preview.asLibrary.map { it.title })
+        val course = preview.asSingleItem.single()
+        assertEquals("Python desde cero" to 3, course.title to course.sections)
+        assertEquals(5, course.elements)
+        assertTrue(db.categories.roots(CategoryKey.COURSES).isEmpty())
+        assertTrue(db.library.itemsInRoot(CategoryKey.COURSES, root).isEmpty())
+    }
+
+    @Test
+    fun aFolderAddedAsOneCourseIsOneCourseAndChangingItsLayoutKeepsProgress() = runBlocking {
+        EnsureBuiltInCategories(db.categories, Clock { now })()
+        putPlainNamedCourse()
+        val added = manageRoots.add(CategoryKey.COURSES, courseLocation, RootLayout.SINGLE_ITEM)
+        val items = { runBlocking { db.library.itemsInRoot(CategoryKey.COURSES, added.key).filterNot { it.archived } } }
+        val course = items().single()
+        assertEquals("Python desde cero", course.title)
+        assertEquals(listOf("Fundamentos", "Introducción", "Proyecto final"), db.library.sections(course.id).map { it.title })
+        val video = db.library.elements(course.id).first { it.title == "Variables" }
+        db.progress.save(Progress.start(video.id, 60, now).recordPosition(42, null, now))
+
+        now += 5.minutes
+        manageRoots.changeLayout(db.categories.roots(CategoryKey.COURSES).single(), RootLayout.LIBRARY)
+
+        assertEquals(RootLayout.LIBRARY, db.categories.roots(CategoryKey.COURSES).single().layout)
+        assertEquals(listOf("Fundamentos", "Introducción", "Proyecto final"), items().map { it.title }.sorted())
+        assertEquals(42L, db.progress.get(video.id)?.positionSec, "videos keep their ids, so their progress")
+        assertEquals(items().single { it.title == "Fundamentos" }.id, db.library.element(video.id)!!.libraryItemId)
+        assertTrue(db.library.itemsInRoot(CategoryKey.COURSES, added.key).single { it.id == course.id }.archived)
+        // Regrouping known videos is not news.
+        assertTrue(items().all { it.firstSeenAt < now })
+
+        manageRoots.changeLayout(db.categories.roots(CategoryKey.COURSES).single(), RootLayout.SINGLE_ITEM)
+        assertEquals(listOf(course.id), items().map { it.id }, "undoing it brings the same course back")
     }
 
     private suspend fun SqlBookmarkRepository.observeOnce(element: ContentId) = observe(element).first().map { it.id }

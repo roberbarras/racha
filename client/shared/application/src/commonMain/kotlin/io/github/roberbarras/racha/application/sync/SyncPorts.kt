@@ -1,6 +1,7 @@
 package io.github.roberbarras.racha.application.sync
 
 import io.github.roberbarras.racha.application.preferences.Preferences
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.preferences.ConflictPolicy
 import io.github.roberbarras.racha.domain.preferences.Settings
 import kotlinx.coroutines.flow.Flow
@@ -106,8 +107,11 @@ data class SettingConflict(val key: String, val localValue: String, val remoteVa
 
 data class LocalSyncState(val pending: Long, val lastSuccessAt: Instant?, val lastError: String?, val conflicts: List<SettingConflict>)
 
-/** A library root of this account on another device (ADR-0004). */
-data class RemoteRoot(val key: String, val categoryKey: String, val name: String)
+/**
+ * A library root of this account on another device (ADR-0004). [layout]: what that folder holds there (ADR-0013);
+ * linking to it takes it, so both devices make the same courses.
+ */
+data class RemoteRoot(val key: String, val categoryKey: String, val name: String, val layout: RootLayout = RootLayout.AUTO)
 
 /** Outbound port: the local side of sync (outbox, cursor, applying remote changes). */
 interface SyncLocalStore {

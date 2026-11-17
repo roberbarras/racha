@@ -5,6 +5,7 @@ import io.github.roberbarras.racha.data.db.RachaDatabase
 import io.github.roberbarras.racha.domain.library.CategoryRoot
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.library.RelativePath
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.RootKey
 import kotlinx.coroutines.withContext
 import io.github.roberbarras.racha.data.db.Category_root as CategoryRootRow
@@ -49,7 +50,9 @@ class SqlRootRelinker(private val db: RachaDatabase, private val io: CoroutineCo
             }
             db.syncQueries.deleteItemsOfRoot(category.value, root.key.value)
             db.categoryQueries.deleteRoot(root.key.value)
-            db.categoryQueries.insertOrIgnoreRoot(CategoryRootRow(to.value, category.value, root.location, root.order.toLong()))
+            // The folder on the other device decides what it holds, so both make the same courses (ADR-0013).
+            val layout = db.syncQueries.selectRemoteRoot(to.value).executeAsOneOrNull()?.layout?.let(::rootLayout)?.takeIf { it != RootLayout.AUTO } ?: root.layout
+            db.categoryQueries.insertOrIgnoreRoot(CategoryRootRow(to.value, category.value, root.location, root.order.toLong(), layout.name))
             db.syncQueries.deleteRemoteRoot(to.value)
         }
     }

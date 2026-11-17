@@ -178,7 +178,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
     }
 
     override suspend fun remoteRoots(categoryKey: String): List<RemoteRoot> = withContext(io) {
-        sync.selectRemoteRoots(categoryKey).executeAsList().map { RemoteRoot(it.key, it.category_key, it.name) }
+        sync.selectRemoteRoots(categoryKey).executeAsList().map { RemoteRoot(it.key, it.category_key, it.name, rootLayout(it.layout)) }
     }
 
     private fun bump() {
@@ -198,6 +198,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
                     put("categoryId", root.category_key)
                     put("name", folderName(root.location))
                     put("sortOrder", root.sort_order)
+                    put("layout", root.layout)
                 })
             } ?: gone()
             "libraryItem" -> lib.selectItem(id).executeAsOneOrNull()?.let { r ->
@@ -273,7 +274,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
             "categoryRoot" -> {
                 if (sync.rootByKey(r.id).executeAsOneOrNull() != null) return // a root of this device
                 if (r.deleted) sync.deleteRemoteRoot(r.id)
-                else sync.upsertRemoteRoot(r.id, d.str("categoryId") ?: return, d.str("name") ?: "", at)
+                else sync.upsertRemoteRoot(r.id, d.str("categoryId") ?: return, d.str("name") ?: "", at, d.str("layout"))
             }
             "libraryItem" -> db.libraryQueries.selectItem(r.id).executeAsOneOrNull()?.let { local ->
                 if (!r.deleted && local.updated_at < at) sync.applyItemOverrides(d.str("titleOverride"), d.long("orderOverride"), at, r.id)

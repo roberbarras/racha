@@ -20,7 +20,8 @@ CREATE TABLE category_root (
     key TEXT NOT NULL PRIMARY KEY,
     category_key TEXT NOT NULL REFERENCES category(key) ON DELETE CASCADE,
     location TEXT NOT NULL,
-    sort_order INTEGER NOT NULL
+    sort_order INTEGER NOT NULL,
+    layout TEXT NOT NULL DEFAULT 'AUTO'
 );
 
 CREATE INDEX category_root_category ON category_root(category_key);
@@ -56,7 +57,7 @@ insertOrIgnoreRoot:
 INSERT OR IGNORE INTO category_root VALUES ?;
 
 updateRoot:
-UPDATE category_root SET category_key = :category_key, location = :location, sort_order = :sort_order WHERE key = :key;
+UPDATE category_root SET category_key = :category_key, location = :location, sort_order = :sort_order, layout = :layout WHERE key = :key;
 
 deleteRoot:
 DELETE FROM category_root WHERE key = ?;

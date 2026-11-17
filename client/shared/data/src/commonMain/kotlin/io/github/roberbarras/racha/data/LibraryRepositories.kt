@@ -63,7 +63,7 @@ class SqlCategoryRepository(private val db: RachaDatabase, private val io: Corou
         val row = root.toRow()
         q.transaction {
             q.insertOrIgnoreRoot(row)
-            q.updateRoot(row.category_key, row.location, row.sort_order, row.key)
+            q.updateRoot(row.category_key, row.location, row.sort_order, row.layout, row.key)
         }
     }
 

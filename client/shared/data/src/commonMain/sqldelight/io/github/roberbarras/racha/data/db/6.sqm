@@ -1,0 +1,8 @@
+-- v7: what each root folder holds (ADR-0013). Folders added before keep the name-based guess (AUTO).
+ALTER TABLE category_root ADD COLUMN layout TEXT NOT NULL DEFAULT 'AUTO';
+
+-- The same for folders of the account's other devices, so linking to one takes its layout.
+ALTER TABLE remote_root ADD COLUMN layout TEXT;
+
+-- The outbox trigger now also fires when the layout changes; SyncTriggers creates it again when the database opens.
+DROP TRIGGER IF EXISTS sync_root_update;

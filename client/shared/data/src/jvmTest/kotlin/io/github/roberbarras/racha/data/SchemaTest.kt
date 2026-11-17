@@ -32,7 +32,7 @@ class SchemaTest {
         }, 0).value
 
         assertEquals(expectedTables, tables)
-        assertEquals(6, RachaDatabase.Schema.version) // v6 (H11): resource text for search
+        assertEquals(7, RachaDatabase.Schema.version) // v7: what each root folder holds (ADR-0013)
     }
 
     @Test

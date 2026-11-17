@@ -4,6 +4,7 @@ import io.github.roberbarras.racha.application.library.RootRelinker
 import io.github.roberbarras.racha.application.sync.RemoteRoot
 import io.github.roberbarras.racha.application.library.CategoryRepository
 import io.github.roberbarras.racha.application.library.LibraryRepository
+import io.github.roberbarras.racha.application.library.scan.FolderPreview
 import io.github.roberbarras.racha.application.library.scan.ScanLibrary
 import io.github.roberbarras.racha.application.preferences.Preferences
 import io.github.roberbarras.racha.application.shared.Clock
@@ -11,6 +12,7 @@ import io.github.roberbarras.racha.domain.library.CategoryKey
 import io.github.roberbarras.racha.domain.library.CategoryRoot
 import io.github.roberbarras.racha.domain.library.Mode
 import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.preferences.Settings
 
 /** Folders of each category (spec §9 "múltiples rutas raíz"): adding one indexes it right away. */
@@ -30,13 +32,30 @@ class ManageRoots(
         return remoteRoots(category).filter { it.key !in local }
     }
 
-    /** Adds a folder; [linkTo] makes it the same root as that folder on another device, so ids (and progress) match. */
-    suspend fun add(category: CategoryKey, location: String, linkTo: RootKey? = null): CategoryRoot {
+    /** What [location] would become, as a library and as one course or series, before adding it (ADR-0013). */
+    suspend fun preview(category: CategoryKey, location: String): FolderPreview? = scan.preview(category, location)
+
+    /**
+     * Adds a folder holding [layout]; [linkTo] makes it the same root as that folder on another device, so ids (and
+     * progress) match, and then that folder's layout wins: both devices must make the same courses.
+     */
+    suspend fun add(category: CategoryKey, location: String, layout: RootLayout = RootLayout.AUTO, linkTo: RootKey? = null): CategoryRoot {
         categories.roots(category).firstOrNull { it.location == location }?.let { return it }
-        val root = CategoryRoot(linkTo ?: RootKey.random(), category, location, categories.roots(category).size)
+        val linkedLayout = linkTo?.let { key -> remoteRoots(category).firstOrNull { it.key == key.value }?.layout }?.takeIf { it != RootLayout.AUTO }
+        val root = CategoryRoot(linkTo ?: RootKey.random(), category, location, categories.roots(category).size, linkedLayout ?: layout)
         categories.upsertRoot(root)
         scan.category(category)
         return root
+    }
+
+    /**
+     * Says again what a folder holds and rescans it. Videos and resources keep their ids, and so their progress,
+     * bookmarks and history; courses that no longer exist are archived (and come back if the layout is undone).
+     */
+    suspend fun changeLayout(root: CategoryRoot, layout: RootLayout) {
+        if (root.layout == layout) return
+        categories.upsertRoot(root.copy(layout = layout))
+        scan.category(root.categoryKey)
     }
 
     /** Links an existing folder to the same one on another device: its content takes that device's ids. */
