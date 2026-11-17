@@ -7,6 +7,9 @@
     <!-- Sync server (opt-in, §7.4) -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- "Enviar a" (H18): find TVs and Chromecasts on the local network (multicast, and Android 17's local network access). -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!-- New episodes, sync failures and the daily reminder (§9), only if the user allows them -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Audio only (H15): keeps playing with the screen off, as a media playback foreground service. -->

@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -78,6 +79,11 @@ import io.github.roberbarras.racha.ui.design.RIcon
 import io.github.roberbarras.racha.ui.design.RText
 import io.github.roberbarras.racha.ui.design.Racha
 import io.github.roberbarras.racha.ui.design.RachaIcons
+import io.github.roberbarras.racha.application.cast.CastState
+import io.github.roberbarras.racha.ui.resources.cast_connecting
+import io.github.roberbarras.racha.ui.resources.cast_playing_on
+import io.github.roberbarras.racha.ui.resources.cast_remote_hint
+import io.github.roberbarras.racha.ui.resources.cast_stop
 import io.github.roberbarras.racha.ui.design.interactive
 import io.github.roberbarras.racha.ui.resources.Res
 import io.github.roberbarras.racha.ui.resources.back
@@ -250,6 +256,9 @@ fun PlayerScreen(
             val container = this
             val audioOnly by vm.audioOnly.collectAsStateWithLifecycle()
             if (audioOnly) AudioOnlyCover(state, Modifier.fillMaxSize())
+            val cast by vm.cast.collectAsStateWithLifecycle()
+            val display by vm.display.collectAsStateWithLifecycle()
+            val remote = cast is CastState.Casting || cast is CastState.Connecting || display != null
             state.engine.subtitleText?.let { SubtitleText(it, Modifier.align(Alignment.BottomCenter).padding(bottom = if (controlsVisible && !inPip) 120.dp else 40.dp)) }
             if (inPip) {
                 // Only reachable where the app drives PiP (desktop): click toggles playback, double click goes back.
@@ -301,10 +310,13 @@ fun PlayerScreen(
                     },
             )
 
+            // Above the gesture layer, so its button takes taps; elsewhere taps still reach the gestures.
+            if (remote) RemoteCover(vm, state, cast, display, Modifier.fillMaxSize())
             feedback?.let { Feedback(it, Modifier.align(Alignment.Center)) }
 
             AnimatedVisibility(
-                visible = controlsVisible || !state.engine.playing,
+                // As a remote, the controls stay: they are what this screen is for.
+                visible = controlsVisible || !state.engine.playing || remote,
                 enter = fadeIn(tween(Racha.duration(Racha.motion.fast))),
                 exit = fadeOut(tween(Racha.duration(Racha.motion.standard))),
             ) {
@@ -344,8 +356,8 @@ fun PlayerScreen(
 @Composable
 private fun VideoBox(vm: PlayerViewModel, hooks: PlayerHooks, state: PlaybackState, scale: VideoScale, maxWidth: Dp, maxHeight: Dp) {
     if (hooks.scalesVideo) {
-        LaunchedEffect(scale) { hooks.setScale(vm.engine, scale) }
-        hooks.VideoSurface(vm.engine, Modifier.fillMaxSize())
+        LaunchedEffect(scale) { hooks.setScale(vm.localEngine, scale) }
+        hooks.VideoSurface(vm.localEngine, Modifier.fillMaxSize())
         return
     }
     val w = state.engine.videoWidth
@@ -365,7 +377,7 @@ private fun VideoBox(vm: PlayerViewModel, hooks: PlayerHooks, state: PlaybackSta
         }
     }
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)), contentAlignment = Alignment.Center) {
-        hooks.VideoSurface(vm.engine, Modifier.requiredSize(width, height))
+        hooks.VideoSurface(vm.localEngine, Modifier.requiredSize(width, height))
     }
 }
 
@@ -509,6 +521,34 @@ internal fun ControlButton(icon: androidx.compose.ui.graphics.vector.ImageVector
 internal val ControlsScrim = Color.Black.copy(alpha = 0.45f)
 
 /** Audio only (H15): the course's cover and what is playing, instead of the (stopped) video. */
+/** The video is on a TV or another screen (H18): this one shows where, and is the remote. */
+@Composable
+private fun RemoteCover(vm: PlayerViewModel, state: PlaybackState, cast: CastState, display: ExternalDisplay?, modifier: Modifier) {
+    val (icon, text) = when {
+        display != null -> RachaIcons.Monitor to stringResource(Res.string.cast_playing_on, display.name)
+        cast is CastState.Connecting -> RachaIcons.Cast to stringResource(Res.string.cast_connecting, cast.device.name)
+        cast is CastState.Casting -> RachaIcons.Tv to stringResource(Res.string.cast_playing_on, cast.device.name)
+        else -> return
+    }
+    Column(
+        modifier.background(Color.Black).padding(Racha.space.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Racha.space.m, Alignment.CenterVertically),
+    ) {
+        RIcon(icon, null, tint = Racha.colors.accent, size = 56.dp)
+        RText(text, style = Racha.type.title, color = Color.White, textAlign = TextAlign.Center)
+        state.element?.let { RText(it.displayTitle, style = Racha.type.body, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center) }
+        // The transport controls sit in the middle of the screen: leave them room.
+        Spacer(Modifier.height(112.dp))
+        RText(stringResource(Res.string.cast_remote_hint), style = Racha.type.caption, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center)
+        RButton(
+            stringResource(Res.string.cast_stop),
+            { if (display != null) vm.showOn(null) else vm.stopCasting() },
+            kind = ButtonKind.Secondary, icon = RachaIcons.X,
+        )
+    }
+}
+
 @Composable
 private fun AudioOnlyCover(state: PlaybackState, modifier: Modifier) {
     val item = state.item ?: return

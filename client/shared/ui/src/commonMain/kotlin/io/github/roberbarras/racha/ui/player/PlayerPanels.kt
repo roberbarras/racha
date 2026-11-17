@@ -64,6 +64,18 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import io.github.roberbarras.racha.ui.resources.summary_action
+import io.github.roberbarras.racha.ui.resources.cast_title
+import io.github.roberbarras.racha.ui.resources.cast_this_device
+import io.github.roberbarras.racha.ui.resources.cast_kind_display
+import io.github.roberbarras.racha.ui.resources.cast_kind_chromecast
+import io.github.roberbarras.racha.ui.resources.cast_kind_dlna
+import io.github.roberbarras.racha.ui.resources.cast_searching
+import io.github.roberbarras.racha.ui.resources.cast_searching_more
+import io.github.roberbarras.racha.ui.resources.cast_none_hint
+import io.github.roberbarras.racha.application.cast.CastState
+import io.github.roberbarras.racha.domain.cast.CastKind
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.roberbarras.racha.ui.summary.SummaryContent
 import io.github.roberbarras.racha.ui.summary.SummarySubject
 import io.github.roberbarras.racha.ui.summary.summaryViewModel
@@ -78,6 +90,7 @@ internal fun PlayerPanelHost(vm: PlayerViewModel, state: PlaybackState, panel: P
         PlayerPanel.Audio -> Res.string.audio_track
         PlayerPanel.Bookmarks -> Res.string.bookmarks
         PlayerPanel.Summary -> Res.string.summary_action
+        PlayerPanel.Cast -> Res.string.cast_title
         PlayerPanel.Settings, PlayerPanel.None -> Res.string.player_settings
     }
     Column(
@@ -103,8 +116,62 @@ internal fun PlayerPanelHost(vm: PlayerViewModel, state: PlaybackState, panel: P
             PlayerPanel.Bookmarks -> BookmarksPanel(vm, state)
             PlayerPanel.Settings -> SkipSettings(vm, state)
             PlayerPanel.Summary -> SummaryPanel(vm, state)
+            PlayerPanel.Cast -> CastPanel(vm)
             PlayerPanel.None -> Unit
         }
+    }
+}
+
+/**
+ * "Enviar a" (H18): screens plugged into this device, then TVs and Chromecasts on the network. The network is only
+ * searched while this panel is open.
+ */
+@Composable
+private fun CastPanel(vm: PlayerViewModel) {
+    val cast by vm.cast.collectAsStateWithLifecycle()
+    val display by vm.display.collectAsStateWithLifecycle()
+    val displays by vm.externalDisplays.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { vm.requestLocalNetwork() }
+    val discovery = vm.deps.cast?.discovery
+    val devices by remember(discovery) { discovery?.devices() ?: kotlinx.coroutines.flow.flowOf(emptyList()) }.collectAsStateWithLifecycle(emptyList())
+    val current = (cast as? CastState.Casting)?.device ?: (cast as? CastState.Connecting)?.device
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
+        CastRow(RachaIcons.Play, stringResource(Res.string.cast_this_device), null, selected = current == null && display == null) {
+            if (display != null) vm.showOn(null) else vm.stopCasting()
+        }
+        displays.forEach { d ->
+            CastRow(RachaIcons.Monitor, d.name, stringResource(Res.string.cast_kind_display), selected = display?.id == d.id) { vm.showOn(d) }
+        }
+        devices.forEach { device ->
+            val kind = stringResource(if (device.kind == CastKind.CHROMECAST) Res.string.cast_kind_chromecast else Res.string.cast_kind_dlna)
+            val detail = listOfNotNull(kind, device.model?.takeIf { !it.equals(kind, ignoreCase = true) }).joinToString(" · ")
+            CastRow(RachaIcons.Tv, device.name, detail, selected = current?.id == device.id) { vm.castTo(device) }
+        }
+        if (discovery != null) {
+            RText(
+                stringResource(if (devices.isEmpty()) Res.string.cast_searching else Res.string.cast_searching_more),
+                Modifier.padding(top = Racha.space.m), style = Racha.type.caption, color = Racha.colors.onRailMuted,
+            )
+            if (devices.isEmpty()) RText(stringResource(Res.string.cast_none_hint), style = Racha.type.caption, color = Racha.colors.onRailMuted)
+        }
+    }
+}
+
+@Composable
+private fun CastRow(icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, detail: String?, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(Racha.radius.m)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(if (selected) Racha.colors.accent.copy(alpha = 0.22f) else Color.Transparent)
+            .interactive(onClick, shape, overlay = Color.White).padding(Racha.space.m),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Racha.space.m),
+    ) {
+        RIcon(icon, null, tint = Racha.colors.onRail, size = 20.dp)
+        Column(Modifier.weight(1f)) {
+            RText(name, style = Racha.type.body, color = Racha.colors.onRail, maxLines = 1)
+            detail?.let { RText(it, style = Racha.type.caption, color = Racha.colors.onRailMuted, maxLines = 1) }
+        }
+        if (selected) RIcon(RachaIcons.Check, null, tint = Racha.colors.accent, size = 18.dp)
     }
 }
 

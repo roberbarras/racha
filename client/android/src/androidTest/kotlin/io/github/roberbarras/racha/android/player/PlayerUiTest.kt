@@ -187,6 +187,43 @@ class PlayerUiTest {
         save("android-player-pip")
     }
 
+    /**
+     * H18: a second screen (the emulator's overlay display stands in for HDMI, USB-C or Miracast) takes the video; the
+     * phone shows where it plays and stays as the remote; unplugged, the video comes back.
+     */
+    @Test
+    fun aConnectedScreenShowsTheVideoAndThePhoneIsTheRemote() {
+        val automation = instrumentation.uiAutomation
+        runCatching { automation.grantRuntimePermission(context.packageName, "android.permission.ACCESS_LOCAL_NETWORK") }
+        automation.executeShellCommand("settings put global overlay_display_devices 1280x720/213").close()
+        try {
+            compose.waitUntil(timeoutMillis = 15_000) { app.playerHooks.externalDisplays.value.isNotEmpty() }
+            val screen = app.playerHooks.externalDisplays.value.first().name
+            openPlayerFromContinueWatching()
+            clickDescription("Send to")
+            compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodesWithText(screen).fetchSemanticsNodes().isNotEmpty() }
+            compose.onAllNodesWithText(screen).onFirst().performClick()
+            compose.waitUntil(timeoutMillis = 10_000) { app.playerHooks.presentationShown }
+            compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodesWithText("Playing on $screen").fetchSemanticsNodes().isNotEmpty() }
+            val before = position()
+            Thread.sleep(2_000)
+            assertTrue(position() > before + 1_000, "the video plays on the other screen")
+            save("android-player-external-screen")
+
+            compose.onAllNodesWithText("Back to this device").onFirst().performClick()
+            compose.waitUntil(timeoutMillis = 10_000) { !app.playerHooks.presentationShown }
+
+            // Unplugged while showing: back on the phone by itself.
+            compose.onAllNodesWithText(screen).onFirst().performClick()
+            compose.waitUntil(timeoutMillis = 10_000) { app.playerHooks.presentationShown }
+            automation.executeShellCommand("settings delete global overlay_display_devices").close()
+            compose.waitUntil(timeoutMillis = 15_000) { compose.onAllNodesWithText("Playing on $screen").fetchSemanticsNodes().isEmpty() }
+            assertFalse(app.playerHooks.presentationShown)
+        } finally {
+            automation.executeShellCommand("settings delete global overlay_display_devices").close()
+        }
+    }
+
     private fun capturedFrames(): Int {
         val projection = arrayOf(MediaStore.Images.Media._ID)
         val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ? AND ${MediaStore.Images.Media.DISPLAY_NAME} LIKE ?"

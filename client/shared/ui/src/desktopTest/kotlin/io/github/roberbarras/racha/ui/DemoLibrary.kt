@@ -74,6 +74,9 @@ object DemoLibrary {
         chat: io.github.roberbarras.racha.application.ai.ChatClient? = null,
         /** Files the user "saved" (name to text). */
         saved: MutableList<Pair<String, String>> = mutableListOf(),
+        /** The player's platform part (player screen tests) and "send to" (H18). */
+        player: io.github.roberbarras.racha.ui.player.PlayerHooks? = null,
+        cast: io.github.roberbarras.racha.application.cast.CastServices? = null,
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
@@ -107,7 +110,7 @@ object DemoLibrary {
                 override suspend fun clear() {}
             }
         }
-        if (chat != null) runBlocking {
+        if (chat != null || player != null) runBlocking {
             db.categories.upsertRoot(io.github.roberbarras.racha.domain.library.CategoryRoot(root, CategoryKey.COURSES, "file:///demo", 0))
             val srt = awsIamLesson.relativePath.value.substringBeforeLast('.') + ".en.srt"
             db.library.upsertSubtitle(io.github.roberbarras.racha.domain.library.Subtitle(
@@ -139,6 +142,7 @@ object DemoLibrary {
             keepLibraryUpToDate = keep,
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = picked
+                override val player = player
                 override val deepLinks = links
                 override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = saved.add(suggestedName to text)
             },
@@ -177,6 +181,7 @@ object DemoLibrary {
                 io.github.roberbarras.racha.application.ai.SummarizeWithAi(db.library, db.categories, subtitleFiles, db.summaries, it, preferences, summaryKeys, clock) { "en" }
             },
             summaryProviders = chat?.let { io.github.roberbarras.racha.application.ai.SummaryProviders(preferences, summaryKeys) },
+            cast = cast,
         )
     }
 

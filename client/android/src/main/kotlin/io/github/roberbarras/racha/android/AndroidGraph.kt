@@ -125,6 +125,7 @@ class AndroidGraph(context: Context) {
     private val aiApiKey = KeystoreSecretStore(context, "ai-key.bin")
     /** One key per summary provider (H17), each in its own Keystore-encrypted file. */
     private val summaryKeys = ProviderKeys { id -> KeystoreSecretStore(context, "ai-summary-$id.bin") }
+    private val wifi: android.net.wifi.WifiManager? = context.applicationContext.getSystemService(android.net.wifi.WifiManager::class.java)
     private val covers = DirectoryCoverFiles(File(context.filesDir, "covers").toPath())
     val account = AccountService(
         syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
@@ -224,11 +225,22 @@ class AndroidGraph(context: Context) {
             summaryKeys, clock,
         ) { platform.player?.language() ?: "en" },
         summaryProviders = SummaryProviders(preferences, summaryKeys),
+        cast = io.github.roberbarras.racha.application.cast.CastServices(
+            io.github.roberbarras.racha.remote.cast.NetworkCastDiscovery(::multicastLock),
+            io.github.roberbarras.racha.remote.cast.CastConnectors(),
+        ) { io.github.roberbarras.racha.remote.cast.LanMediaServer() },
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.util.TimeZone.getDefault().id },
         ),
     )
+
+    /** Wi-Fi drops multicast to save battery: held only while "Enviar a" searches for TVs (H18). */
+    private fun multicastLock(): AutoCloseable {
+        val wifi = wifi ?: return AutoCloseable {}
+        val lock = wifi.createMulticastLock("racha-cast").apply { setReferenceCounted(false); acquire() }
+        return AutoCloseable { if (lock.isHeld) lock.release() }
+    }
 
     private companion object {
         const val WIDGET_DEBOUNCE_MS = 2_000L

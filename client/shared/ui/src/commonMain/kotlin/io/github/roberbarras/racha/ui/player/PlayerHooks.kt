@@ -9,8 +9,21 @@ import io.github.roberbarras.racha.application.playback.PlayerEngine
 import io.github.roberbarras.racha.domain.preferences.VideoScale
 import kotlinx.coroutines.flow.StateFlow
 
+/** A screen connected to this device (HDMI, USB-C, Miracast) that can show the video (H18). */
+data class ExternalDisplay(val id: Int, val name: String)
+
 /** What the shared player UI needs from the platform (Media3 on Android, libmpv on desktop). */
 interface PlayerHooks {
+    /** Screens where the video can go while this device stays as the remote (Android); empty elsewhere. */
+    val externalDisplays: StateFlow<List<ExternalDisplay>>
+        get() = kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+
+    /** Shows [engine]'s video on [displayId], or back on this screen with null. */
+    fun showOnDisplay(engine: PlayerEngine, displayId: Int?) = Unit
+
+    /** Asks for whatever finding TVs on the local network needs (Android 17: local network access). */
+    fun requestLocalNetwork() = Unit
+
     fun createEngine(): PlayerEngine
 
     /** The video output of [engine], sized by the caller (or filling it when [scalesVideo]). */

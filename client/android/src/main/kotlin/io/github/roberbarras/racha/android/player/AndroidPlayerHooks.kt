@@ -4,6 +4,9 @@ import android.app.PictureInPictureParams
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
+import android.hardware.display.DisplayManager
+import io.github.roberbarras.racha.ui.player.ExternalDisplay
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.media.AudioManager
@@ -60,6 +63,58 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
 
     override val inPictureInPicture: StateFlow<Boolean> = pip.asStateFlow()
 
+    // ---- External screens (H18) ---------------------------------------------------------------------------------
+    private val displayManager = context.getSystemService(DisplayManager::class.java)
+    private val displays = MutableStateFlow(presentationDisplays())
+    private var presentation: VideoPresentation? = null
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) { displays.value = presentationDisplays() }
+        override fun onDisplayRemoved(displayId: Int) { displays.value = presentationDisplays() }
+        override fun onDisplayChanged(displayId: Int) { displays.value = presentationDisplays() }
+    }
+
+    init {
+        displayManager.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
+    }
+
+    /** HDMI, USB-C (DisplayPort) and Miracast screens, as the system offers them for presentations. */
+    private fun presentationDisplays(): List<ExternalDisplay> =
+        displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).map { ExternalDisplay(it.displayId, it.name) }
+
+    override val externalDisplays: StateFlow<List<ExternalDisplay>> = displays.asStateFlow()
+
+    /** The video moves to the other screen (the phone's surface stays, without output) and back. */
+    override fun showOnDisplay(engine: PlayerEngine, displayId: Int?) {
+        val media = engine as Media3Engine
+        presentation?.let { shown ->
+            media.detach(shown.surface)
+            runCatching { shown.dismiss() }
+        }
+        presentation = null
+        if (displayId == null) {
+            surfaces[engine]?.let(media::attach)
+            return
+        }
+        val activity = activity ?: return
+        val display = displayManager.getDisplay(displayId) ?: return
+        presentation = VideoPresentation(activity, display, media).also { shown ->
+            shown.show()
+            media.attach(shown.surface)
+        }
+    }
+
+    /** Android 17 asks before an app reaches devices on the local network (finding and driving TVs). */
+    override fun requestLocalNetwork() {
+        val activity = activity ?: return
+        if (Build.VERSION.SDK_INT < 37) return
+        if (activity.checkSelfPermission(LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED) return
+        activity.requestPermissions(arrayOf(LOCAL_NETWORK), 37)
+    }
+
+    /** The external screen in use, if any (device tests). */
+    @VisibleForTesting
+    val presentationShown: Boolean get() = presentation?.isShowing == true
+
     /** Engines currently shown on screen (instrumented tests read their state). */
     @VisibleForTesting
     val visibleEngines: Set<PlayerEngine> get() = surfaces.keys.toSet()
@@ -72,6 +127,8 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
     }
 
     fun detach(activity: ComponentActivity) {
+        presentation?.let { runCatching { it.dismiss() } }
+        presentation = null
         activity.removeOnPictureInPictureModeChangedListener(pipListener)
         activity.removeOnUserLeaveHintListener(leaveHint)
         if (this.activity === activity) this.activity = null
@@ -212,6 +269,8 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
     override fun language(): String = Locale.getDefault().language.ifEmpty { "en" }
 
     private companion object {
+        const val LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+
         /** PiP accepts aspect ratios between 1:2.39 and 2.39:1. */
         fun aspectOf(width: Int, height: Int): Rational {
             if (width <= 0 || height <= 0) return Rational(16, 9)

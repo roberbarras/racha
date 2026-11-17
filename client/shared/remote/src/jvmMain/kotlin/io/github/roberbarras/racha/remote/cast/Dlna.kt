@@ -170,3 +170,14 @@ class DlnaPlayer internal constructor(private val control: String) : RemotePlaye
         }
     }
 }
+
+/** Chromecasts and DLNA TVs, each to its own protocol. */
+class CastConnectors(
+    private val chromecast: CastConnector = ChromecastConnector(),
+    private val dlna: CastConnector = DlnaConnector(),
+) : CastConnector {
+    override suspend fun connect(device: CastDevice): RemotePlayer = when (device.kind) {
+        CastKind.CHROMECAST -> chromecast.connect(device)
+        CastKind.DLNA -> dlna.connect(device)
+    }
+}

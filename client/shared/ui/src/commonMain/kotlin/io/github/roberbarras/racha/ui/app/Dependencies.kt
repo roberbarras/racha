@@ -74,6 +74,8 @@ class RachaDependencies(
     /** AI summaries of lessons and sections (H17) and their providers; null where not offered. */
     val summaries: io.github.roberbarras.racha.application.ai.SummarizeWithAi? = null,
     val summaryProviders: io.github.roberbarras.racha.application.ai.SummaryProviders? = null,
+    /** Send to a Chromecast or DLNA TV (H18); null where not offered. */
+    val cast: io.github.roberbarras.racha.application.cast.CastServices? = null,
 )
 
 /** Platform capabilities the shared UI needs. */

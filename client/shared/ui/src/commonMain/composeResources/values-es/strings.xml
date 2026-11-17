@@ -545,4 +545,19 @@
     <string name="provider_get_key">Conseguir clave</string>
     <string name="provider_remove">Quitar</string>
     <string name="provider_remove_confirm">¿Quitar %1$s y su clave?</string>
+    <string name="cast_title">Enviar a</string>
+    <string name="cast_this_device">Este dispositivo</string>
+    <string name="cast_kind_display">Pantalla conectada</string>
+    <string name="cast_kind_chromecast">Chromecast</string>
+    <string name="cast_kind_dlna">Televisor (DLNA)</string>
+    <string name="cast_searching">Buscando televisores y Chromecast en tu red…</string>
+    <string name="cast_searching_more">Sigue buscando…</string>
+    <string name="cast_none_hint">¿No aparece nada? Comprueba que el televisor o el Chromecast está encendido y en la misma red Wi-Fi que este dispositivo.</string>
+    <string name="cast_connecting">Conectando con %1$s…</string>
+    <string name="cast_playing_on">Reproduciendo en %1$s</string>
+    <string name="cast_remote_hint">Este dispositivo es el mando: pausa, avanza o cambia de clase desde aquí.</string>
+    <string name="cast_stop">Volver a este dispositivo</string>
+    <string name="cast_failed_connect">No se ha podido conectar con %1$s.</string>
+    <string name="cast_failed_load">%1$s no ha podido abrir este vídeo (puede que no admita su formato).</string>
+    <string name="cast_lost">Se ha perdido la conexión con %1$s: sigue aquí.</string>
 </resources>

@@ -14,6 +14,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import io.github.roberbarras.racha.application.cast.CastState
+import io.github.roberbarras.racha.application.cast.CastingEngine
+import io.github.roberbarras.racha.application.playback.PlayerEngine
+import io.github.roberbarras.racha.domain.cast.CastDevice
+import io.github.roberbarras.racha.ui.resources.Res
+import io.github.roberbarras.racha.ui.resources.cast_failed_connect
+import io.github.roberbarras.racha.ui.resources.cast_failed_load
+import io.github.roberbarras.racha.ui.resources.cast_lost
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.launch
 
 /** Gesture and control settings read once per player (spec §4.2 "todos configurables"). */
@@ -31,7 +41,7 @@ data class PlayerPreferences(
     val shortcuts: Shortcuts = Shortcuts.DEFAULT,
 )
 
-enum class PlayerPanel { None, Queue, Speed, Subtitles, Audio, Bookmarks, Settings, Summary }
+enum class PlayerPanel { None, Queue, Speed, Subtitles, Audio, Bookmarks, Settings, Summary, Cast }
 
 class PlayerViewModel(
     internal val deps: RachaDependencies,
@@ -39,8 +49,36 @@ class PlayerViewModel(
     element: ContentId,
     mode: StartMode,
 ) : ViewModel() {
-    val engine = hooks.createEngine()
+    /** This device's engine: the platform's hooks (surface, screenshots, audio only) always get this one. */
+    val localEngine = hooks.createEngine()
+    /** With "send to" (H18), the engine can move to a TV; the controller drives whichever plays. */
+    private val casting: CastingEngine? = deps.cast?.let { CastingEngine(localEngine, it.connector, it.publisher(), deps.appScope) }
+    val engine: PlayerEngine = casting ?: localEngine
     val controller = deps.playbackController(engine, viewModelScope)
+    val cast: StateFlow<CastState> = casting?.cast ?: MutableStateFlow(CastState.Local)
+    private val mutableDisplay = MutableStateFlow<ExternalDisplay?>(null)
+    /** The external screen showing the video, if any (H18). */
+    val display: StateFlow<ExternalDisplay?> = mutableDisplay.asStateFlow()
+    val externalDisplays: StateFlow<List<ExternalDisplay>> = hooks.externalDisplays
+    val castOffered: Boolean get() = casting != null
+
+    fun castTo(device: CastDevice) {
+        showOn(null)
+        casting?.castTo(device)
+        controller.usedFeature("cast_${device.kind.name.lowercase()}")
+    }
+
+    fun stopCasting() = casting?.stopCasting()
+
+    fun showOn(target: ExternalDisplay?) {
+        if (mutableDisplay.value == target) return
+        if (target != null) casting?.stopCasting()
+        hooks.showOnDisplay(localEngine, target?.id)
+        mutableDisplay.value = target
+        if (target != null) controller.usedFeature("external_display")
+    }
+
+    fun requestLocalNetwork() = hooks.requestLocalNetwork()
     val state: StateFlow<PlaybackState> = controller.state
 
     private val mutableFullscreen = MutableStateFlow(false)
@@ -74,8 +112,29 @@ class PlayerViewModel(
             controller.open(element, mode)
         }
         viewModelScope.launch {
-            state.map { Triple(it.engine.playing, it.engine.videoWidth, it.engine.videoHeight) }.distinctUntilChanged()
+            // While a TV plays, this screen may turn off (it is only the remote).
+            combine(state, cast) { s, c -> Triple(s.engine.playing && c !is CastState.Casting, s.engine.videoWidth, s.engine.videoHeight) }
+                .distinctUntilChanged()
                 .collect { (playing, w, h) -> hooks.onPlayingChanged(playing, w, h) }
+        }
+        viewModelScope.launch {
+            // Cable unplugged: the video comes back here.
+            hooks.externalDisplays.collect { list -> mutableDisplay.value?.let { shown -> if (list.none { it.id == shown.id }) showOn(null) } }
+        }
+        viewModelScope.launch {
+            cast.collect { c ->
+                notice.value = when (c) {
+                    is CastState.Failed -> getString(
+                        when (c.reason) {
+                            "load" -> Res.string.cast_failed_load
+                            "lost" -> Res.string.cast_lost
+                            else -> Res.string.cast_failed_connect
+                        },
+                        c.device.name,
+                    )
+                    else -> notice.value
+                }
+            }
         }
     }
 
@@ -87,7 +146,7 @@ class PlayerViewModel(
         if (mutableAudioOnly.value == enabled) return
         mutableAudioOnly.value = enabled
         engine.setVideoEnabled(!enabled)
-        hooks.setAudioOnly(engine, enabled)
+        hooks.setAudioOnly(localEngine, enabled)
         if (enabled) controller.usedFeature("audio_only")
     }
 
@@ -113,7 +172,7 @@ class PlayerViewModel(
     fun screenshot(savedMessage: suspend (String) -> String) = viewModelScope.launch {
         val element = state.value.element ?: return@launch
         val name = "racha-${element.id.value.take(8)}-${engine.positionMs() / 1000}"
-        hooks.screenshot(engine, name)?.let { notice.value = savedMessage(it) }
+        hooks.screenshot(localEngine, name)?.let { notice.value = savedMessage(it) }
         controller.usedFeature("screenshot")
     }
 
@@ -124,7 +183,8 @@ class PlayerViewModel(
     }
 
     override fun onCleared() {
-        if (mutableAudioOnly.value) hooks.setAudioOnly(engine, false)
+        if (mutableAudioOnly.value) hooks.setAudioOnly(localEngine, false)
+        if (mutableDisplay.value != null) hooks.showOnDisplay(localEngine, null)
         hooks.setFullscreen(false)
         hooks.onPlayingChanged(false, 0, 0)
         hooks.onClosed()

@@ -215,6 +215,10 @@ class DesktopGraph(
             summaryKeys, clock,
         ) { platform.player?.language() ?: "en" },
         summaryProviders = SummaryProviders(preferences, summaryKeys),
+        cast = io.github.roberbarras.racha.application.cast.CastServices(
+            io.github.roberbarras.racha.remote.cast.NetworkCastDiscovery(),
+            io.github.roberbarras.racha.remote.cast.CastConnectors(),
+        ) { io.github.roberbarras.racha.remote.cast.LanMediaServer() },
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.time.ZoneId.systemDefault().id },

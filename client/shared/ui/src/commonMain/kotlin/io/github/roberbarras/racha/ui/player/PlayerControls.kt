@@ -49,6 +49,8 @@ import io.github.roberbarras.racha.ui.resources.speed
 import io.github.roberbarras.racha.ui.resources.subtitles
 import org.jetbrains.compose.resources.stringResource
 import io.github.roberbarras.racha.ui.resources.summary_action
+import io.github.roberbarras.racha.ui.resources.cast_title
+import io.github.roberbarras.racha.application.cast.CastState
 
 /**
  * Top bar (back, title, panels and tools), centre transport (previous, −N, play/pause, +N, next) and bottom bar
@@ -165,6 +167,12 @@ private fun Tools(vm: PlayerViewModel, state: PlaybackState, panelOpen: Boolean,
             else -> vm.controller.clearLoop()
         }
     }, active = state.loopA != null)
+    if (vm.castOffered || vm.externalDisplays.collectAsStateWithLifecycle().value.isNotEmpty()) {
+        val cast by vm.cast.collectAsStateWithLifecycle()
+        val display by vm.display.collectAsStateWithLifecycle()
+        ControlButton(RachaIcons.Cast, stringResource(Res.string.cast_title), act { vm.togglePanel(PlayerPanel.Cast) },
+            active = cast is CastState.Casting || display != null)
+    }
     ControlButton(RachaIcons.Camera, stringResource(Res.string.screenshot), act(onScreenshot))
     ControlButton(RachaIcons.PictureInPicture2, stringResource(Res.string.picture_in_picture), act { vm.enterPictureInPicture() })
     val audioOnly by vm.audioOnly.collectAsStateWithLifecycle()

@@ -36,6 +36,9 @@ object RachaIcons {
     /** lucide:captions */
     val Captions: ImageVector by lazy { icon("captions", "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z", "M7 15h4M15 15h2M7 11h2M13 11h4") }
 
+    /** lucide:cast */
+    val Cast: ImageVector by lazy { icon("cast", "M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6", "M2 12a9 9 0 0 1 8 8", "M2 16a5 5 0 0 1 4 4", "M2 20L2.01 20") }
+
     /** lucide:chart-column */
     val ChartColumn: ImageVector by lazy { icon("chart-column", "M3 3v16a2 2 0 0 0 2 2h16", "M18 17V9", "M13 17V5", "M8 17v-3") }
 
@@ -102,6 +105,9 @@ object RachaIcons {
     /** lucide:hard-drive */
     val HardDrive: ImageVector by lazy { icon("hard-drive", "M10 16h.01", "M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z", "M21.946 12.013H2.054", "M6 16h.01") }
 
+    /** lucide:headphones */
+    val Headphones: ImageVector by lazy { icon("headphones", "M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3") }
+
     /** lucide:history */
     val History: ImageVector by lazy { icon("history", "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", "M3 3v5h5", "M12 7v5l4 2") }
 
@@ -142,7 +148,6 @@ object RachaIcons {
     val Pencil: ImageVector by lazy { icon("pencil", "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z", "m15 5 4 4") }
 
     /** lucide:picture-in-picture-2 */
-    val Headphones: ImageVector by lazy { icon("headphones", "M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3") }
     val PictureInPicture2: ImageVector by lazy { icon("picture-in-picture-2", "M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4", "M14 13h6a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-6a2 2 0 0 1 -2 -2v-3a2 2 0 0 1 2 -2z") }
 
     /** lucide:play */

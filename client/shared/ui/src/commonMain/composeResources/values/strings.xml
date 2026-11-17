@@ -545,4 +545,19 @@
     <string name="provider_get_key">Get a key</string>
     <string name="provider_remove">Remove</string>
     <string name="provider_remove_confirm">Remove %1$s and its key?</string>
+    <string name="cast_title">Send to</string>
+    <string name="cast_this_device">This device</string>
+    <string name="cast_kind_display">Connected screen</string>
+    <string name="cast_kind_chromecast">Chromecast</string>
+    <string name="cast_kind_dlna">TV (DLNA)</string>
+    <string name="cast_searching">Looking for TVs and Chromecasts on your network…</string>
+    <string name="cast_searching_more">Still looking…</string>
+    <string name="cast_none_hint">Nothing yet? Check that the TV or Chromecast is on and on the same Wi-Fi network as this device.</string>
+    <string name="cast_connecting">Connecting to %1$s…</string>
+    <string name="cast_playing_on">Playing on %1$s</string>
+    <string name="cast_remote_hint">This device is the remote: pause, skip or change lessons from here.</string>
+    <string name="cast_stop">Back to this device</string>
+    <string name="cast_failed_connect">Could not connect to %1$s.</string>
+    <string name="cast_failed_load">%1$s could not open this video (its format may not be supported).</string>
+    <string name="cast_lost">Lost the connection to %1$s: playing here again.</string>
 </resources>
