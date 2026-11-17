@@ -23,6 +23,7 @@ Implementa la spec §6.1 en SQLite (SQLDelight, compatible con SQLite 3.18 = And
 | `sync_queue` | `id` | `SyncQueueEntry` | FIFO de cambios pendientes de subir. |
 | `device` | `id` | `Device` | Un único `is_current` (índice parcial). |
 | `account` | `id` | `Account` | Una fila como máximo. |
+| `summary` | `target_id` (lección o sección) | `Summary` | Resumen con IA en Markdown, quién lo escribió y en qué idioma (v9, [ADR-0016](adr/0016-resumenes-con-ia.md)). Sin FK: puede llegar por sync antes que su lección. Se sincroniza. |
 
 Convenciones: instantes en milisegundos UTC; listas separadas por salto de línea; enums por nombre.
 Las "inserciones o actualizaciones" son `INSERT OR IGNORE` + `UPDATE` en una transacción: `INSERT OR REPLACE` borraría

@@ -2,7 +2,7 @@
 
 Spec §6.3 y §7.4. Protocolo y servidor: [ADR-0012](adr/0012-protocolo-sync-y-modelo-remoto.md) y [SERVIDOR.md](SERVIDOR.md). Ids comunes entre dispositivos: [ADR-0004](adr/0004-contentid-y-multiples-raices.md).
 
-La sync es **opcional**: sin cuenta la app funciona igual y no hace ninguna llamada de red. Lo que viaja es el estado (progreso, marcadores, historial, favoritos, ajustes, categorías, raíces y la biblioteca indexada); **los ficheros nunca salen del dispositivo**.
+La sync es **opcional**: sin cuenta la app funciona igual y no hace ninguna llamada de red. Lo que viaja es el estado (progreso, marcadores, historial, favoritos, ajustes, categorías, raíces, la biblioteca indexada y los resúmenes con IA, [ADR-0016](adr/0016-resumenes-con-ia.md)); **los ficheros nunca salen del dispositivo**.
 
 ## Piezas
 

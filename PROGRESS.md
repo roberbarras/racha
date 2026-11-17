@@ -24,7 +24,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
 | H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | ✅ Cerrado |
-| H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
+| H17 | Resúmenes con IA a partir de subtítulos, con varios proveedores en el orden que elijas | 🔄 En CI |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
 | H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
 
@@ -55,6 +55,29 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H17 · Resúmenes con IA — 🔄 en CI
+
+Decisión: [ADR-0016](docs/adr/0016-resumenes-con-ia.md). Guía: [docs/RESUMENES-IA.md](docs/RESUMENES-IA.md). Evidencias: [docs/evidence/h17](docs/evidence/h17).
+
+**Hecho**
+- **«Resumen y claves»** de una clase a partir de sus subtítulos, y **resumen de sección** a partir de los de sus clases. Están en el menú de cada clase, en la cabecera de cada sección y en un panel del reproductor. Es Markdown con Resumen, Claves, Términos y Para repasar, en el idioma de la app; se puede guardar como `.md`, volver a generar o borrar.
+- **Varios proveedores** (Gemini, Groq, NVIDIA, OpenRouter, Mistral, Cerebras, DeepSeek, Ollama o cualquiera compatible con OpenAI). Se prueban en el **orden que elijas** y, si uno falla (sin cuota gratuita, clave, modelo, caído), lo intenta el siguiente. Clave por proveedor en el llavero o el Keystore; «Probar» y «Cargar modelos».
+- Clases **sin `.srt`**: opción desactivada (y sin botón en el reproductor).
+- Clases largas por partes. Los resúmenes se guardan con los datos de la app (esquema v9), **se sincronizan** (servidor: Flyway V8, `/summaries`) y entran en la copia completa.
+- Corrección: los apóstrofos de algunos textos en inglés se veían con una barra (`system\'s`).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: subtítulos a texto, troceado, instrucciones, lista de proveedores | ✅ |
+| Caso de uso con SQLite real: paso al siguiente proveedor, sin clave o desactivado, por partes, sección, sin subtítulos, sin proveedores, todos fallan, sync | ✅ |
+| Cliente HTTP compatible con OpenAI contra un servidor simulado (petición, modelos, errores, «pensamiento») | ✅ |
+| Servidor: resúmenes entre dispositivos, `/summaries`, validación; OpenAPI regenerado | ✅ |
+| UI escritorio: Markdown, opción desactivada sin `.srt`, generar y guardar `.md`, añadir proveedor (capturas) | ✅ |
+| CI | ⏳ |
 
 ---
 
