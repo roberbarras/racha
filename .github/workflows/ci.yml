@@ -268,9 +268,14 @@ jobs:
         run: |
           set -o pipefail
           why() { grep -A12 'What went wrong' "$1" | head -14 | tr '\n' ' ' | cut -c1-1500; }
-          if ! ./gradlew :android:assembleRelease --console=plain 2>&1 | tee "$RUNNER_TEMP/release1.log"; then
+          # A tag vX.Y.Z is the app's version; versionCode = X*10000 + Y*100 + Z (1.0.0 → 10000, always increasing).
+          args=()
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            args=(-Pracha.version="${GITHUB_REF_NAME#v}" -Pracha.versionCode=$((BASH_REMATCH[1] * 10000 + BASH_REMATCH[2] * 100 + BASH_REMATCH[3])))
+          fi
+          if ! ./gradlew :android:assembleRelease "${args[@]}" --console=plain 2>&1 | tee "$RUNNER_TEMP/release1.log"; then
             echo "::warning title=Release APK, first attempt::$(why "$RUNNER_TEMP/release1.log")"
-            if ! ./gradlew :android:assembleRelease --console=plain 2>&1 | tee "$RUNNER_TEMP/release2.log"; then
+            if ! ./gradlew :android:assembleRelease "${args[@]}" --console=plain 2>&1 | tee "$RUNNER_TEMP/release2.log"; then
               echo "::error title=Release APK::$(why "$RUNNER_TEMP/release2.log")"
               exit 1
             fi
