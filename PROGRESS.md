@@ -19,6 +19,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H10 | Estadísticas y telemetría | ✅ Cerrado |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | ✅ Cerrado |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
+| 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | 🔄 En curso |
 
 ## Criterios de aceptación (§12)
 
@@ -47,6 +48,28 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## 1.0 · Mejoras tras la entrega y versión 1.0.0 — 🔄 en curso
+
+Peticiones del usuario tras H12. Decisión en [ADR-0013](docs/adr/0013-que-contiene-una-carpeta.md). Evidencias: [docs/evidence/v1.0](docs/evidence/v1.0).
+
+**Hecho**
+- **Dos formas de añadir contenido** (Carpetas y primer uso): **Añadir biblioteca** (cada subcarpeta es un curso o serie) y **Añadir curso o serie** (la carpeta es el curso y sus subcarpetas, las secciones, se llamen como se llamen). Antes de añadir se ve lo que saldrá ("Se añadirá «X»: 3 secciones · 5 vídeos y recursos" / "Se añadirán 12 cursos o series: …"), con cambio a la otra opción y aviso si los nombres (`01 - …`, temporadas, fechas) apuntan a un solo curso.
+- **Cambiar qué contiene una carpeta ya añadida**: reescanea conservando progreso, marcadores e historial (los vídeos no cambian de id); lo guardado a nivel de curso queda en los cursos archivados y vuelve si se deshace. Las carpetas anteriores siguen con la detección automática hasta que se cambien.
+- El tipo **se sincroniza** con la carpeta; al vincularla con la de otro dispositivo se adopta el de aquella. Esquema local v7 (sin cambios en el servidor: va en el JSON del `categoryRoot`).
+- **Sesiones y reinicios del servidor**: ya sobrevivían (los refresh están en PostgreSQL y `/auth` no depende de la clave); se corrige el aviso y la documentación que decían lo contrario, y la pantalla de estadísticas ahora renueva el token tras un 401 como ya hacían la sync y la telemetría.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: ambos tipos, ids de vídeos estables al cambiar, carpeta vacía | ✅ |
+| SQLite: vista previa sin escribir, añadir como curso, cambiar a biblioteca y volver (progreso intacto, curso restaurado, sin "novedades" falsas) | ✅ |
+| Sync: el tipo viaja, cambiarlo se encola, dispositivo antiguo = automático, vincular adopta el tipo remoto; migración v6 → v7 | ✅ |
+| UI escritorio: vista previa, cambio de opción, añadir y cambiar después (capturas); onboarding con las dos opciones | ✅ |
+| Estadísticas: 401 tras reinicio → renovación y datos | ✅ |
+| CI | CI_LINK |
 
 ---
 
