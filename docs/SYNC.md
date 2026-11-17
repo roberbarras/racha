@@ -47,6 +47,8 @@ Los ids de contenido incluyen la clave de la raíz. Al añadir una carpeta, si l
 
 Servidor (host, puerto, HTTPS, ruta base), entrar o crear cuenta, estado (última sincronización, pendientes, último error), "Sincronizar ahora", intervalo, política de conflictos, cerrar sesión y los ajustes por revisar. Si la sesión caduca o hay ajustes por revisar, Inicio lo avisa con un banner.
 
+**Contraseña** (H13): con la sesión iniciada, «Cambiar contraseña» pide la actual y la nueva dos veces; cierra la sesión de los demás dispositivos y este sigue dentro. Sin sesión, «¿Olvidaste tu contraseña?» (bajo el formulario) pide al servidor del formulario un código para el correo escrito, en el idioma de la app; después se escribe el código y la nueva contraseña. Al recuperarla así se cierran todas las sesiones. Si el servidor no tiene correo configurado, la pantalla lo dice. Detalles del servidor en [SERVIDOR.md](SERVIDOR.md#correo-recuperar-la-contraseña).
+
 ## Tests
 
 - `SyncStoreTest`, `RootLinkTest` (JVM, SQLite real): triggers, compactación, lápidas, reglas por entidad, conflictos, vinculación.

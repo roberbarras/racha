@@ -17,7 +17,8 @@ racha/
 │   │                        (Media3, WebView, Keystore, WorkManager, notificaciones, widget).
 │   └── desktop              App JVM de escritorio (Linux): raíz de composición + adaptadores
 │                            (libmpv vía FFM, JavaFX WebView, PDFBox, libsecret, D-Bus, instancia única).
-├── server/                  Spring Boot 4 + PostgreSQL 18, hexágono por bounded context.
+├── server/                  Spring Boot 4 + PostgreSQL 18, hexágono por bounded context (identity, sync, telemetry,
+│                            stats, admin).
 ├── design/                  Design tokens (JSON) compartidos y marca.
 └── docs/                    Especificación, arquitectura, ADRs, guías, OpenAPI y evidencias por hito.
 ```
@@ -101,6 +102,7 @@ DDD **táctico donde hay reglas de negocio reales**; CRUD ligero donde no las ha
 | Varias raíces por categoría sin colisiones | `contentId` con `categoryKey` + `rootKey` estables y sincronizados | [ADR-0004](adr/0004-contentid-y-multiples-raices.md) |
 | Sync | Modelo remoto por entidad, "gana el más reciente" atómico en SQL, pull por cursor de secuencia | [ADR-0012](adr/0012-protocolo-sync-y-modelo-remoto.md) |
 | Qué contiene una carpeta | El usuario elige biblioteca o un solo curso/serie al añadirla, con vista previa; cambiable sin perder progreso | [ADR-0013](adr/0013-que-contiene-una-carpeta.md) |
+| Operación del servidor | Datos y copias en carpetas, IP real tras proxies, administrador, recuperación de contraseña por correo, logs y métricas | [ADR-0014](adr/0014-operacion-del-servidor.md) |
 
 ## 6. Flujo de trabajo
 

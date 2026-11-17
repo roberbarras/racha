@@ -20,6 +20,13 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | ✅ Cerrado |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
 | 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
+| H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | 🔄 En curso |
+| H14 | Panel web (usuario y administración) | ⏳ Planificado |
+| H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ⏳ Planificado |
+| H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
+| H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
+| H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
+| H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
 
 ## Criterios de aceptación (§12)
 
@@ -48,6 +55,31 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H13 · Servidor seguro y operable — 🔄 en curso
+
+Decisión: [ADR-0014](docs/adr/0014-operacion-del-servidor.md). Guías: [SERVIDOR.md](docs/SERVIDOR.md), [DESPLIEGUE.md](docs/DESPLIEGUE.md), [`.env.example`](.env.example).
+
+**Hecho**
+- **IP real detrás de proxies** (`RACHA_TRUSTED_PROXIES`: `local` por defecto para Cloudflare Tunnel, nginx o Caddy; `cloudflare` para su proxy). **Bloqueos por cuenta + IP** (10 fallos) y **por IP** (50): fallar contraseñas ya no puede bloquear a nadie más ni a tu cuenta desde otro sitio.
+- **Datos en `data/postgres`** (`down -v` no los borra), **copias diarias** en `backups/` con rotación (14 + 8 semanales) y copia a demanda, **restauración y migración** con `tools/restore-backup.sh`.
+- **Administrador**: `RACHA_ADMIN_EMAIL` o la primera cuenta; API `/admin/*`: estado, recuentos, métricas, usuarios (rol, desactivar), copias, logs por nivel, correo de prueba. Salvaguardas: siempre un admin activo.
+- **Contraseñas**: cambio (cierra los demás dispositivos) y **recuperación por correo** con código de 8 caracteres y enlace a `/reset-password`; SMTP configurable (`RACHA_MAIL_*`). En las dos apps (pantalla Cuenta) y en la página web.
+- **Métricas** Prometheus con token y **logs** JSON con rotación.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Servidor: 49+ tests (IP real, bloqueos por cuenta+IP e IP, cambio y recuperación de contraseña, admin y salvaguardas, logs, copias, métricas con token, OpenAPI) | ✅ |
+| Compose aislado: arranque, copia inicial y a demanda, restauración (una cuenta posterior a la copia desaparece), rotación | ✅ |
+| Clientes: protocolo Ktor, cambio y recuperación en la UI de escritorio | ✅ |
+| CI | CI_LINK |
+
+**Notas**
+- Docker Compose acepta `CLAVE: valor` en el `.env`, pero lo estándar es `CLAVE=valor` (así está en `.env.example`).
+- Si ya tenías el servidor arrancado con la versión anterior (volumen `racha_racha-db`), hay que pasar los datos a la carpeta nueva: [SERVIDOR.md](docs/SERVIDOR.md#datos-copias-y-migración-a-otro-servidor).
 
 ---
 

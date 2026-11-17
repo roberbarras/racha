@@ -17,3 +17,4 @@ Formato: Estado · Contexto · Decisión · Alternativas descartadas · Consecue
 | [0011](0011-presentacion-video-linux.md) | Linux: salida nativa de mpv incrustada + UI en ventana superpuesta; hwdec desactivado por defecto | Aceptada |
 | [0012](0012-protocolo-sync-y-modelo-remoto.md) | Modelo remoto por entidad, LWW atómico en SQL, pull con cursor de secuencia | Aceptada |
 | [0013](0013-que-contiene-una-carpeta.md) | Cada carpeta es una biblioteca o un solo curso/serie, a elección del usuario | Aceptada |
+| [0014](0014-operacion-del-servidor.md) | Datos en carpetas, copias con rotación, IP real tras proxies, bloqueos por cuenta+IP, administrador, recuperación por correo, logs y métricas | Aceptada |
