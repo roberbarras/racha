@@ -9,7 +9,7 @@ Implementa la spec §6.1 en SQLite (SQLDelight, compatible con SQLite 3.18 = And
 | Tabla | Clave | Entidad de dominio | Notas |
 |---|---|---|---|
 | `category` | `key` | `Category` | `is_primary` único (índice parcial). Visibilidad por modo y patrones de exclusión por categoría. |
-| `category_root` | `key` (UUID) | `CategoryRoot` | `location` es local del dispositivo (`file://…`); `key` se sincroniza. FK → `category` en cascada. |
+| `category_root` | `key` (UUID) | `CategoryRoot` | `location` es local del dispositivo (`file://…`); `key` y `layout` (biblioteca / un curso / automático, ADR-0013, v7) se sincronizan. FK → `category` en cascada. |
 | `library_item` | `id` (`contentId`) | `LibraryItem` | Totales y `%` desnormalizados para que la Home lea una fila por curso. FK → `category`. |
 | `section` | `id` | `Section` | Módulo, temporada, grupo por fecha o "sueltos". FK → `library_item`. |
 | `playable_element` | `id` | `PlayableElement` | Vídeo o recurso. `file_size` + `file_modified_at` para escaneo incremental; `file_hash` para revincular. FK → `section`, `library_item`. |
@@ -60,7 +60,7 @@ Los valores fijados por la spec (10 s por gesto, guardado cada 60 s, subtítulos
 
 ## Migraciones
 
-- Esquema actual: versión 1. Cada versión publicada deja una instantánea en `shared/data/src/commonMain/sqldelight/databases/<versión>.db`.
+- Esquema actual: versión 7. Cada versión publicada deja una instantánea en `shared/data/src/commonMain/sqldelight/databases/<versión>.db`.
 - Un cambio de esquema = un fichero `<versión>.sqm` + nueva instantánea (`generateCommonMainRachaDatabaseSchema`).
 - Se verifica en `check`: `verifyCommonMainRachaDatabaseMigration` (las migraciones producen el esquema declarado) y `MigrationTest` (cada instantánea migrada == instalación limpia).
 - Escritorio: el driver crea/migra con `PRAGMA user_version` al abrir. Android: `AndroidSqliteDriver` hace lo mismo. Ambos con claves foráneas activadas y WAL.

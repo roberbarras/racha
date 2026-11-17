@@ -8,11 +8,13 @@ adaptadores en `shared/files` (java.nio), `desktop/library` (libmpv, inotify) y 
 
 Las categorías no tienen tipo: a cada carpeta se le aplican todas las reglas y su `StructureKind` describe lo detectado.
 
-| Situación en la raíz de la categoría | Resultado |
+Qué es la carpeta añadida lo elige el usuario al añadirla ([ADR-0013](adr/0013-que-contiene-una-carpeta.md)). Antes de añadirla ve lo que saldría, y puede cambiarlo después sin perder el progreso:
+
+| Carpeta añadida como | Resultado |
 |---|---|
-| La mayoría de subcarpetas parecen secciones (`NN - Título`, temporada o fecha) | **La raíz es un curso** (el ejemplo de §3.1); título = nombre de la carpeta raíz |
-| Si no | Cada subcarpeta con contenido es un curso/serie/canal |
-| Ficheros directamente en la raíz | Elemento "Sueltos" (§3.2.3) |
+| **Biblioteca** (varios cursos o series) | Cada subcarpeta con contenido es un curso/serie/canal; los ficheros directamente en la raíz forman "Sueltos" (§3.2.3) |
+| **Un curso o serie** | **La raíz es el curso** (el ejemplo de §3.1), título = nombre de la carpeta; sus subcarpetas son las secciones, se llamen como se llamen |
+| Detección automática (carpetas añadidas antes de poder elegir) | La raíz es un curso si la mayoría de subcarpetas parecen secciones (`NN - Título`, temporada o fecha); si no, biblioteca |
 
 Dentro de cada curso/serie/canal:
 
