@@ -21,7 +21,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
 | 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
-| H14 | Panel web (usuario y administración) | 🔄 En curso |
+| H14 | Panel web (usuario y administración) | ✅ Cerrado |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ⏳ Planificado |
 | H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H14 · Panel web — 🔄 en curso
+## H14 · Panel web — ✅ cerrado
 
 Documento: [docs/PANEL-WEB.md](docs/PANEL-WEB.md). Evidencias: [docs/evidence/h14](docs/evidence/h14).
 
@@ -73,7 +73,7 @@ Documento: [docs/PANEL-WEB.md](docs/PANEL-WEB.md). Evidencias: [docs/evidence/h1
 |---|---|
 | Servidor: 54 tests (sesión web, dispositivos, estadísticas detalladas, actividad de admin, página y CSP, OpenAPI) | ✅ |
 | Revisión visual con datos de ejemplo en un servidor aislado: escritorio claro y oscuro, móvil | ✅ |
-| CI | CI_LINK |
+| CI | ✅ [run 44139605649](https://github.com/roberbarras/racha/actions/runs/44139605649) |
 
 ---
 
