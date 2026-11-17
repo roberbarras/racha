@@ -70,7 +70,7 @@ Comprueba la configuración desde el panel de administración («Enviar correo d
 
 ## Administración
 
-La cuenta administradora (`RACHA_ADMIN_EMAIL` o la primera) ve en `/admin/*` (panel web en H14): versión, tiempo encendido, configuración (correo, URL pública, proxies, métricas), recuentos (usuarios, dispositivos, sesiones, progreso, eventos y errores recientes, tamaño de la base de datos), memoria, CPU, peticiones y errores HTTP, las copias y los logs (fichero JSON con rotación, 10 MB × 14, filtrables por nivel). Puede hacer administrador a otro usuario o desactivar una cuenta (cierra todas sus sesiones); siempre queda al menos un administrador activo y nadie puede desactivarse a sí mismo. El rol se comprueba en cada petición.
+La cuenta administradora (`RACHA_ADMIN_EMAIL` o la primera) ve en el [panel web](PANEL-WEB.md) (`/web/`, API `/admin/*`): versión, tiempo encendido, configuración (correo, URL pública, proxies, métricas), recuentos (usuarios, dispositivos, sesiones, progreso, eventos y errores recientes, tamaño de la base de datos), memoria, CPU, peticiones y errores HTTP, las copias y los logs (fichero JSON con rotación, 10 MB × 14, filtrables por nivel). Puede hacer administrador a otro usuario o desactivar una cuenta (cierra todas sus sesiones); siempre queda al menos un administrador activo y nadie puede desactivarse a sí mismo. El rol se comprueba en cada petición.
 
 **Métricas** para Prometheus en `/actuator/prometheus` con `Authorization: Bearer <RACHA_METRICS_TOKEN>`.
 

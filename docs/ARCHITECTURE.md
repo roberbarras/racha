@@ -103,6 +103,7 @@ DDD **táctico donde hay reglas de negocio reales**; CRUD ligero donde no las ha
 | Sync | Modelo remoto por entidad, "gana el más reciente" atómico en SQL, pull por cursor de secuencia | [ADR-0012](adr/0012-protocolo-sync-y-modelo-remoto.md) |
 | Qué contiene una carpeta | El usuario elige biblioteca o un solo curso/serie al añadirla, con vista previa; cambiable sin perder progreso | [ADR-0013](adr/0013-que-contiene-una-carpeta.md) |
 | Operación del servidor | Datos y copias en carpetas, IP real tras proxies, administrador, recuperación de contraseña por correo, logs y métricas | [ADR-0014](adr/0014-operacion-del-servidor.md) |
+| Panel web | Servido por el propio servidor, sin bibliotecas externas; refresh en cookie HttpOnly, CSP estricta | [PANEL-WEB.md](PANEL-WEB.md) |
 
 ## 6. Flujo de trabajo
 

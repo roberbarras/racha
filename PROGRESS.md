@@ -21,7 +21,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
 | 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
-| H14 | Panel web (usuario y administración) | ⏳ Planificado |
+| H14 | Panel web (usuario y administración) | 🔄 En curso |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ⏳ Planificado |
 | H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
@@ -55,6 +55,25 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H14 · Panel web — 🔄 en curso
+
+Documento: [docs/PANEL-WEB.md](docs/PANEL-WEB.md). Evidencias: [docs/evidence/h14](docs/evidence/h14).
+
+**Hecho**
+- Panel en `/web/` servido por el propio servidor (sin otro contenedor ni bibliotecas externas): **Resumen** (indicadores, 30 días, mapa de calor del año, categorías), **Actividad** (sesiones, horas, días de la semana, dispositivos, cursos y series con progreso, lo visto reciente), **Dispositivos** (cerrar sesión u olvidar uno), **Cuenta** (cambiar contraseña).
+- Para administradores: **Servidor** (estado, recursos, configuración con correo de prueba, copias, actividad de todo el servidor, errores y fallos de sincronización), **Usuarios** (rol y desactivar), **Logs** (por nivel).
+- Sesión del navegador con el *refresh token* en cookie `HttpOnly`/`SameSite=Strict`, el navegador como dispositivo `web`, CSP estricta. Español/inglés, claro/oscuro, móvil.
+- **Release v1.0.0 publicada** (https://github.com/roberbarras/racha/releases/tag/v1.0.0): AppImage y APK firmado con tu clave; CI pone ya la versión del tag en el APK (antes salía 0.0.1).
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Servidor: 54 tests (sesión web, dispositivos, estadísticas detalladas, actividad de admin, página y CSP, OpenAPI) | ✅ |
+| Revisión visual con datos de ejemplo en un servidor aislado: escritorio claro y oscuro, móvil | ✅ |
+| CI | CI_LINK |
 
 ---
 
