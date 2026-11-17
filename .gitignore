@@ -1,4 +1,6 @@
 # Gradle / build
+# Local release builds (CI publishes the real ones)
+/dist/
 .gradle/
 build/
 !**/src/**/build/
