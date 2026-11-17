@@ -8,12 +8,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 /** Something about sync that needs the user, shown outside the account screen. */
 enum class SyncAttention { SESSION_EXPIRED, SETTINGS_CONFLICT }
 
-/** What the "Account and sync" screen drives (spec §7.4, §9): sign in/out, status, "sync now" and conflicts. */
+/**
+ * What the "Account and sync" screen drives (spec §7.4, §9): sign in/out, status, "sync now", conflicts and the
+ * password (change, recovery by e-mail).
+ */
 class SyncControls(
     private val accounts: AccountService,
     private val engine: SyncEngine,
     private val scheduler: SyncScheduler,
     private val local: SyncLocalStore,
+    private val passwords: ManagePassword,
 ) {
     val account: StateFlow<AccountState> get() = accounts.state
     val run: StateFlow<SyncRun> get() = engine.run
@@ -41,6 +45,17 @@ class SyncControls(
     suspend fun logout() = accounts.logout()
 
     fun syncNow() = scheduler.requestSync()
+
+    /** Signed in: the other devices are signed out, this one stays. */
+    suspend fun changePassword(current: String, replacement: String): PasswordOutcome = passwords.change(current, replacement)
+
+    /** Signed out: e-mails a code to [email] (same answer whether the account exists or not). */
+    suspend fun requestRecoveryCode(address: ServerAddress, email: String, language: String): PasswordOutcome =
+        passwords.requestCode(address, email, language)
+
+    /** With the e-mailed code; every session of the account ends, so this device signs in again afterwards. */
+    suspend fun resetPassword(address: ServerAddress, email: String, code: String, replacement: String): PasswordOutcome =
+        passwords.reset(address, email, code, replacement)
 
     /** Answers a settings conflict: keep this device's value (it is sent again) or take the other device's. */
     suspend fun resolve(conflict: SettingConflict, keepLocal: Boolean) {

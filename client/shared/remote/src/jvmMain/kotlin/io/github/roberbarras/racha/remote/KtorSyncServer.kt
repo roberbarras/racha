@@ -2,6 +2,7 @@ package io.github.roberbarras.racha.remote
 
 import io.github.roberbarras.racha.application.sync.AuthServer
 import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.PasswordServer
 import io.github.roberbarras.racha.application.sync.PullPage
 import io.github.roberbarras.racha.application.sync.PushOutcome
 import io.github.roberbarras.racha.application.sync.PushResult
@@ -31,12 +32,14 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -53,7 +56,7 @@ import kotlin.time.Instant
 class KtorSyncServer(
     private val engineFactory: (HttpOptions) -> HttpClientEngine = ::okHttp,
     private val options: suspend () -> HttpOptions = { HttpOptions() },
-) : AuthServer, SyncServer, TelemetryServer, StatsServer, AutoCloseable {
+) : AuthServer, PasswordServer, SyncServer, TelemetryServer, StatsServer, AutoCloseable {
     /** Tests: a fixed engine (e.g. MockEngine). */
     constructor(engine: HttpClientEngine) : this({ engine })
 
@@ -100,6 +103,28 @@ class KtorSyncServer(
 
     override suspend fun logout(address: ServerAddress, refreshToken: String) {
         call { client().post(address.baseUrl + "/auth/logout") { jsonBody(RefreshDto(refreshToken)) } }
+    }
+
+    override suspend fun changePassword(address: ServerAddress, accessToken: String, current: String, replacement: String) {
+        authorized(call {
+            client().post(address.baseUrl + "/account/password") {
+                bearerAuth(accessToken)
+                jsonBody(ChangePasswordDto(current, replacement))
+            }
+        })
+    }
+
+    override suspend fun requestRecoveryCode(address: ServerAddress, email: String, language: String) {
+        ok(call {
+            client().post(address.baseUrl + "/auth/password/forgot") {
+                header(HttpHeaders.AcceptLanguage, language)
+                jsonBody(ForgotPasswordDto(email))
+            }
+        })
+    }
+
+    override suspend fun resetPassword(address: ServerAddress, email: String, code: String, replacement: String) {
+        ok(call { client().post(address.baseUrl + "/auth/password/reset") { jsonBody(ResetPasswordDto(email, code, replacement)) } })
     }
 
     override suspend fun push(address: ServerAddress, accessToken: String, changes: List<SyncChange>): List<PushResult> {

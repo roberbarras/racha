@@ -26,6 +26,8 @@ import io.github.roberbarras.racha.application.sync.AccountService
 import io.github.roberbarras.racha.application.sync.AuthServer
 import io.github.roberbarras.racha.application.sync.CredentialStore
 import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.ManagePassword
+import io.github.roberbarras.racha.application.sync.PasswordServer
 import io.github.roberbarras.racha.application.sync.PullPage
 import io.github.roberbarras.racha.application.sync.PushOutcome
 import io.github.roberbarras.racha.application.sync.PushResult
@@ -72,7 +74,7 @@ class AccountUiTest {
         val credentials = MemoryCredentials()
         val account = AccountService(server, credentials, database.sync, database.accounts, prefs, { DeviceDescriptor(null, "Test", "linux", "test") }, clock)
         val engine = SyncEngine(database.sync, server, account, prefs, clock)
-        SyncControls(account, engine, SyncScheduler(engine, prefs), database.sync).also { controls = it }
+        SyncControls(account, engine, SyncScheduler(engine, prefs), database.sync, ManagePassword(server, account, prefs)).also { controls = it }
     }
 
     @Composable
@@ -132,6 +134,61 @@ class AccountUiTest {
         runBlocking { assertEquals(ThemeMode.LIGHT, preferences.get(Settings.Theme)) }
     }
 
+    @Test
+    fun thePasswordIsChangedWithTheCurrentOne() = runDesktopComposeUiTest(1440, 1000) {
+        Locale.setDefault(Locale.ENGLISH)
+        val deps = dependencies()
+        runBlocking { controls.login(ServerAddress("sync.example.com", 443, true, ""), "ana@example.com", "correct horse") }
+        setContent { App(deps) }
+        waitOrDump("account") { onAllNodesWithText("Account").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText("Account").performClick()
+        waitOrDump("change button") { onAllNodesWithText("Change password").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText("Change password").performClick()
+        waitOrDump("change form") { onAllNodes(hasContentDescription("Current password")).fetchSemanticsNodes().isNotEmpty() }
+
+        onNode(hasContentDescription("Current password")).performTextInput("not it")
+        onNode(hasContentDescription("New password (10 characters or more)")).performTextInput("a brand new password")
+        onNode(hasContentDescription("Repeat it")).performTextInput("a brand new password")
+        onNode(hasText("Save password") and hasClickAction()).performClick()
+        waitOrDump("wrong current") { onAllNodesWithText("The current password is not correct.").fetchSemanticsNodes().isNotEmpty() }
+
+        onNode(hasContentDescription("Current password")).performTextReplacement("correct horse")
+        onNode(hasText("Save password") and hasClickAction()).performClick()
+        waitOrDump("changed") { onAllNodesWithText("Password changed.").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals("a brand new password", server.password)
+        assertEquals(true, account().let { it is io.github.roberbarras.racha.application.sync.AccountState.SignedIn }, "this device stays signed in")
+    }
+
+    @Test
+    fun aForgottenPasswordIsResetWithTheEmailedCode() = runDesktopComposeUiTest(1440, 1200) {
+        Locale.setDefault(Locale.ENGLISH)
+        setContent { App(dependencies()) }
+        waitOrDump("account") { onAllNodesWithText("Account").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText("Account").performClick()
+        waitOrDump("sign-in form") { onAllNodes(hasContentDescription("Host")).fetchSemanticsNodes().isNotEmpty() }
+        onNode(hasContentDescription("Host")).performTextInput("sync.example.com")
+        onNode(hasContentDescription("Email")).performTextInput("ana@example.com")
+
+        onNode(hasText("Forgot your password?") and hasClickAction()).performClick()
+        waitOrDump("recovery") { onAllNodesWithText("Send me a code").fetchSemanticsNodes().isNotEmpty() }
+        onNode(hasText("Send me a code") and hasClickAction()).performClick()
+        waitOrDump("code asked") { onAllNodes(hasContentDescription("Code (XXXX-XXXX)")).fetchSemanticsNodes().isNotEmpty() }
+        assertEquals(listOf("code:ana@example.com:en"), server.passwordCalls)
+
+        onNode(hasContentDescription("Code (XXXX-XXXX)")).performTextInput("zzzz-zzzz")
+        onNode(hasContentDescription("New password (10 characters or more)")).performTextInput("a brand new password")
+        onNode(hasContentDescription("Repeat it")).performTextInput("a brand new password")
+        onNode(hasText("Save password") and hasClickAction()).performClick()
+        waitOrDump("wrong code") { onAllNodesWithText("The code is wrong or has expired.").fetchSemanticsNodes().isNotEmpty() }
+
+        onNode(hasContentDescription("Code (XXXX-XXXX)")).performTextReplacement("abcd-2345")
+        onNode(hasText("Save password") and hasClickAction()).performClick()
+        waitOrDump("reset") { onAllNodesWithText("Password changed. You can sign in with the new one.").fetchSemanticsNodes().isNotEmpty() }
+        assertEquals("a brand new password", server.password)
+    }
+
+    private fun account() = controls.account.value
+
     private val out = java.io.File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
 
     /** Like waitUntil, but a timeout says which step it was and leaves the screen's texts and a capture behind. */
@@ -188,8 +245,10 @@ class AccountUiTest {
         }
     }
 
-    private class FakeServer : AuthServer, SyncServer {
+    private class FakeServer : AuthServer, SyncServer, PasswordServer {
         var lastAddress: ServerAddress? = null
+        val passwordCalls = mutableListOf<String>()
+        var password = "correct horse"
         private val tokens = Tokens("6f1c2b8e-0000-4000-8000-000000000001", "6f1c2b8e-0000-4000-8000-000000000002", "access", 900, "refresh")
 
         override suspend fun register(address: ServerAddress, email: String, password: String, displayName: String?, device: DeviceDescriptor) =
@@ -197,7 +256,7 @@ class AccountUiTest {
 
         override suspend fun login(address: ServerAddress, email: String, password: String, device: DeviceDescriptor): Tokens {
             lastAddress = address
-            if (password != "correct horse") throw RemoteError.Rejected(401, "invalid_credentials", "invalid email or password")
+            if (password != this.password) throw RemoteError.Rejected(401, "invalid_credentials", "invalid email or password")
             return tokens
         }
 
@@ -209,5 +268,22 @@ class AccountUiTest {
             changes.map { PushResult(it.entity, it.id, PushOutcome.APPLIED, null, null) }
 
         override suspend fun pull(address: ServerAddress, accessToken: String, since: Long, limit: Int) = PullPage(emptyList(), since, false)
+
+        override suspend fun changePassword(address: ServerAddress, accessToken: String, current: String, replacement: String) {
+            if (current != password) throw RemoteError.Rejected(403, "wrong_password", "the current password is not correct")
+            passwordCalls += "change"
+            password = replacement
+        }
+
+        override suspend fun requestRecoveryCode(address: ServerAddress, email: String, language: String) {
+            lastAddress = address
+            passwordCalls += "code:$email:$language"
+        }
+
+        override suspend fun resetPassword(address: ServerAddress, email: String, code: String, replacement: String) {
+            if (code.replace("-", "").uppercase() != "ABCD2345") throw RemoteError.Rejected(400, "invalid_recovery_code", "wrong code")
+            passwordCalls += "reset:$email"
+            password = replacement
+        }
     }
 }

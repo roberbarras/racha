@@ -42,6 +42,7 @@ import io.github.roberbarras.racha.ui.app.PlatformHooks
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import io.github.roberbarras.racha.application.sync.AccountService
 import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.ManagePassword
 import io.github.roberbarras.racha.application.sync.SyncControls
 import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
@@ -193,7 +194,7 @@ class DesktopGraph(
         ) { platform.player?.language() ?: "en" }
     },
         appScope = appScope,
-        sync = SyncControls(account, syncEngine, syncScheduler, database.sync),
+        sync = SyncControls(account, syncEngine, syncScheduler, database.sync, ManagePassword(syncServer, account, preferences)),
         manageCategories = ManageCategories(database.categories, scanLibrary, clock),
         storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(DesktopPaths.thumbnails), keepLibraryUpToDate),
         configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),

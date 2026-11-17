@@ -24,6 +24,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.roberbarras.racha.application.sync.AccountState
 import io.github.roberbarras.racha.application.sync.LocalSyncState
+import io.github.roberbarras.racha.application.sync.PasswordOutcome
 import io.github.roberbarras.racha.application.sync.RemoteError
 import io.github.roberbarras.racha.application.sync.ServerAddress
 import io.github.roberbarras.racha.application.sync.SettingConflict
@@ -187,6 +188,57 @@ class AccountViewModel(private val deps: RachaDependencies, private val sync: Sy
         }
     }
 
+    private val mutableChange = MutableStateFlow(PasswordChange())
+    val passwordChange: StateFlow<PasswordChange> = mutableChange.asStateFlow()
+    private val mutableRecovery = MutableStateFlow(PasswordRecovery())
+    val passwordRecovery: StateFlow<PasswordRecovery> = mutableRecovery.asStateFlow()
+
+    fun editChange(change: (PasswordChange) -> PasswordChange) = mutableChange.update(change)
+
+    fun editRecovery(change: (PasswordRecovery) -> PasswordRecovery) = mutableRecovery.update(change)
+
+    fun changePassword() {
+        val state = mutableChange.value
+        if (!state.ready) return
+        mutableChange.update { it.copy(busy = true, result = null) }
+        viewModelScope.launch {
+            val outcome = sync.changePassword(state.current, state.replacement)
+            mutableChange.value = if (outcome == PasswordOutcome.Done) PasswordChange(result = outcome) else state.copy(busy = false, result = outcome)
+        }
+    }
+
+    /** Uses the server and e-mail of the sign-in form; the mail comes in the app's language. */
+    fun sendRecoveryCode() {
+        val f = mutableForm.value
+        val address = runCatching { ServerAddress(f.host.trim(), f.port.trim().toInt(), f.https, f.basePath.trim()) }.getOrNull()
+        if (address == null || f.email.isBlank()) {
+            mutableError.value = FormError.InvalidServer
+            return
+        }
+        mutableRecovery.update { it.copy(busy = true, result = null) }
+        viewModelScope.launch {
+            val outcome = sync.requestRecoveryCode(address, f.email, androidx.compose.ui.text.intl.Locale.current.language)
+            mutableRecovery.update { it.copy(busy = false, codeSent = outcome == PasswordOutcome.Done, result = outcome.takeIf { o -> o != PasswordOutcome.Done }) }
+        }
+    }
+
+    fun resetPassword() {
+        val state = mutableRecovery.value
+        val f = mutableForm.value
+        val address = runCatching { ServerAddress(f.host.trim(), f.port.trim().toInt(), f.https, f.basePath.trim()) }.getOrNull() ?: return
+        if (!state.ready) return
+        mutableRecovery.update { it.copy(busy = true, result = null) }
+        viewModelScope.launch {
+            val outcome = sync.resetPassword(address, f.email, state.code, state.replacement)
+            if (outcome == PasswordOutcome.Done) {
+                mutableRecovery.value = PasswordRecovery(result = outcome)
+                mutableForm.update { it.copy(password = "", register = false) }
+            } else {
+                mutableRecovery.value = state.copy(busy = false, result = outcome)
+            }
+        }
+    }
+
     fun logout() = viewModelScope.launch { sync.logout() }
 
     fun syncNow() = sync.syncNow()
@@ -225,6 +277,8 @@ fun AccountScreen(deps: RachaDependencies, sync: SyncControls) {
     val run by vm.run.collectAsStateWithLifecycle()
     val interval by vm.interval.collectAsStateWithLifecycle()
     val policy by vm.policy.collectAsStateWithLifecycle()
+    val passwordChange by vm.passwordChange.collectAsStateWithLifecycle()
+    val passwordRecovery by vm.passwordRecovery.collectAsStateWithLifecycle()
     ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item { ScreenTitle(stringResource(Res.string.account_title), stringResource(Res.string.account_message)) }
         when (val a = account) {
@@ -234,10 +288,17 @@ fun AccountScreen(deps: RachaDependencies, sync: SyncControls) {
                 }
                 item(key = "status") { StatusCard(a, status, run, vm.now(), onSyncNow = vm::syncNow, onLogout = { vm.logout() }) }
                 item(key = "options") { OptionsCard(interval, policy, vm::setInterval, vm::setPolicy) }
+                item(key = "password") { PasswordChangeCard(passwordChange, vm::editChange, vm::changePassword) }
             }
             is AccountState.Expired, AccountState.SignedOut -> {
                 if (a is AccountState.Expired) item(key = "expired") { Notice(stringResource(Res.string.account_expired)) }
                 item(key = "form") { SignInCard(form, busy, error, vm::edit, vm::submit) }
+                if (!form.register) {
+                    item(key = "recovery") {
+                        PasswordRecoveryCard(passwordRecovery, canAsk = form.host.isNotBlank() && form.email.isNotBlank(), vm::editRecovery,
+                            vm::sendRecoveryCode, vm::resetPassword)
+                    }
+                }
             }
         }
     }

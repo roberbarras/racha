@@ -81,4 +81,32 @@ class KtorSyncServerTest {
         assertEquals(7, results.single().server!!.seq)
         assertEquals(5, server.pull(address, "t", 5, 100).cursor)
     }
+    @Test
+    fun passwordCallsSpeakTheProtocol() = runBlocking<Unit> {
+        val seen = mutableListOf<String>()
+        val server = KtorSyncServer(MockEngine { request ->
+            val body = request.body.toByteArray().decodeToString()
+            seen += request.url.encodedPath + " " + (request.headers[HttpHeaders.Authorization] ?: "-") + " " +
+                (request.headers[HttpHeaders.AcceptLanguage] ?: "-") + " " + body
+            when (request.url.encodedPath) {
+                "/api/account/password" -> if ("wrong" in body) {
+                    respond("""{"status":403,"code":"wrong_password","detail":"no"}""", HttpStatusCode.Forbidden, json)
+                } else {
+                    respond("", HttpStatusCode.NoContent)
+                }
+                "/api/auth/password/forgot" -> respond("", HttpStatusCode.Accepted)
+                else -> respond("", HttpStatusCode.NoContent)
+            }
+        })
+        server.changePassword(address, "t", "correct horse battery", "a brand new password")
+        val wrong = assertFailsWith<RemoteError.Rejected> { server.changePassword(address, "t", "wrong", "a brand new password") }
+        assertEquals("wrong_password", wrong.code)
+        server.requestRecoveryCode(address, "ana@example.com", "es")
+        server.resetPassword(address, "ana@example.com", "ABCD-2345", "a brand new password")
+
+        assertEquals("/api/account/password Bearer t - " +
+            """{"currentPassword":"correct horse battery","newPassword":"a brand new password"}""", seen[0])
+        assertEquals("""/api/auth/password/forgot - es {"email":"ana@example.com"}""", seen[2])
+        assertEquals("""/api/auth/password/reset - - {"email":"ana@example.com","code":"ABCD-2345","newPassword":"a brand new password"}""", seen[3])
+    }
 }

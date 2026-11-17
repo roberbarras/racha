@@ -420,4 +420,27 @@
     <string name="change_layout">Cambiar qué contiene</string>
     <string name="change_layout_title">¿Qué contiene esta carpeta?</string>
     <string name="change_layout_message">El progreso, los marcadores y el historial se conservan. Lo que guardaste de cada curso (Mi lista, favoritos, portadas generadas, nombres editados) se queda en los cursos de antes y vuelve si deshaces el cambio.</string>
+    <!-- Contraseña (H13) -->
+    <string name="password_change">Cambiar contraseña</string>
+    <string name="password_change_note">Los demás dispositivos de tu cuenta tendrán que volver a entrar; este sigue dentro.</string>
+    <string name="password_current">Contraseña actual</string>
+    <string name="password_new">Nueva contraseña (10 caracteres o más)</string>
+    <string name="password_repeat">Repítela</string>
+    <string name="password_save">Guardar contraseña</string>
+    <string name="password_working">Un momento…</string>
+    <string name="password_changed">Contraseña cambiada.</string>
+    <string name="password_mismatch">Las dos contraseñas no coinciden.</string>
+    <string name="password_wrong">La contraseña actual no es correcta.</string>
+    <string name="password_too_weak">La contraseña necesita entre 10 y 128 caracteres.</string>
+    <string name="password_signed_out">La sesión ha terminado: vuelve a entrar.</string>
+    <string name="password_failed">No se ha podido: %1$s</string>
+    <string name="password_forgot">¿Olvidaste tu contraseña?</string>
+    <string name="password_forgot_message">Te enviaremos un código al correo que has escrito arriba, en el servidor de arriba.</string>
+    <string name="password_send_code">Enviarme un código</string>
+    <string name="password_code_sent">Si la cuenta existe, te llegará un correo con un código en unos minutos. Escríbelo aquí.</string>
+    <string name="password_code">Código (XXXX-XXXX)</string>
+    <string name="password_resend">Pedir otro código</string>
+    <string name="password_invalid_code">El código no es correcto o ha caducado.</string>
+    <string name="password_mail_unavailable">Este servidor no puede enviar correos. Habla con quien lo administra.</string>
+    <string name="password_reset_done">Contraseña cambiada. Ya puedes entrar con la nueva.</string>
 </resources>

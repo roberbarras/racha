@@ -42,6 +42,7 @@ import io.github.roberbarras.racha.android.sync.KeystoreCredentialStore
 import io.github.roberbarras.racha.android.sync.SyncWorker
 import io.github.roberbarras.racha.application.sync.AccountService
 import io.github.roberbarras.racha.application.sync.DeviceDescriptor
+import io.github.roberbarras.racha.application.sync.ManagePassword
 import io.github.roberbarras.racha.application.sync.SyncControls
 import io.github.roberbarras.racha.application.sync.SyncEngine
 import io.github.roberbarras.racha.application.sync.SyncScheduler
@@ -128,7 +129,7 @@ class AndroidGraph(context: Context) {
     val syncEngine = SyncEngine(database.sync, syncServer, account, preferences, clock, telemetry, NotifySyncFailure(preferences, clock, notifier))
     val syncScheduler = SyncScheduler(syncEngine, preferences) { telemetryUploader.upload() }
     val connectivity = ConnectivityMonitor(context)
-    private val syncControls = SyncControls(account, syncEngine, syncScheduler, database.sync)
+    private val syncControls = SyncControls(account, syncEngine, syncScheduler, database.sync, ManagePassword(syncServer, account, preferences))
 
     init {
         val app = context.applicationContext

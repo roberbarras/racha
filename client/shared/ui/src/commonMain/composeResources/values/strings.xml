@@ -420,4 +420,27 @@
     <string name="change_layout">Change what it holds</string>
     <string name="change_layout_title">What does this folder hold?</string>
     <string name="change_layout_message">Progress, bookmarks and history are kept. What you saved for each course (My list, favourites, generated covers, edited names) stays with the previous courses and comes back if you undo the change.</string>
+    <!-- Password (H13) -->
+    <string name="password_change">Change password</string>
+    <string name="password_change_note">Your account's other devices will have to sign in again; this one stays signed in.</string>
+    <string name="password_current">Current password</string>
+    <string name="password_new">New password (10 characters or more)</string>
+    <string name="password_repeat">Repeat it</string>
+    <string name="password_save">Save password</string>
+    <string name="password_working">One moment…</string>
+    <string name="password_changed">Password changed.</string>
+    <string name="password_mismatch">The two passwords do not match.</string>
+    <string name="password_wrong">The current password is not correct.</string>
+    <string name="password_too_weak">The password needs 10 to 128 characters.</string>
+    <string name="password_signed_out">The session has ended: sign in again.</string>
+    <string name="password_failed">It could not be done: %1$s</string>
+    <string name="password_forgot">Forgot your password?</string>
+    <string name="password_forgot_message">We will send a code to the e-mail you typed above, on the server above.</string>
+    <string name="password_send_code">Send me a code</string>
+    <string name="password_code_sent">If the account exists, an e-mail with a code will arrive in a few minutes. Type it here.</string>
+    <string name="password_code">Code (XXXX-XXXX)</string>
+    <string name="password_resend">Ask for another code</string>
+    <string name="password_invalid_code">The code is wrong or has expired.</string>
+    <string name="password_mail_unavailable">This server cannot send e-mail. Ask its administrator.</string>
+    <string name="password_reset_done">Password changed. You can sign in with the new one.</string>
 </resources>

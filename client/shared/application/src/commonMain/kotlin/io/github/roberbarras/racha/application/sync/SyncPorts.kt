@@ -80,6 +80,17 @@ interface AuthServer {
     suspend fun logout(address: ServerAddress, refreshToken: String)
 }
 
+/** Outbound port: changing a password (signed in) and recovering it by e-mail (signed out). */
+interface PasswordServer {
+    /** Throws [RemoteError.Rejected] 403 `wrong_password` when [current] is wrong. */
+    suspend fun changePassword(address: ServerAddress, accessToken: String, current: String, replacement: String)
+
+    /** Asks the server to e-mail a recovery code; [language] picks the mail's language. */
+    suspend fun requestRecoveryCode(address: ServerAddress, email: String, language: String)
+
+    suspend fun resetPassword(address: ServerAddress, email: String, code: String, replacement: String)
+}
+
 /** Outbound port: `/sync/push` and `/sync/pull`. */
 interface SyncServer {
     suspend fun push(address: ServerAddress, accessToken: String, changes: List<SyncChange>): List<PushResult>

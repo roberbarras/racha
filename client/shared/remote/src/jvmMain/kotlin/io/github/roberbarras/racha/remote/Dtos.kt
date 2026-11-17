@@ -17,6 +17,15 @@ internal data class LoginDto(val email: String, val password: String, val device
 internal data class RefreshDto(val refreshToken: String)
 
 @Serializable
+internal data class ChangePasswordDto(val currentPassword: String, val newPassword: String)
+
+@Serializable
+internal data class ForgotPasswordDto(val email: String)
+
+@Serializable
+internal data class ResetPasswordDto(val email: String, val code: String, val newPassword: String)
+
+@Serializable
 internal data class TokenDto(
     val userId: String, val deviceId: String, val accessToken: String, val expiresIn: Long, val refreshToken: String, val tokenType: String = "Bearer",
 )
