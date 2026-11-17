@@ -22,7 +22,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
-| H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | 🔄 En curso |
+| H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
 | H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H15 · Reproducción cómoda — 🔄 en curso
+## H15 · Reproducción cómoda — ✅ cerrado
 
 Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md#comodidad-h15). Evidencias: [docs/evidence/h15](docs/evidence/h15).
 
@@ -75,8 +75,8 @@ Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md#comodidad-h15). Evidencias:
 | SQLite y controlador: lo elegido sigue en el siguiente vídeo y al volver a abrir la app; "sin subtítulos" también; migración v7 → v8 | ✅ |
 | UI escritorio: desmarcar sección; editor de atajos (capturar, mover entre acciones, Esc, restaurar) | ✅ |
 | Linux, harness con mpv real en Xvfb: solo audio (`vid=no`, sigue avanzando, vuelve el vídeo) | ✅ |
-| Android en el emulador: solo audio (sin vídeo, servicio activo, pantalla puede apagarse, sigue en segundo plano) | CI |
-| CI | CI_LINK |
+| Android en el emulador: solo audio (sin vídeo, servicio activo, pantalla puede apagarse, sigue en segundo plano) | ✅ |
+| CI | ✅ [run 44176778483](https://github.com/roberbarras/racha/actions/runs/44176778483) |
 
 ---
 
