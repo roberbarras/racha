@@ -17,3 +17,6 @@ INSERT OR REPLACE INTO playback_memory(item_key, speed, audio_language, audio_in
 
 clearMemory:
 DELETE FROM playback_memory;
+
+selectAllMemory:
+SELECT * FROM playback_memory ORDER BY item_key;

@@ -187,6 +187,11 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
 
     // ---- outgoing ------------------------------------------------------------------------------------------------
 
+    override suspend fun snapshot(): List<SyncChange> = withContext(io) {
+        val now = kotlin.time.Instant.fromEpochMilliseconds(currentMillis())
+        sync.allSyncedIds().executeAsList().mapNotNull { outgoing(it.entity, it.id, now) }.filterNot { it.deleted }
+    }
+
     /** The change to push for a queued entity, from its current row; null when it is not synchronised. */
     private fun outgoing(entity: String, id: String, changedAt: Instant): SyncChange? {
         fun gone() = SyncChange(entity, wireId(entity, id), changedAt, true, JsonObject(emptyMap()))
@@ -276,14 +281,22 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
                 if (r.deleted) sync.deleteRemoteRoot(r.id)
                 else sync.upsertRemoteRoot(r.id, d.str("categoryId") ?: return, d.str("name") ?: "", at, d.str("layout"))
             }
+            // The user's edits of titles and order. A scan stamps rows with the time it ran, so on a new device (or
+            // after a restore) an older edit would always lose: when this device has no edits of its own, it applies.
             "libraryItem" -> db.libraryQueries.selectItem(r.id).executeAsOneOrNull()?.let { local ->
-                if (!r.deleted && local.updated_at < at) sync.applyItemOverrides(d.str("titleOverride"), d.long("orderOverride"), at, r.id)
+                val unedited = local.title_override == null && local.order_override == null
+                val edits = d.str("titleOverride") != null || d.long("orderOverride") != null
+                if (!r.deleted && (local.updated_at < at || unedited && edits)) sync.applyItemOverrides(d.str("titleOverride"), d.long("orderOverride"), at, r.id)
             }
             "section" -> sync.sectionById(r.id).executeAsOneOrNull()?.let { local ->
-                if (!r.deleted && local.updated_at < at) sync.applySectionOverrides(d.str("titleOverride"), d.long("orderOverride"), at, r.id)
+                val unedited = local.title_override == null && local.order_override == null
+                val edits = d.str("titleOverride") != null || d.long("orderOverride") != null
+                if (!r.deleted && (local.updated_at < at || unedited && edits)) sync.applySectionOverrides(d.str("titleOverride"), d.long("orderOverride"), at, r.id)
             }
             "element" -> db.libraryQueries.selectElement(r.id).executeAsOneOrNull()?.let { local ->
-                if (!r.deleted && local.updated_at < at) {
+                val unedited = local.title_override == null && local.order_override == null && local.skip_intro_sec == null && local.skip_outro_sec == null
+                val edits = d.str("titleOverride") != null || d.long("orderOverride") != null || d.long("skipIntroSec") != null || d.long("skipOutroSec") != null
+                if (!r.deleted && (local.updated_at < at || unedited && edits)) {
                     sync.applyElementOverrides(d.str("titleOverride"), d.long("orderOverride"), d.long("skipIntroSec"), d.long("skipOutroSec"), at, r.id)
                 }
             }

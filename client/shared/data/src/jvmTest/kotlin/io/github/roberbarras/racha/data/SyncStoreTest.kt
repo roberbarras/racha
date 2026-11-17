@@ -218,4 +218,16 @@ class SyncStoreTest {
         db.rootRelinker.relink(here, RootKey(phone))
         assertEquals(RootLayout.LIBRARY, db.categories.roots(CategoryKey.COURSES).single { it.key.value == phone }.layout)
     }
+    @Test
+    fun anOlderEditReachesACourseScannedLaterButNeverOverwritesOwnEdits() = runBlocking {
+        seedLibrary() // scanned "now": newer than the edit made earlier on another device
+        store.startRecording()
+        val edited = now - 1.hours
+        store.applyRemote(listOf(record("libraryItem", item.id.value, edited, buildJsonObject { put("titleOverride", "Mi curso") })), ConflictPolicy.ASK)
+        assertEquals("Mi curso", db.library.item(item.id)?.titleOverride, "this device had no edit of its own")
+
+        db.library.upsertItem(db.library.item(item.id)!!.copy(titleOverride = "Mi título", updatedAt = now + 1.hours))
+        store.applyRemote(listOf(record("libraryItem", item.id.value, now, buildJsonObject { put("titleOverride", "Otro") })), ConflictPolicy.ASK)
+        assertEquals("Mi título", db.library.item(item.id)?.titleOverride, "a newer edit of its own stays")
+    }
 }

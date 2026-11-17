@@ -1,6 +1,7 @@
 package io.github.roberbarras.racha.data
 
 import io.github.roberbarras.racha.application.playback.PlaybackMemoryRepository
+import io.github.roberbarras.racha.data.db.Playback_memory
 import io.github.roberbarras.racha.data.db.RachaDatabase
 import io.github.roberbarras.racha.domain.playback.PlaybackChoice
 import io.github.roberbarras.racha.domain.playback.SubtitleChoice
@@ -12,20 +13,22 @@ import kotlin.time.Instant
 class SqlPlaybackMemory(private val db: RachaDatabase, private val io: CoroutineContext) : PlaybackMemoryRepository {
     private val q get() = db.playbackMemoryQueries
 
-    override suspend fun get(key: String): PlaybackChoice? = withContext(io) {
-        q.selectMemory(key).executeAsOneOrNull()?.let { row ->
-            PlaybackChoice(
-                speed = row.speed,
-                audioLanguage = row.audio_language,
-                audioIndex = row.audio_index?.toInt(),
-                subtitles = when (val s = row.subtitles) {
-                    null -> null
-                    OFF -> SubtitleChoice.Off
-                    else -> SubtitleChoice.Language(s)
-                },
-            )
-        }
+    override suspend fun get(key: String): PlaybackChoice? = withContext(io) { q.selectMemory(key).executeAsOneOrNull()?.toChoice() }
+
+    override suspend fun all(): Map<String, PlaybackChoice> = withContext(io) {
+        q.selectAllMemory().executeAsList().associate { it.item_key to it.toChoice() }
     }
+
+    private fun Playback_memory.toChoice() = PlaybackChoice(
+        speed = speed,
+        audioLanguage = audio_language,
+        audioIndex = audio_index?.toInt(),
+        subtitles = when (val s = subtitles) {
+            null -> null
+            OFF -> SubtitleChoice.Off
+            else -> SubtitleChoice.Language(s)
+        },
+    )
 
     override suspend fun save(key: String, choice: PlaybackChoice, at: Instant) = withContext(io) {
         val subtitles = when (val s = choice.subtitles) {

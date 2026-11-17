@@ -111,6 +111,9 @@ DELETE FROM favorite WHERE target_type = ? AND target_id = ?;
 selectStat:
 SELECT * FROM local_stat WHERE metric = ? AND period = ?;
 
+selectAllStats:
+SELECT * FROM local_stat ORDER BY metric, period;
+
 selectStatsByMetric:
 SELECT * FROM local_stat WHERE metric = ? ORDER BY period;
 

@@ -141,6 +141,9 @@ interface SyncLocalStore {
     /** Applies newer remote versions (last writer wins); settings that also changed here follow [policy]. */
     suspend fun applyRemote(records: List<SyncRecord>, policy: ConflictPolicy)
 
+    /** Every synced row as it would be pushed now (full backup, H16); per-device settings are not included. */
+    suspend fun snapshot(): List<SyncChange>
+
     /**
      * The server stored these pushed changes with its own time (it clamps clocks that run ahead, ADR-0012): rows
      * not changed since take that time, or this device would ignore newer remote changes until its clock catches up.

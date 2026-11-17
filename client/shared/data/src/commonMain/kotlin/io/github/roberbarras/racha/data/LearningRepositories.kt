@@ -140,4 +140,6 @@ class SqlLocalStatRepository(private val db: RachaDatabase, private val io: Coro
 
     override suspend fun forMetric(metric: String): List<LocalStat> =
         withContext(io) { q.selectStatsByMetric(metric).executeAsList().map { it.toDomain() } }
+
+    override suspend fun all(): List<LocalStat> = withContext(io) { q.selectAllStats().executeAsList().map { it.toDomain() } }
 }

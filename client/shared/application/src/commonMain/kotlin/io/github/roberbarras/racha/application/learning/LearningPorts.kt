@@ -63,4 +63,7 @@ interface LocalStatRepository {
     suspend fun save(stat: LocalStat)
 
     suspend fun forMetric(metric: String): List<LocalStat>
+
+    /** Every running total (full backup, H16). */
+    suspend fun all(): List<LocalStat>
 }
