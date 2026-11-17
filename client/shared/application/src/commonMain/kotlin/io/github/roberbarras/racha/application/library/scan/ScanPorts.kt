@@ -48,4 +48,7 @@ fun interface LibraryWatcher {
 /** Converts instants to the user's local calendar date (grouping by modification day). */
 fun interface LocalDates {
     fun dateOf(instant: Instant): CalendarDate
+
+    /** Hour of the day (0–23) in the user's zone; UTC unless the platform says otherwise (statistics, H16). */
+    fun hourOf(instant: Instant): Int = (instant.epochSeconds / 3600).mod(24L).toInt()
 }

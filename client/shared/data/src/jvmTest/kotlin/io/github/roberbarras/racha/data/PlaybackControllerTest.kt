@@ -283,6 +283,28 @@ class PlaybackControllerTest {
         assertEquals(1.5, db.playbackMemory.get(io.github.roberbarras.racha.application.playback.PlaybackMemoryRepository.LAST)?.speed)
     }
 
+    @Test
+    fun aViewingLeavesTheRunningTotalsForStatistics() = runBlocking {
+        seed()
+        controller.open(first.id, StartMode.BEGINNING)
+        engine.emitPlaying(true)
+        eventually { controller.state.value.engine.playing }
+        delay(200) // the controller notes when playing started on its own coroutine
+        now += 120.seconds
+        controller.setSpeed(1.5)
+        now += 60.seconds
+        controller.close()
+        val all = PlaybackController.ALL_TIME
+        suspend fun total(metric: String) = db.stats.get(metric, all)?.value
+        assertEquals(180.0, total(PlaybackController.itemMetric(item.id.value)))
+        assertEquals(180.0, total(PlaybackController.hourMetric(10)), "10:00 UTC (LocalDates in UTC here)")
+        assertEquals(180.0, total(PlaybackController.weekdayMetric(CalendarDate(2026, 11, 13).isoDayOfWeek)))
+        assertEquals(1.0, total(PlaybackController.SESSIONS))
+        assertEquals(180.0, total(PlaybackController.SESSION_SECONDS))
+        assertEquals(270.0, total(PlaybackController.SESSION_SPEED_SECONDS), "speed weighted by time (1.5 × 180 at the end)")
+        assertEquals(5, CalendarDate(2026, 11, 13).isoDayOfWeek, "13 Nov 2026 is a Friday")
+    }
+
     private suspend fun SqlHistoryRepository.observeRecentOnce() = observeRecent(10).first()
 
     private class FakeEngine : PlayerEngine {

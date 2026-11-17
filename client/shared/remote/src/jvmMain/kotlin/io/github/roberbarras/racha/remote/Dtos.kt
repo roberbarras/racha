@@ -73,3 +73,28 @@ internal data class PersonalStatsDto(
     val watchByDay: List<DayWatchDto> = emptyList(),
     val watchByCategory: List<CategoryWatchDto> = emptyList(),
 )
+
+/** `GET /stats/me/details` (H14 server, H16 client): only what the app shows. */
+@Serializable
+internal data class StatsDetailsDto(
+    val sessions: SessionsDto,
+    val byHour: List<HourDto> = emptyList(),
+    val byWeekday: List<WeekdayDto> = emptyList(),
+    val byDevice: List<DeviceWatchDto> = emptyList(),
+    val titles: List<TitleDto> = emptyList(),
+) {
+    @Serializable
+    data class SessionsDto(val count: Long = 0, val averageSeconds: Long = 0, val averageSpeed: Double = 1.0, val withSubtitles: Double = 0.0)
+
+    @Serializable
+    data class HourDto(val hour: Int, val seconds: Long)
+
+    @Serializable
+    data class WeekdayDto(val day: Int, val seconds: Long)
+
+    @Serializable
+    data class DeviceWatchDto(val name: String? = null, val platform: String? = null, val seconds: Long = 0)
+
+    @Serializable
+    data class TitleDto(val itemId: String, val seconds: Long = 0)
+}

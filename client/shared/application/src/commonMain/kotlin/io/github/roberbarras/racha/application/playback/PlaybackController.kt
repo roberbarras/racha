@@ -452,9 +452,16 @@ class PlaybackController(
         val seconds = (now - since).inWholeSeconds
         if (seconds <= 0) return
         sessionSeconds += seconds
-        val day = localDates.dateOf(now).toString()
+        val date = localDates.dateOf(now)
+        val day = date.toString()
         add(WATCH_SECONDS, day, seconds, now)
-        mutableState.value.item?.let { add(categoryMetric(it.categoryKey.value), day, seconds, now) }
+        mutableState.value.item?.let {
+            add(categoryMetric(it.categoryKey.value), day, seconds, now)
+            add(itemMetric(it.id.value), ALL_TIME, seconds, now)
+        }
+        // When the user watches (H16): hour of day and weekday, this device only (the server adds every device's).
+        add(hourMetric(localDates.hourOf(now)), ALL_TIME, seconds, now)
+        add(weekdayMetric(date.isoDayOfWeek), ALL_TIME, seconds, now)
     }
 
     private suspend fun add(metric: String, day: String, seconds: Long, now: Instant) {
@@ -470,7 +477,16 @@ class PlaybackController(
         val now = clock.now()
         flushWatchTime(now)
         val position = positionAtEnd ?: (engine.positionMs() / 1000)
-        if (sessionSeconds > 0) reportWatch(element, start, now, position)
+        if (sessionSeconds > 0) {
+            val seconds = sessionSeconds // reportWatch starts the next session's count
+            reportWatch(element, start, now, position)
+            // Sessions (H16): how many, how long, at what speed (weighted by time) and how often with subtitles.
+            val s = mutableState.value
+            add(SESSIONS, ALL_TIME, 1, now)
+            add(SESSION_SECONDS, ALL_TIME, seconds, now)
+            add(SESSION_SPEED_SECONDS, ALL_TIME, (s.speed * seconds).toLong(), now)
+            if (s.engine.selectedSubtitle != null) add(SESSIONS_WITH_SUBTITLES, ALL_TIME, 1, now)
+        }
         if ((now - start).inWholeSeconds < MIN_SESSION_SEC) return
         history.add(HistoryEntry(Uuid.random().toString(), element.id, start, position))
     }
@@ -502,6 +518,20 @@ class PlaybackController(
 
         /** Watch time per category and day, for the personal statistics (§2.2). */
         fun categoryMetric(categoryKey: String) = "$WATCH_SECONDS.category:$categoryKey"
+
+        /** Running totals (H16) are kept under this period instead of a day. */
+        const val ALL_TIME = "all"
+
+        fun itemMetric(itemId: String) = "$WATCH_SECONDS.item:$itemId"
+
+        fun hourMetric(hour: Int) = "$WATCH_SECONDS.hour:$hour"
+
+        fun weekdayMetric(isoDay: Int) = "$WATCH_SECONDS.weekday:$isoDay"
+
+        const val SESSIONS = "sessions"
+        const val SESSION_SECONDS = "sessions.seconds"
+        const val SESSION_SPEED_SECONDS = "sessions.speedSeconds"
+        const val SESSIONS_WITH_SUBTITLES = "sessions.withSubtitles"
         private const val LOOP_CHECK_MS = 150L
         private const val OUTRO_CHECK_MS = 1_000L
         private const val MIN_SESSION_SEC = 5L

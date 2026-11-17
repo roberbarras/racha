@@ -11,4 +11,6 @@ class SystemLocalDates(private val zone: () -> ZoneId = ZoneId::systemDefault) :
         val date = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()).atZone(zone()).toLocalDate()
         return CalendarDate(date.year, date.monthValue, date.dayOfMonth)
     }
+
+    override fun hourOf(instant: Instant): Int = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()).atZone(zone()).hour
 }

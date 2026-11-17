@@ -12,7 +12,10 @@ import io.github.roberbarras.racha.application.sync.SyncChange
 import io.github.roberbarras.racha.application.sync.SyncRecord
 import io.github.roberbarras.racha.application.sync.SyncServer
 import io.github.roberbarras.racha.application.sync.Tokens
+import io.github.roberbarras.racha.application.stats.DeviceTime
+import io.github.roberbarras.racha.application.stats.RemoteDetails
 import io.github.roberbarras.racha.application.stats.RemoteStats
+import io.github.roberbarras.racha.application.stats.SessionStats
 import io.github.roberbarras.racha.application.stats.StatsServer
 import io.github.roberbarras.racha.application.telemetry.ClientError
 import io.github.roberbarras.racha.application.telemetry.TelemetryEvent
@@ -167,6 +170,24 @@ class KtorSyncServer(
                 jsonBody(errors.map { ErrorDto(it.id, it.platform, it.appVersion, it.message, it.stackTrace, it.occurredAt.toString(), it.context) })
             }
         })
+    }
+
+    override suspend fun personalDetails(address: ServerAddress, accessToken: String, zone: String): RemoteDetails? {
+        val response = call {
+            client().get(address.baseUrl + "/stats/me/details") {
+                bearerAuth(accessToken)
+                parameter("zone", zone)
+            }
+        }
+        if (response.status.value == 404) return null // a server older than the breakdowns
+        val dto = authorized(response).body<StatsDetailsDto>()
+        return RemoteDetails(
+            sessions = SessionStats(dto.sessions.count, dto.sessions.averageSeconds, dto.sessions.averageSpeed, dto.sessions.withSubtitles),
+            byHour = dto.byHour.associate { it.hour to it.seconds },
+            byWeekday = dto.byWeekday.associate { it.day to it.seconds },
+            devices = dto.byDevice.map { DeviceTime(it.name ?: "?", it.platform ?: "", it.seconds) },
+            titleSeconds = dto.titles.associate { it.itemId to it.seconds },
+        )
     }
 
     override suspend fun personalStats(address: ServerAddress, accessToken: String, zone: String): RemoteStats {

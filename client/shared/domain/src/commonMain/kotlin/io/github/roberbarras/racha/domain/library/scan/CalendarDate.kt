@@ -25,6 +25,9 @@ data class CalendarDate(val year: Int, val month: Int, val day: Int) : Comparabl
 
     fun plusDays(days: Long): CalendarDate = ofEpochDay(toEpochDay() + days)
 
+    /** 1 = Monday … 7 = Sunday (ISO); 1970-01-01 was a Thursday. */
+    val isoDayOfWeek: Int get() = (toEpochDay() + 3).mod(7L).toInt() + 1
+
     companion object {
         /** Inverse of [toEpochDay] (H. Hinnant's civil-from-days). */
         fun ofEpochDay(epochDay: Long): CalendarDate {
