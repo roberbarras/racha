@@ -6,6 +6,7 @@ import io.github.roberbarras.racha.application.playback.MediaSource
 import io.github.roberbarras.racha.application.playback.PlayerEngine
 import io.github.roberbarras.racha.application.shared.AppLog
 import io.github.roberbarras.racha.domain.cast.CastDevice
+import io.github.roberbarras.racha.domain.cast.CastKind
 import io.github.roberbarras.racha.domain.cast.CastMedia
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -307,7 +308,12 @@ class CastingEngine(
         val name = source.uri.substringAfterLast('/')
         val url = publisher.publishFile(source.uri, CastMedia.contentType(name), device.host)
         val sub = source.subtitles.firstOrNull { it.id == subtitle }?.let { s ->
-            RemoteSubtitle(publisher.publishSubtitle(s.uri, device.host), s.language, s.label)
+            // Chromecasts read WebVTT; DLNA TVs that show external subtitles read SubRip.
+            val url = when (device.kind) {
+                CastKind.CHROMECAST -> publisher.publishSubtitle(s.uri, device.host)
+                CastKind.DLNA -> publisher.publishFile(s.uri, CastMedia.contentType(s.uri), device.host)
+            }
+            RemoteSubtitle(url, s.language, s.label)
         }
         return RemoteMedia(url, CastMedia.contentType(name), title(name), sub, startMs)
     }
