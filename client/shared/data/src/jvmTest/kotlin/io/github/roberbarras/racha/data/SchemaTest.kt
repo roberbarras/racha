@@ -17,7 +17,7 @@ class SchemaTest {
     private val expectedTables = setOf(
         "category", "category_root", "library_item", "section", "playable_element", "subtitle",
         "progress", "bookmark", "history_entry", "favorite", "local_stat",
-        "app_setting", "sync_queue", "device", "account", "sync_state", "remote_root", "sync_conflict", "telemetry_outbox", "resource_text", "playback_memory",
+        "app_setting", "sync_queue", "device", "account", "sync_state", "remote_root", "sync_conflict", "telemetry_outbox", "resource_text", "playback_memory", "summary",
     )
 
     @Test
@@ -32,7 +32,7 @@ class SchemaTest {
         }, 0).value
 
         assertEquals(expectedTables, tables)
-        assertEquals(8, RachaDatabase.Schema.version) // v8 (H15): playback choices per course or series
+        assertEquals(9, RachaDatabase.Schema.version) // v9 (H17): AI summaries
     }
 
     @Test

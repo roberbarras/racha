@@ -132,6 +132,10 @@ seedBookmark:
 INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
 SELECT 'bookmark', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM bookmark;
 
+seedSummary:
+INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
+SELECT 'summary', target_id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM summary;
+
 seedHistory:
 INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at)
 SELECT 'history', id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER) FROM history_entry;
@@ -201,6 +205,9 @@ UPDATE progress SET updated_at = :server WHERE element_id = :id AND updated_at =
 adoptBookmarkTime:
 UPDATE bookmark SET updated_at = :server WHERE id = :id AND updated_at = :pushed;
 
+adoptSummaryTime:
+UPDATE summary SET updated_at = :server WHERE target_id = :id AND updated_at = :pushed;
+
 adoptSettingTime:
 UPDATE app_setting SET updated_at = :server WHERE key = :id AND updated_at = :pushed;
 
@@ -223,4 +230,5 @@ UNION ALL SELECT 'progress', element_id FROM progress
 UNION ALL SELECT 'bookmark', id FROM bookmark
 UNION ALL SELECT 'history', id FROM history_entry
 UNION ALL SELECT 'favorite', target_type || ':' || target_id FROM favorite
+UNION ALL SELECT 'summary', target_id FROM summary
 UNION ALL SELECT 'setting', key FROM app_setting;

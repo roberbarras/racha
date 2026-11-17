@@ -32,6 +32,7 @@ import io.github.roberbarras.racha.data.db.Category as CategoryRow
 import io.github.roberbarras.racha.data.db.Favorite as FavoriteRow
 import io.github.roberbarras.racha.data.db.History_entry as HistoryRow
 import io.github.roberbarras.racha.data.db.Progress as ProgressRow
+import io.github.roberbarras.racha.data.db.Summary as SummaryRow
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Instant
 
@@ -49,7 +50,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
         sync.transaction {
             sync.setRecording(1)
             sync.seedCategory(); sync.seedCategoryRoot(); sync.seedLibraryItem(); sync.seedSection(); sync.seedElement()
-            sync.seedSubtitle(); sync.seedProgress(); sync.seedBookmark(); sync.seedHistory(); sync.seedFavorite(); sync.seedSetting()
+            sync.seedSubtitle(); sync.seedProgress(); sync.seedBookmark(); sync.seedHistory(); sync.seedFavorite(); sync.seedSummary(); sync.seedSetting()
         }
         bump()
     }
@@ -125,6 +126,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
                         "subtitle" -> sync.adoptSubtitleTime(at, id, pushedAt)
                         "progress" -> sync.adoptProgressTime(at, id, pushedAt)
                         "bookmark" -> sync.adoptBookmarkTime(at, id, pushedAt)
+                        "summary" -> sync.adoptSummaryTime(at, id, pushedAt)
                         "setting" -> sync.adoptSettingTime(at, id, pushedAt)
                     }
                 }
@@ -239,6 +241,12 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
                     change(entity, id, it.created_at, buildJsonObject { put("targetType", it.target_type); put("targetId", it.target_id) })
                 } ?: gone()
             }
+            "summary" -> db.summaryQueries.selectSummary(id).executeAsOneOrNull()?.let { r ->
+                change(entity, id, r.updated_at, buildJsonObject {
+                    put("target", r.target_type.lowercase()); put("markdown", r.markdown); put("provider", r.provider); put("model", r.model)
+                    put("language", r.language)
+                })
+            } ?: gone()
             "setting" -> {
                 // Only per-user settings travel; per-device ones (folders, player engine…) stay here.
                 if (Settings.byKey(id)?.scope != SettingScope.USER) return null
@@ -339,6 +347,18 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
                 if (r.deleted) db.learningQueries.deleteFavorite(type, target)
                 else db.learningQueries.insertFavorite(FavoriteRow(type, target, at))
             }
+            "summary" -> {
+                if (!CONTENT_ID.matches(r.id)) return
+                val local = db.summaryQueries.selectSummary(r.id).executeAsOneOrNull()
+                if (local != null && local.updated_at >= at) return
+                if (r.deleted) {
+                    if (local != null) db.summaryQueries.deleteSummary(r.id)
+                    return
+                }
+                val target = d.str("target")?.uppercase()?.takeIf { t -> t == "ELEMENT" || t == "SECTION" } ?: return
+                db.summaryQueries.upsertSummary(SummaryRow(r.id, target, d.str("markdown") ?: return, d.str("provider") ?: "", d.str("model") ?: "",
+                    d.str("language") ?: "", at))
+            }
             "setting" -> applySetting(r, policy)
         }
     }
@@ -372,6 +392,7 @@ class SqlSyncLocalStore(private val db: RachaDatabase, private val io: Coroutine
 
     private companion object {
         const val MAX_RETRIES = 5
+        val CONTENT_ID = Regex("[0-9a-f]{64}")
 
         fun wireId(entity: String, localId: String) = if (entity == "setting") "user:$localId" else localId
 

@@ -1,0 +1,23 @@
+-- AI summaries (H17) of a lesson (ELEMENT) or a section (SECTION), in Markdown. Synced like the user's other data. No
+-- foreign key: a summary written on another device may arrive before (or without) its lesson on this one.
+CREATE TABLE summary (
+    target_id TEXT NOT NULL PRIMARY KEY,
+    target_type TEXT NOT NULL,
+    markdown TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NOT NULL,
+    language TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+selectSummary:
+SELECT * FROM summary WHERE target_id = ?;
+
+upsertSummary:
+INSERT OR REPLACE INTO summary(target_id, target_type, markdown, provider, model, language, updated_at) VALUES ?;
+
+deleteSummary:
+DELETE FROM summary WHERE target_id = ?;
+
+summarizedAmong:
+SELECT target_id FROM summary WHERE target_id IN ?;

@@ -173,6 +173,24 @@ internal object SyncTriggers {
         END;
         """.trimIndent(),
         """
+        CREATE TRIGGER IF NOT EXISTS sync_summary_insert AFTER INSERT ON summary FOR EACH ROW WHEN (SELECT recording = 1 AND applying = 0 FROM sync_state WHERE id = 1)
+        BEGIN
+            INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at) SELECT 'summary', NEW.target_id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER);
+        END;
+        """.trimIndent(),
+        """
+        CREATE TRIGGER IF NOT EXISTS sync_summary_update AFTER UPDATE ON summary FOR EACH ROW WHEN (SELECT recording = 1 AND applying = 0 FROM sync_state WHERE id = 1)
+        BEGIN
+            INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at) SELECT 'summary', NEW.target_id, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER);
+        END;
+        """.trimIndent(),
+        """
+        CREATE TRIGGER IF NOT EXISTS sync_summary_delete AFTER DELETE ON summary FOR EACH ROW WHEN (SELECT recording = 1 AND applying = 0 FROM sync_state WHERE id = 1)
+        BEGIN
+            INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at) SELECT 'summary', OLD.target_id, 'DELETE', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER);
+        END;
+        """.trimIndent(),
+        """
         CREATE TRIGGER IF NOT EXISTS sync_setting_insert AFTER INSERT ON app_setting FOR EACH ROW WHEN (SELECT recording = 1 AND applying = 0 FROM sync_state WHERE id = 1)
         BEGIN
             INSERT INTO sync_queue(entity_type, entity_id, operation, payload, retries, last_error, created_at) SELECT 'setting', NEW.key, 'UPSERT', NULL, 0, NULL, CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER);
