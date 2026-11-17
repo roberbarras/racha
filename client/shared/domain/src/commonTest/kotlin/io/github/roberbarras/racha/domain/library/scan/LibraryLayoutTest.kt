@@ -7,6 +7,7 @@ import io.github.roberbarras.racha.domain.library.LanguageCode
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.domain.library.ResourceType
 import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.SectionKind
 import io.github.roberbarras.racha.domain.library.StructureKind
 import kotlin.test.Test
@@ -40,8 +41,12 @@ class LibraryLayoutTest {
 
     private fun files(vararg paths: String) = tree(*paths.map { it to t0 }.toTypedArray())
 
-    private fun detect(entries: List<FileEntry>, category: CategoryKey = CategoryKey.COURSES, excludes: List<String> = listOf("temp/")) =
-        LibraryLayout.detect(category, root, "AWS Certified Solutions Architect", entries, ExclusionRules(excludes), utcDate)
+    private fun detect(
+        entries: List<FileEntry>,
+        category: CategoryKey = CategoryKey.COURSES,
+        excludes: List<String> = listOf("temp/"),
+        layout: RootLayout = RootLayout.AUTO,
+    ) = LibraryLayout.detect(category, root, "AWS Certified Solutions Architect", entries, ExclusionRules(excludes), utcDate, layout)
 
     /** The reference layout of spec §3.1 (acceptance criterion 1). */
     private val specExample = files(
@@ -206,5 +211,52 @@ class LibraryLayoutTest {
         assertEquals(SectionKind.LOOSE, course.sections.first().kind)
         val (mkv, mp4) = course.sections[1].elements
         assertNotEquals(mkv.id, mp4.id)
+    }
+    // ADR-0013: the user says what a folder is; the names of its subfolders no longer decide.
+
+    /** A course whose sections have plain names: guessed as a library, but added as one course it is one course. */
+    private val plainNamedCourse = files(
+        "Introducción/01 Bienvenida.mp4",
+        "Introducción/02 Cómo usar el curso.mp4",
+        "Fundamentos/01 Variables.mp4",
+        "Fundamentos/02 Funciones.mp4",
+        "Proyecto final/01 Enunciado.pdf",
+        "Proyecto final/02 Solución.mp4",
+        "Presentación.mp4",
+    )
+
+    @Test
+    fun aSingleItemFolderIsOneCourseWhateverItsSubfoldersAreCalled() {
+        assertEquals(RootLayout.LIBRARY, LibraryLayout.guess(plainNamedCourse, ExclusionRules(listOf("temp/"))))
+        assertEquals(3, detect(plainNamedCourse).items.count { it.kind != StructureKind.LOOSE }, "the old guess: one course per section")
+
+        val course = detect(plainNamedCourse.shuffled(), layout = RootLayout.SINGLE_ITEM).items.single()
+        assertEquals("AWS Certified Solutions Architect", course.title)
+        assertEquals(StructureKind.COURSE, course.kind)
+        assertEquals(ContentId.forFolder(CategoryKey.COURSES, root, RelativePath.ROOT), course.id)
+        // Files lying in the course folder come first, then the subfolders as sections in natural order.
+        assertEquals(listOf("", "Fundamentos", "Introducción", "Proyecto final"), course.sections.map { it.title })
+        assertEquals(7, course.elements.size)
+    }
+
+    @Test
+    fun aLibraryFolderIsOneItemPerSubfolderEvenWhenTheyLookLikeSections() {
+        assertEquals(RootLayout.SINGLE_ITEM, LibraryLayout.guess(specExample, ExclusionRules(listOf("temp/"))))
+
+        val items = detect(specExample, layout = RootLayout.LIBRARY).items
+        assertEquals(listOf("01 - Introduction", "02 - Code & Slides Download", "04 - IAM - Identity and Access Management"), items.map { it.title })
+        assertTrue(items.all { it.kind == StructureKind.COURSE })
+    }
+
+    @Test
+    fun theLayoutChangesCoursesButNeverTheIdsOfVideosAndResources() {
+        val asLibrary = detect(plainNamedCourse, layout = RootLayout.LIBRARY).items.flatMap { it.elements }.map { it.id }.toSet()
+        val asCourse = detect(plainNamedCourse, layout = RootLayout.SINGLE_ITEM).items.flatMap { it.elements }.map { it.id }.toSet()
+        assertEquals(asLibrary, asCourse) // progress, bookmarks and history follow the files
+    }
+
+    @Test
+    fun aSingleItemFolderWithoutVideosOrResourcesIsEmpty() {
+        assertTrue(detect(files("notas/readme.md"), layout = RootLayout.SINGLE_ITEM).items.isEmpty())
     }
 }

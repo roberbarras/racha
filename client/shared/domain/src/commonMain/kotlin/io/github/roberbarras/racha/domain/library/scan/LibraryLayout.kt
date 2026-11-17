@@ -5,6 +5,7 @@ import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.LanguageCode
 import io.github.roberbarras.racha.domain.library.RelativePath
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.domain.library.ResourceType
 import io.github.roberbarras.racha.domain.library.RootKey
 import io.github.roberbarras.racha.domain.library.SectionKind
@@ -53,9 +54,10 @@ data class DetectedLibrary(val items: List<DetectedItem>)
  * Turns the file list of one category root into courses/series/channels, sections and elements, applying the
  * cascade of spec §3.2. Pure: no I/O, deterministic for a given input.
  *
- * Root level: if most top-level folders look like sections (`NN - Title`, seasons, dates) the root itself is one
- * item (the reference layout of spec §3.1); otherwise each top-level folder is an item and files lying directly in
- * the root form the "Loose files" item.
+ * Root level, by the folder's [RootLayout] (ADR-0013): a single item is the root itself, its subfolders being
+ * sections (the reference layout of spec §3.1); a library has one item per top-level folder, and files lying
+ * directly in the root form the "Loose files" item. [RootLayout.AUTO] picks one of the two from the names: the root
+ * is one item when most top-level folders look like sections (`NN - Title`, seasons, dates).
  */
 object LibraryLayout {
 
@@ -70,7 +72,22 @@ object LibraryLayout {
         entries: List<FileEntry>,
         exclusions: ExclusionRules,
         localDate: (Instant) -> CalendarDate,
-    ): DetectedLibrary = Detection(category, root, rootName, Tree(entries, exclusions), localDate).run()
+        layout: RootLayout = RootLayout.AUTO,
+    ): DetectedLibrary = Detection(category, root, rootName, Tree(entries, exclusions), localDate).run(layout)
+
+    /** What [RootLayout.AUTO] would make of these files: a hint when the user picks the other one. */
+    fun guess(entries: List<FileEntry>, exclusions: ExclusionRules): RootLayout {
+        val tree = Tree(entries, exclusions)
+        return if (looksLikeOneItem(tree)) RootLayout.SINGLE_ITEM else RootLayout.LIBRARY
+    }
+
+    private fun looksLikeOneItem(tree: Tree): Boolean {
+        val topDirs = tree.childDirs(RelativePath.ROOT).filter(tree::hasElementsUnder)
+        return topDirs.isNotEmpty() && topDirs.count { isSectionLike(it.name) } * 2 > topDirs.size
+    }
+
+    private fun isSectionLike(name: String) =
+        NameParser.sectionPrefix(name) != null || NameParser.season(name) != null || NameParser.date(name) != null
 
     private class Tree(entries: List<FileEntry>, exclusions: ExclusionRules) {
         val files: List<FileEntry> = entries.filter { !it.isDirectory && !exclusions.excludes(it.path, false) }
@@ -106,9 +123,13 @@ object LibraryLayout {
         val tree: Tree,
         val localDate: (Instant) -> CalendarDate,
     ) {
-        fun run(): DetectedLibrary {
+        fun run(layout: RootLayout): DetectedLibrary {
             val topDirs = tree.childDirs(RelativePath.ROOT).filter(tree::hasElementsUnder)
-            val rootIsItem = topDirs.isNotEmpty() && topDirs.count { isSectionLike(it.name) } * 2 > topDirs.size
+            val rootIsItem = when (layout) {
+                RootLayout.SINGLE_ITEM -> tree.hasElementsUnder(RelativePath.ROOT)
+                RootLayout.LIBRARY -> false
+                RootLayout.AUTO -> looksLikeOneItem(tree)
+            }
             val items = if (rootIsItem) {
                 listOf(item(RelativePath.ROOT, rootName, looseRoot = false))
             } else {
@@ -118,9 +139,6 @@ object LibraryLayout {
             val ordered = items.sortedWith(compareBy<DetectedItem> { it.kind == StructureKind.LOOSE }.thenComparator { a, b -> NaturalOrder.compare(a.title, b.title) })
             return DetectedLibrary(ordered.mapIndexed { index, item -> item.copy(order = index) })
         }
-
-        private fun isSectionLike(name: String) =
-            NameParser.sectionPrefix(name) != null || NameParser.season(name) != null || NameParser.date(name) != null
 
         private fun item(path: RelativePath, title: String, looseRoot: Boolean): DetectedItem {
             val id = ContentId.forFolder(category, root, path)

@@ -60,12 +60,22 @@ data class Category(
 enum class Mode { STUDY, LEISURE }
 
 /**
+ * What a root folder holds (ADR-0013), chosen by the user when adding it:
+ * - [LIBRARY]: several courses or series, one per subfolder (their own subfolders are sections);
+ * - [SINGLE_ITEM]: the folder is one course or series and its subfolders are its sections, whatever their names;
+ * - [AUTO]: folders added before the choice existed, guessed from the names of the subfolders (spec §3.2).
+ */
+enum class RootLayout { AUTO, LIBRARY, SINGLE_ITEM }
+
+/**
  * One root folder of a category. [key] is synced and links the same library across devices; [location] is the
- * device-local URI (`file://…` today, `content://…` if SAF is added, ADR-0005) and is never synced.
+ * device-local URI (`file://…` today, `content://…` if SAF is added, ADR-0005) and is never synced. [layout]
+ * travels with the key, so a linked folder becomes the same courses on every device.
  */
 data class CategoryRoot(
     val key: RootKey,
     val categoryKey: CategoryKey,
     val location: String,
     val order: Int,
+    val layout: RootLayout = RootLayout.AUTO,
 )
