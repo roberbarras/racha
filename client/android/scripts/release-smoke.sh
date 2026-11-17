@@ -34,16 +34,28 @@ if [ "$installed" != yes ]; then
   { $adb root >/dev/null 2>&1 && sleep 3 && $adb wait-for-device && $adb shell 'du -xsk /data/* /data/app/*/* 2>/dev/null | sort -rn | head -15'; } >>"$report" 2>&1 || true
   exit 1
 fi
+# Every step has a time limit: a hang fails with a report saying where, instead of running into the job's limit.
+phase() { echo "phase: $1 ($(date +%T))" >>"$report"; }
 $adb logcat -c
-$adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
+phase launch
+timeout 90 $adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
 sleep 5
 for link in racha://stats racha://settings racha://account racha://nonsense; do
-  $adb shell am start -W -a android.intent.action.VIEW -d "$link" "$pkg" >/dev/null
+  phase "deep link $link"
+  timeout 60 $adb shell am start -W -a android.intent.action.VIEW -d "$link" "$pkg" >/dev/null
   sleep 2
 done
 # Monkey stays inside the app (-p), no system-level keys that could leave it or change settings.
-$adb shell monkey -p "$pkg" -s 4242 --throttle 60 --pct-syskeys 0 --pct-appswitch 0 --ignore-security-exceptions -v 1500 \
-  >/tmp/racha-monkey.log 2>&1 || true
+phase monkey
+monkey_status=0
+timeout 600 $adb shell monkey -p "$pkg" -s 4242 --throttle 60 --pct-syskeys 0 --pct-appswitch 0 --ignore-security-exceptions -v 1500 \
+  >/tmp/racha-monkey.log 2>&1 || monkey_status=$?
+if [ "$monkey_status" = 124 ]; then
+  { echo "monkey did not finish in 10 min; last events:"; tail -20 /tmp/racha-monkey.log; timeout 20 $adb shell dumpsys activity top | head -40; } >>"$report" 2>&1 || true
+  cat "$report"
+  exit 1
+fi
+phase checks
 sleep 2
 crashes=$($adb logcat -d -b crash | grep -c "Process: $pkg" || true)
 anrs=$($adb logcat -d | grep -c "ANR in $pkg" || true)
