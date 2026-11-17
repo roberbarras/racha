@@ -55,7 +55,9 @@ class OnboardingUiTest {
         waitUntil(timeoutMillis = 30_000) { runBlocking { deps.preferences.get(Settings.Mode) } == Mode.LEISURE }
         onNodeWithText("Siguiente").performClick()
         waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Elige tus carpetas").fetchSemanticsNodes().isNotEmpty() }
-        assertTrue(onAllNodesWithText("Añadir carpeta").fetchSemanticsNodes().size >= 3, "one per category")
+        // Both ways of adding a folder in every category (ADR-0013).
+        assertTrue(onAllNodesWithText("Añadir biblioteca").fetchSemanticsNodes().size >= 3, "one per category")
+        assertTrue(onAllNodesWithText("Añadir curso o serie").fetchSemanticsNodes().size >= 3, "one per category")
         ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", File(out, "desktop-onboarding-folders-es.png"))
         onNodeWithText("Siguiente").performClick()
         waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Un empujón diario").fetchSemanticsNodes().isNotEmpty() }

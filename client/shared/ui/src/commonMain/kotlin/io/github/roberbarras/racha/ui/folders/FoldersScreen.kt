@@ -28,6 +28,7 @@ import io.github.roberbarras.racha.domain.library.Category
 import io.github.roberbarras.racha.domain.library.CategoryKey
 import io.github.roberbarras.racha.domain.library.CategoryRoot
 import io.github.roberbarras.racha.domain.library.RootKey
+import io.github.roberbarras.racha.domain.library.RootLayout
 import io.github.roberbarras.racha.application.sync.RemoteRoot
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -51,7 +52,7 @@ import io.github.roberbarras.racha.ui.design.RText
 import io.github.roberbarras.racha.ui.design.Racha
 import io.github.roberbarras.racha.ui.design.RachaIcons
 import io.github.roberbarras.racha.ui.resources.Res
-import io.github.roberbarras.racha.ui.resources.add_folder
+import io.github.roberbarras.racha.ui.resources.change_layout
 import io.github.roberbarras.racha.ui.resources.folders_message
 import io.github.roberbarras.racha.ui.resources.folders_title
 import io.github.roberbarras.racha.ui.resources.no_folders
@@ -71,8 +72,17 @@ import org.jetbrains.compose.resources.stringResource
 /** [linkable]: folders of this category on the account's other devices not linked here yet (ADR-0004). */
 data class CategoryFolders(val category: Category, val roots: List<CategoryRoot>, val linkable: List<RemoteRoot>)
 
-/** Asking whether a folder is the same as one on another device: a new one ([location]) or an existing [root]. */
-data class LinkQuestion(val category: CategoryKey, val options: List<RemoteRoot>, val location: String? = null, val root: CategoryRoot? = null)
+/**
+ * Asking whether a folder is the same as one on another device: a new one ([location], to be added with [layout]) or
+ * an existing [root].
+ */
+data class LinkQuestion(
+    val category: CategoryKey,
+    val options: List<RemoteRoot>,
+    val location: String? = null,
+    val root: CategoryRoot? = null,
+    val layout: RootLayout = RootLayout.AUTO,
+)
 
 class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
     private val refresh = MutableStateFlow(0)
@@ -83,17 +93,54 @@ class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
     private val mutableQuestion = MutableStateFlow<LinkQuestion?>(null)
     val question: StateFlow<LinkQuestion?> = mutableQuestion.asStateFlow()
 
-    fun add(category: CategoryKey) = viewModelScope.launch {
+    private val mutablePending = MutableStateFlow<PendingFolder?>(null)
+    /** A picked folder shown as what it would become, before adding it (ADR-0013). */
+    val pending: StateFlow<PendingFolder?> = mutablePending.asStateFlow()
+
+    private val mutableEditing = MutableStateFlow<RootKey?>(null)
+    /** The folder whose layout is being changed. */
+    val editing: StateFlow<RootKey?> = mutableEditing.asStateFlow()
+
+    fun add(category: CategoryKey, layout: RootLayout) = viewModelScope.launch {
         val location = deps.platform.pickFolder() ?: return@launch
-        val options = deps.manageRoots.linkable(category)
+        mutableQuestion.value = null
+        mutablePending.value = PendingFolder(category, location, layout)
+        val preview = deps.manageRoots.preview(category, location)
+        mutablePending.value = mutablePending.value?.takeIf { it.location == location }?.copy(preview = preview)
+    }
+
+    fun previewAs(layout: RootLayout) {
+        mutablePending.value = mutablePending.value?.copy(layout = layout)
+    }
+
+    fun cancelAdd() {
+        mutablePending.value = null
+    }
+
+    fun confirmAdd() = viewModelScope.launch {
+        val pending = mutablePending.value ?: return@launch
+        mutablePending.value = null
+        val options = deps.manageRoots.linkable(pending.category)
         if (options.isEmpty()) {
-            deps.manageRoots.add(category, location)
+            deps.manageRoots.add(pending.category, pending.location, pending.layout)
             refresh.value++
         } else {
             // The folder with the same name on the other device is the likely match: offered first.
-            val name = displayPath(location).substringAfterLast('/')
-            mutableQuestion.value = LinkQuestion(category, options.sortedByDescending { it.name.equals(name, ignoreCase = true) }, location = location)
+            val name = displayPath(pending.location).substringAfterLast('/')
+            mutableQuestion.value = LinkQuestion(
+                pending.category, options.sortedByDescending { it.name.equals(name, ignoreCase = true) }, location = pending.location, layout = pending.layout,
+            )
         }
+    }
+
+    fun editLayout(root: CategoryRoot?) {
+        mutableEditing.value = root?.key
+    }
+
+    fun changeLayout(root: CategoryRoot, layout: RootLayout) = viewModelScope.launch {
+        mutableEditing.value = null
+        deps.manageRoots.changeLayout(root, layout)
+        refresh.value++
     }
 
     fun askLink(entry: CategoryFolders, root: CategoryRoot) {
@@ -107,7 +154,7 @@ class FoldersViewModel(private val deps: RachaDependencies) : ViewModel() {
         mutableQuestion.value = null
         val target = remote?.let { RootKey(it.key) }
         when {
-            question.location != null -> deps.manageRoots.add(question.category, question.location, linkTo = target)
+            question.location != null -> deps.manageRoots.add(question.category, question.location, question.layout, linkTo = target)
             question.root != null && target != null -> deps.manageRoots.link(question.root, target)
         }
         refresh.value++
@@ -125,6 +172,8 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
     val vm = viewModel { FoldersViewModel(deps) }
     val folders by vm.folders.collectAsStateWithLifecycle()
     val question by vm.question.collectAsStateWithLifecycle()
+    val pending by vm.pending.collectAsStateWithLifecycle()
+    val editing by vm.editing.collectAsStateWithLifecycle()
     val scan by app.scan.collectAsStateWithLifecycle()
     val storageAccess by app.storageAccess.collectAsStateWithLifecycle()
     ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
@@ -149,7 +198,14 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
                 CategoryFoldersCard(
                     entry,
                     question = question?.takeIf { it.category == entry.category.key },
-                    onAdd = { vm.add(entry.category.key) },
+                    pending = pending?.takeIf { it.category == entry.category.key },
+                    editing = editing,
+                    onAdd = { vm.add(entry.category.key, it) },
+                    onPreviewAs = vm::previewAs,
+                    onConfirmAdd = { vm.confirmAdd() },
+                    onCancelAdd = vm::cancelAdd,
+                    onEditLayout = vm::editLayout,
+                    onChangeLayout = { root, layout -> vm.changeLayout(root, layout) },
                     onRemove = vm::remove,
                     onLink = { vm.askLink(entry, it) },
                     onAnswer = { vm.answer(it) },
@@ -159,11 +215,19 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CategoryFoldersCard(
     entry: CategoryFolders,
     question: LinkQuestion?,
-    onAdd: () -> Unit,
+    pending: PendingFolder?,
+    editing: RootKey?,
+    onAdd: (RootLayout) -> Unit,
+    onPreviewAs: (RootLayout) -> Unit,
+    onConfirmAdd: () -> Unit,
+    onCancelAdd: () -> Unit,
+    onEditLayout: (CategoryRoot?) -> Unit,
+    onChangeLayout: (CategoryRoot, RootLayout) -> Unit,
     onRemove: (CategoryRoot) -> Unit,
     onLink: (CategoryRoot) -> Unit,
     onAnswer: (RemoteRoot?) -> Unit,
@@ -176,19 +240,28 @@ private fun CategoryFoldersCard(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
             IconBadge(categoryIcon(entry.category))
             RText(categoryName(entry.category), style = Racha.type.heading, modifier = Modifier.weight(1f))
-            RButton(stringResource(Res.string.add_folder), onAdd, kind = ButtonKind.Secondary, icon = RachaIcons.FolderPlus)
         }
-        if (entry.roots.isEmpty()) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.s), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+            AddFolderButtons(onAdd, enabled = pending == null)
+        }
+        if (entry.roots.isEmpty() && pending == null) {
             RText(stringResource(Res.string.no_folders), style = Racha.type.body, color = Racha.colors.inkSubtle)
         }
         entry.roots.forEach { root ->
             Box(Modifier.fillMaxWidth().height(1.dp).background(Racha.colors.border))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
-                RText(displayPath(root.location), style = Racha.type.body, modifier = Modifier.weight(1f), maxLines = 2)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Racha.space.xxs)) {
+                    RText(displayPath(root.location), style = Racha.type.body, maxLines = 2)
+                    RText(layoutName(root.layout), style = Racha.type.caption, color = Racha.colors.inkMuted)
+                }
+                RIconButton(RachaIcons.Pencil, stringResource(Res.string.change_layout), { onEditLayout(root) }, tint = Racha.colors.inkMuted)
                 if (entry.linkable.isNotEmpty()) RIconButton(RachaIcons.Link, stringResource(Res.string.link_folder), { onLink(root) }, tint = Racha.colors.inkMuted)
                 RIconButton(RachaIcons.Trash2, stringResource(Res.string.remove_folder), { onRemove(root) }, tint = Racha.colors.inkMuted)
             }
+            if (editing == root.key) LayoutChooser(root.layout, { onChangeLayout(root, it) }, { onEditLayout(null) })
         }
+        // A new folder goes after the existing ones.
+        if (pending != null) FolderPreviewCard(pending, onPreviewAs, onConfirmAdd, onCancelAdd)
         if (question != null) LinkChooser(question, onAnswer)
     }
 }

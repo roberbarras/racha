@@ -389,4 +389,35 @@
     <string name="ai_key_hint">Kept in the system\'s keychain; never exported or synced.</string>
     <string name="ai_key_saved">A key is saved</string>
     <string name="ai_key_remove">Remove key</string>
+    <!-- What a folder holds (ADR-0013) -->
+    <string name="add_library">Add library</string>
+    <string name="add_single_item">Add course or series</string>
+    <string name="layout_library">Several courses or series</string>
+    <string name="layout_library_hint">Each subfolder is a course or a series, and the folders inside it are its sections.</string>
+    <string name="layout_single_item">One course or series</string>
+    <string name="layout_single_item_hint">The folder is the course or the series, and its subfolders are the sections, whatever their names.</string>
+    <string name="layout_auto">Detected from the names</string>
+    <string name="folder_preview_reading">Reading the folder…</string>
+    <plurals name="folder_preview_library">
+        <item quantity="one">%1$d course or series will be added</item>
+        <item quantity="other">%1$d courses or series will be added</item>
+    </plurals>
+    <string name="folder_preview_single_item">“%1$s” will be added</string>
+    <string name="folder_preview_more">and %1$d more</string>
+    <plurals name="folder_preview_sections">
+        <item quantity="one">%1$d section</item>
+        <item quantity="other">%1$d sections</item>
+    </plurals>
+    <plurals name="folder_preview_elements">
+        <item quantity="one">%1$d video or resource</item>
+        <item quantity="other">%1$d videos and resources</item>
+    </plurals>
+    <string name="folder_preview_empty">There are no videos or resources in this folder yet.</string>
+    <string name="folder_preview_guess_single_item">From the names of its subfolders (01 - …, seasons, dates), it looks like a single course or series.</string>
+    <string name="folder_preview_add">Add</string>
+    <string name="folder_preview_as_single_item">It is one course or series</string>
+    <string name="folder_preview_as_library">They are several courses or series</string>
+    <string name="change_layout">Change what it holds</string>
+    <string name="change_layout_title">What does this folder hold?</string>
+    <string name="change_layout_message">Progress, bookmarks and history are kept. What you saved for each course (My list, favourites, generated covers, edited names) stays with the previous courses and comes back if you undo the change.</string>
 </resources>

@@ -57,6 +57,8 @@ object DemoLibrary {
     private val utc = LocalDates { i -> CalendarDate.ofEpochDay(i.epochSeconds.floorDiv(86_400)) }
 
     lateinit var awsIamLesson: PlayableElement
+    /** The database behind the last [dependencies] (tests that check what was stored). */
+    lateinit var database: LocalDatabase
     lateinit var aws: LibraryItem
     lateinit var seriesEpisode: PlayableElement
 
@@ -65,11 +67,15 @@ object DemoLibrary {
         links: kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.emptyFlow(),
         /** A first run: built-in categories only, nothing indexed (onboarding shows). */
         empty: Boolean = false,
+        /** What the folder picker returns, and the files of that folder (adding folders). Nothing is read from disk. */
+        picked: String? = null,
+        pickedFiles: List<String> = emptyList(),
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
         RachaDatabase.Schema.create(driver)
         val db = LocalDatabase(driver, Dispatchers.IO)
+        database = db
         val clock = Clock { now }
         val preferences = Preferences(db.settings, clock)
         runBlocking { if (empty) EnsureBuiltInCategories(db.categories, clock)() else seed(db, clock) }
@@ -78,7 +84,13 @@ object DemoLibrary {
             override suspend fun list(location: String, descend: (RelativePath) -> Boolean) = emptyList<FileEntry>()
             override fun uri(location: String, path: RelativePath) = location
         }
-        val scan = ScanLibrary(db.categories, db.library, db.progress, emptySource, { _, _ -> null }, { _, _ -> "" }, preferences, clock, utc)
+        val pickedSource = object : LibrarySource {
+            override fun displayName(location: String) = location.trimEnd('/').substringAfterLast('/')
+            override suspend fun list(location: String, descend: (RelativePath) -> Boolean) =
+                if (location != picked) emptyList() else pickedFiles.map { FileEntry(RelativePath.of(it), isDirectory = false, size = 1_000, modifiedAt = now - 2.days) }
+            override fun uri(location: String, path: RelativePath) = "$location/${path.value}"
+        }
+        val scan = ScanLibrary(db.categories, db.library, db.progress, if (picked != null) pickedSource else emptySource, { _, _ -> null }, { _, _ -> "" }, preferences, clock, utc)
         val update = UpdateItemProgress(db.library, db.progress)
         val keep = KeepLibraryUpToDate(
             db.categories, scan, HashEngagedElements(db.categories, db.library) { _, _ -> "" },
@@ -102,7 +114,7 @@ object DemoLibrary {
             setMode = SetMode(preferences),
             keepLibraryUpToDate = keep,
             platform = object : PlatformHooks {
-                override suspend fun pickFolder(): String? = null
+                override suspend fun pickFolder(): String? = picked
                 override val deepLinks = links
             },
             resourceViewer = {

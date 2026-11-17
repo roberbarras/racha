@@ -389,4 +389,35 @@
     <string name="ai_key_hint">Se guarda en el llavero del sistema; nunca se exporta ni se sincroniza.</string>
     <string name="ai_key_saved">Hay una clave guardada</string>
     <string name="ai_key_remove">Quitar clave</string>
+    <!-- Qué contiene una carpeta (ADR-0013) -->
+    <string name="add_library">Añadir biblioteca</string>
+    <string name="add_single_item">Añadir curso o serie</string>
+    <string name="layout_library">Varios cursos o series</string>
+    <string name="layout_library_hint">Cada subcarpeta es un curso o una serie, y las carpetas que tenga dentro son sus secciones.</string>
+    <string name="layout_single_item">Un curso o serie</string>
+    <string name="layout_single_item_hint">La carpeta es el curso o la serie, y sus subcarpetas son las secciones, se llamen como se llamen.</string>
+    <string name="layout_auto">Detección automática por los nombres</string>
+    <string name="folder_preview_reading">Leyendo la carpeta…</string>
+    <plurals name="folder_preview_library">
+        <item quantity="one">Se añadirá %1$d curso o serie</item>
+        <item quantity="other">Se añadirán %1$d cursos o series</item>
+    </plurals>
+    <string name="folder_preview_single_item">Se añadirá «%1$s»</string>
+    <string name="folder_preview_more">y %1$d más</string>
+    <plurals name="folder_preview_sections">
+        <item quantity="one">%1$d sección</item>
+        <item quantity="other">%1$d secciones</item>
+    </plurals>
+    <plurals name="folder_preview_elements">
+        <item quantity="one">%1$d vídeo o recurso</item>
+        <item quantity="other">%1$d vídeos y recursos</item>
+    </plurals>
+    <string name="folder_preview_empty">Todavía no hay vídeos ni recursos en esta carpeta.</string>
+    <string name="folder_preview_guess_single_item">Por los nombres de sus subcarpetas (01 - …, temporadas, fechas), parece un solo curso o serie.</string>
+    <string name="folder_preview_add">Añadir</string>
+    <string name="folder_preview_as_single_item">Es un solo curso o serie</string>
+    <string name="folder_preview_as_library">Son varios cursos o series</string>
+    <string name="change_layout">Cambiar qué contiene</string>
+    <string name="change_layout_title">¿Qué contiene esta carpeta?</string>
+    <string name="change_layout_message">El progreso, los marcadores y el historial se conservan. Lo que guardaste de cada curso (Mi lista, favoritos, portadas generadas, nombres editados) se queda en los cursos de antes y vuelve si deshaces el cambio.</string>
 </resources>

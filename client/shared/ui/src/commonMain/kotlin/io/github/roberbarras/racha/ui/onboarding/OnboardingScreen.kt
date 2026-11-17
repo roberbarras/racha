@@ -54,9 +54,12 @@ import io.github.roberbarras.racha.ui.design.Racha
 import io.github.roberbarras.racha.ui.design.RachaIcons
 import io.github.roberbarras.racha.ui.design.RachaLogo
 import io.github.roberbarras.racha.ui.design.SegmentedToggle
+import io.github.roberbarras.racha.ui.folders.AddFolderButtons
+import io.github.roberbarras.racha.ui.folders.FolderPreviewCard
+import io.github.roberbarras.racha.ui.folders.PendingFolder
 import io.github.roberbarras.racha.ui.folders.displayPath
+import io.github.roberbarras.racha.ui.folders.layoutName
 import io.github.roberbarras.racha.ui.resources.Res
-import io.github.roberbarras.racha.ui.resources.add_folder
 import io.github.roberbarras.racha.ui.resources.language_en
 import io.github.roberbarras.racha.ui.resources.language_es
 import io.github.roberbarras.racha.ui.resources.language_system
@@ -203,31 +206,52 @@ private fun FoldersStep(deps: RachaDependencies) {
     val categories by remember { deps.categories.observeAll() }.collectAsStateWithLifecycle(emptyList())
     var roots by remember { mutableStateOf<Map<CategoryKey, List<CategoryRoot>>>(emptyMap()) }
     var adding by remember { mutableStateOf<CategoryKey?>(null) }
+    // A picked folder is shown as what it would become before adding it (ADR-0013).
+    var pending by remember { mutableStateOf<PendingFolder?>(null) }
     val scope = rememberCoroutineScope()
     categories.sortedBy { it.order }.forEach { category ->
         RCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(Racha.space.l), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.m), verticalArrangement = Arrangement.spacedBy(Racha.space.s), itemVerticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.m)) {
                     IconBadge(categoryIcon(category))
                     RText(categoryName(category), style = Racha.type.heading, modifier = Modifier.weight(1f))
-                    RButton(
-                        stringResource(if (adding == category.key) Res.string.onboarding_adding else Res.string.add_folder),
-                        {
+                    if (adding == category.key) RText(stringResource(Res.string.onboarding_adding), style = Racha.type.caption, color = Racha.colors.inkMuted)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.s), verticalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+                    AddFolderButtons(
+                        onAdd = { layout ->
                             scope.launch {
                                 val location = deps.platform.pickFolder() ?: return@launch
-                                adding = category.key
+                                pending = PendingFolder(category.key, location, layout)
+                                val preview = deps.manageRoots.preview(category.key, location)
+                                pending = pending?.takeIf { it.location == location }?.copy(preview = preview)
+                            }
+                        },
+                        enabled = adding == null && pending == null,
+                    )
+                }
+                pending?.takeIf { it.category == category.key }?.let { folder ->
+                    FolderPreviewCard(
+                        folder,
+                        onLayout = { pending = folder.copy(layout = it) },
+                        onConfirm = {
+                            pending = null
+                            adding = category.key
+                            scope.launch {
                                 try {
-                                    deps.manageRoots.add(category.key, location)
+                                    deps.manageRoots.add(category.key, folder.location, folder.layout)
                                     roots = roots + (category.key to deps.manageRoots.roots(category.key))
                                 } finally {
                                     adding = null
                                 }
                             }
                         },
-                        kind = ButtonKind.Secondary, icon = RachaIcons.FolderPlus, enabled = adding == null,
+                        onCancel = { pending = null },
                     )
                 }
-                roots[category.key].orEmpty().forEach { RText(displayPath(it.location), style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 2) }
+                roots[category.key].orEmpty().forEach {
+                    RText(displayPath(it.location) + " · " + layoutName(it.layout), style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 2)
+                }
             }
         }
     }
