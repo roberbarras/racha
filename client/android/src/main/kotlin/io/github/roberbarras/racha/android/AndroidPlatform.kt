@@ -67,12 +67,16 @@ class AndroidPlatform(
     private val creator = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         pendingCreate?.complete(uri)
     }
+    // Summaries (H17) are saved as Markdown.
+    private val markdownCreator = activity.registerForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
+        pendingCreate?.complete(uri)
+    }
     private var pendingOpen: CompletableDeferred<Uri?>? = null
     private val opener = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> pendingOpen?.complete(uri) }
 
     override suspend fun saveTextFile(suggestedName: String, text: String): Boolean {
         val deferred = CompletableDeferred<Uri?>().also { pendingCreate = it }
-        creator.launch(suggestedName)
+        (if (suggestedName.endsWith(".md")) markdownCreator else creator).launch(suggestedName)
         val uri = deferred.await() ?: return false
         return withContext(Dispatchers.IO) {
             runCatching { activity.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.encodeToByteArray()) } }.isSuccess

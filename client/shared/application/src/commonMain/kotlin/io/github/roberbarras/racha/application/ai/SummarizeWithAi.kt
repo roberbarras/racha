@@ -16,6 +16,7 @@ import io.github.roberbarras.racha.domain.ai.Transcript
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.library.PlayableElement
 import io.github.roberbarras.racha.domain.preferences.Settings
+import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.cancellation.CancellationException
 
 /** One provider that did not answer, and why (`quota`, `key`, `payment`, `model`, `too_long`, `server`, `unreachable`…). */
@@ -57,6 +58,14 @@ class SummarizeWithAi(
 
     /** Whether the lesson can be summarised here: a provider is set up and it has subtitles. */
     suspend fun canSummarize(element: ContentId): Boolean = configured() && library.subtitles(element).isNotEmpty()
+
+    /** The lessons of [item] that have subtitles: the ones whose "Resumen y claves" is enabled. */
+    suspend fun withSubtitles(item: ContentId): Set<ContentId> =
+        library.elements(item).filter { !it.archived && library.subtitles(it.id).isNotEmpty() }.map { it.id }.toSet()
+
+    fun observe(target: ContentId): Flow<Summary?> = summaries.observe(target)
+
+    suspend fun delete(target: ContentId) = summaries.delete(target)
 
     suspend fun lesson(element: ContentId, regenerate: Boolean = false): SummaryOutcome {
         if (!configured()) return SummaryOutcome.NotConfigured

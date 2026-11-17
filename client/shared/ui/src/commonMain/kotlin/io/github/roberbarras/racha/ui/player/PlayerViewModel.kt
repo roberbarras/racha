@@ -31,10 +31,10 @@ data class PlayerPreferences(
     val shortcuts: Shortcuts = Shortcuts.DEFAULT,
 )
 
-enum class PlayerPanel { None, Queue, Speed, Subtitles, Audio, Bookmarks, Settings }
+enum class PlayerPanel { None, Queue, Speed, Subtitles, Audio, Bookmarks, Settings, Summary }
 
 class PlayerViewModel(
-    private val deps: RachaDependencies,
+    internal val deps: RachaDependencies,
     private val hooks: PlayerHooks,
     element: ContentId,
     mode: StartMode,

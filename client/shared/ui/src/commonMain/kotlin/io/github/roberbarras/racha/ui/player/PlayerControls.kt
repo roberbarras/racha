@@ -48,6 +48,7 @@ import io.github.roberbarras.racha.ui.resources.seek_forward
 import io.github.roberbarras.racha.ui.resources.speed
 import io.github.roberbarras.racha.ui.resources.subtitles
 import org.jetbrains.compose.resources.stringResource
+import io.github.roberbarras.racha.ui.resources.summary_action
 
 /**
  * Top bar (back, title, panels and tools), centre transport (previous, −N, play/pause, +N, next) and bottom bar
@@ -153,6 +154,10 @@ private fun Tools(vm: PlayerViewModel, state: PlaybackState, panelOpen: Boolean,
     if (state.subtitles.isNotEmpty()) ControlButton(RachaIcons.Captions, stringResource(Res.string.subtitles), act { vm.togglePanel(PlayerPanel.Subtitles) }, active = state.engine.selectedSubtitle != null)
     if (state.engine.audioTracks.size > 1) ControlButton(RachaIcons.AudioLines, stringResource(Res.string.audio_track), act { vm.togglePanel(PlayerPanel.Audio) })
     ControlButton(RachaIcons.Bookmark, stringResource(Res.string.bookmarks), act { vm.togglePanel(PlayerPanel.Bookmarks) })
+    // Only lessons with subtitles can be summarised (H17).
+    if (vm.deps.summaries != null && state.subtitles.isNotEmpty()) {
+        ControlButton(RachaIcons.Sparkles, stringResource(Res.string.summary_action), act { vm.togglePanel(PlayerPanel.Summary) })
+    }
     ControlButton(RachaIcons.Repeat, stringResource(Res.string.ab_loop), act {
         when {
             state.loopA == null -> vm.controller.markLoopA()

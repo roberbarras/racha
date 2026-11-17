@@ -35,6 +35,8 @@ import io.github.roberbarras.racha.domain.preferences.ThemeMode
 import io.github.roberbarras.racha.ui.common.parseColor
 import io.github.roberbarras.racha.ui.design.RachaTheme
 import io.github.roberbarras.racha.ui.detail.DetailScreen
+import io.github.roberbarras.racha.ui.summary.SummaryScreen
+import io.github.roberbarras.racha.ui.summary.SummarySubject
 import io.github.roberbarras.racha.ui.folders.FoldersScreen
 import io.github.roberbarras.racha.ui.account.AccountScreen
 import io.github.roberbarras.racha.ui.stats.StatsScreen
@@ -151,7 +153,19 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
                 NavHost(navController, startDestination = HomeRoute) {
                     composable<HomeRoute> { HomeScreen(app, deps, openItem, play, onAddFolder = { go(Destination.Folders) }, onOpenAccount = { go(Destination.Account) }) }
                     composable<CategoryRoute> { CategoryScreen(deps, it.toRoute<CategoryRoute>().key, onBack = navController::navigateUp, onOpenItem = openItem) }
-                    composable<ItemRoute> { DetailScreen(deps, ContentId(it.toRoute<ItemRoute>().id), onBack = navController::navigateUp, onPlay = play) }
+                    composable<ItemRoute> {
+                        DetailScreen(
+                            deps, ContentId(it.toRoute<ItemRoute>().id), onBack = navController::navigateUp, onPlay = play,
+                            onSummary = { subject -> navController.navigate(SummaryRoute(subject.target.value, subject.item.value, subject.section, subject.title)) },
+                        )
+                    }
+                    composable<SummaryRoute> {
+                        val route = it.toRoute<SummaryRoute>()
+                        SummaryScreen(
+                            deps, SummarySubject(ContentId(route.targetId), ContentId(route.itemId), route.section, route.title),
+                            onBack = navController::navigateUp, onSettings = { go(Destination.Settings) },
+                        )
+                    }
                     composable<MyListRoute> { MyListScreen(deps, openItem) }
                     composable<HistoryRoute> { HistoryScreen(deps, openItem) }
                     composable<SearchRoute> { SearchScreen(deps, openItem) }

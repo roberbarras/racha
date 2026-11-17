@@ -100,6 +100,12 @@ import io.github.roberbarras.racha.ui.resources.loose_files
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import io.github.roberbarras.racha.ui.summary.SummarySubject
+import io.github.roberbarras.racha.ui.resources.summary_action
+import io.github.roberbarras.racha.ui.resources.summary_no_subtitles_short
+import io.github.roberbarras.racha.ui.resources.summary_section_action
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
@@ -117,8 +123,16 @@ class DetailViewModel(private val deps: RachaDependencies, private val id: Conte
     val cover = MutableStateFlow<CoverResult?>(null)
     val generating = MutableStateFlow(false)
 
+    /** Lessons with subtitles: their "Resumen y claves" is enabled (H17). Refreshed when the course changes (scans). */
+    val withSubtitles = MutableStateFlow<Set<ContentId>>(emptySet())
+    val summariesOffered = deps.summaries != null
+
     init {
         viewModelScope.launch { coverAvailable.value = deps.generateCover?.available() == true }
+        val ai = deps.summaries
+        if (ai != null) viewModelScope.launch {
+            state.map { view -> view?.sections?.sumOf { it.elements.size } }.distinctUntilChanged().collect { withSubtitles.value = ai.withSubtitles(id) }
+        }
     }
 
     fun generateCover() = viewModelScope.launch {
@@ -130,7 +144,9 @@ class DetailViewModel(private val deps: RachaDependencies, private val id: Conte
 
 /** Course/series/channel detail (spec §2.2): sections, per-element progress, manual marks, my list. */
 @Composable
-fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onPlay: (ContentId, StartMode) -> Unit) {
+fun DetailScreen(
+    deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onSummary: (SummarySubject) -> Unit = {}, onPlay: (ContentId, StartMode) -> Unit,
+) {
     val vm = viewModel(key = id.value) { DetailViewModel(deps, id) }
     val detail by vm.state.collectAsStateWithLifecycle()
     val view = detail
@@ -141,7 +157,7 @@ fun DetailScreen(deps: RachaDependencies, id: ContentId, onBack: () -> Unit, onP
         } else {
             item { Hero(view, vm, onPlay) }
             view.sections.forEach { section ->
-                item(key = section.section.id.value) { SectionBlock(section, vm, compact, onPlay) }
+                item(key = section.section.id.value) { SectionBlock(section, vm, compact, onPlay, onSummary) }
             }
         }
     }
@@ -212,7 +228,7 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
 }
 
 @Composable
-private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boolean, onPlay: (ContentId, StartMode) -> Unit) {
+private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boolean, onPlay: (ContentId, StartMode) -> Unit, onSummary: (SummarySubject) -> Unit) {
     val title = when {
         section.section.titleOverride != null -> section.section.displayTitle
         section.section.kind == SectionKind.SEASON && section.section.title.isEmpty() -> stringResource(Res.string.season_n, section.section.order)
@@ -224,7 +240,15 @@ private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boo
         val allWatched = section.elements.isNotEmpty() && section.elements.all { it.watched }
         val label = stringResource(if (allWatched) Res.string.mark_section_unwatched else Res.string.mark_section_watched)
         val icon = if (allWatched) RachaIcons.CircleDashed else RachaIcons.CircleCheck
+        val withSubtitles by vm.withSubtitles.collectAsStateWithLifecycle()
+        val summarisable = section.elements.any { it.element.id in withSubtitles }
+        val subject = SummarySubject(section.section.id, section.section.libraryItemId, section = true, title = title)
         SectionHeader(title) {
+            if (vm.summariesOffered && summarisable) {
+                val summaryLabel = stringResource(Res.string.summary_section_action)
+                if (compact) RIconButton(RachaIcons.Sparkles, summaryLabel, { onSummary(subject) }, tint = Racha.colors.inkMuted)
+                else RButton(summaryLabel, onClick = { onSummary(subject) }, kind = ButtonKind.Ghost, icon = RachaIcons.Sparkles)
+            }
             if (compact) {
                 RIconButton(icon, label, { vm.markSection(section.section.id, !allWatched) }, tint = Racha.colors.inkMuted)
             } else {
@@ -235,14 +259,14 @@ private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boo
         Column(Modifier.clip(shape).background(Racha.colors.surface).border(1.dp, Racha.colors.border, shape)) {
             section.elements.forEachIndexed { index, element ->
                 if (index > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Racha.colors.border))
-                ElementRow(element, onPlay = { onPlay(element.element.id, StartMode.ASK) }, vm = vm)
+                ElementRow(element, onPlay = { onPlay(element.element.id, StartMode.ASK) }, vm = vm, onSummary = onSummary)
             }
         }
     }
 }
 
 @Composable
-private fun ElementRow(view: ElementView, onPlay: () -> Unit, vm: DetailViewModel) {
+private fun ElementRow(view: ElementView, onPlay: () -> Unit, vm: DetailViewModel, onSummary: (SummarySubject) -> Unit) {
     val element = view.element
     val colors = Racha.colors
     var menu by remember { mutableStateOf(false) }
@@ -280,6 +304,18 @@ private fun ElementRow(view: ElementView, onPlay: () -> Unit, vm: DetailViewMode
                             vm.markElement(element.id, !view.watched); menu = false
                         }
                         MenuItem(stringResource(Res.string.mark_up_to_here)) { vm.markUpTo(element.id); menu = false }
+                        if (vm.summariesOffered && element.kind == ElementKind.VIDEO) {
+                            // Without subtitles there is nothing to summarise from: shown, but disabled (H17).
+                            val withSubtitles by vm.withSubtitles.collectAsStateWithLifecycle()
+                            val enabled = element.id in withSubtitles
+                            MenuItem(
+                                stringResource(Res.string.summary_action), enabled = enabled,
+                                hint = if (enabled) null else stringResource(Res.string.summary_no_subtitles_short),
+                            ) {
+                                menu = false
+                                onSummary(SummarySubject(element.id, element.libraryItemId, section = false, title = element.displayTitle))
+                            }
+                        }
                     }
                 }
             }
@@ -288,12 +324,14 @@ private fun ElementRow(view: ElementView, onPlay: () -> Unit, vm: DetailViewMode
 }
 
 @Composable
-private fun MenuItem(text: String, onClick: () -> Unit) {
-    RText(
-        text,
-        Modifier.fillMaxWidth().interactive(onClick, RoundedCornerShape(Racha.radius.s)).padding(horizontal = Racha.space.m, vertical = Racha.space.s),
-        style = Racha.type.body,
-    )
+private fun MenuItem(text: String, enabled: Boolean = true, hint: String? = null, onClick: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().interactive(onClick, RoundedCornerShape(Racha.radius.s), enabled = enabled)
+            .padding(horizontal = Racha.space.m, vertical = Racha.space.s),
+    ) {
+        RText(text, style = Racha.type.body, color = if (enabled) Racha.colors.ink else Racha.colors.inkSubtle)
+        hint?.let { RText(it, style = Racha.type.caption, color = Racha.colors.inkSubtle) }
+    }
 }
 
 @Composable

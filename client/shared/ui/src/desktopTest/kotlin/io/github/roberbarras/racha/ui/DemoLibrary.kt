@@ -70,6 +70,10 @@ object DemoLibrary {
         /** What the folder picker returns, and the files of that folder (adding folders). Nothing is read from disk. */
         picked: String? = null,
         pickedFiles: List<String> = emptyList(),
+        /** AI summaries (H17) against this simulated provider: the IAM lesson gets English subtitles. */
+        chat: io.github.roberbarras.racha.application.ai.ChatClient? = null,
+        /** Files the user "saved" (name to text). */
+        saved: MutableList<Pair<String, String>> = mutableListOf(),
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
@@ -96,6 +100,26 @@ object DemoLibrary {
             db.categories, scan, HashEngagedElements(db.categories, db.library) { _, _ -> "" },
             RefreshThumbnails(db.categories, db.library, { _, _, _, _, _ -> null }, preferences), { kotlinx.coroutines.flow.emptyFlow() }, preferences,
         )
+        val summaryKeys = io.github.roberbarras.racha.application.ai.ProviderKeys { id ->
+            object : io.github.roberbarras.racha.application.shared.SecretStore {
+                override suspend fun read() = "test-key-$id"
+                override suspend fun write(value: String) {}
+                override suspend fun clear() {}
+            }
+        }
+        if (chat != null) runBlocking {
+            db.categories.upsertRoot(io.github.roberbarras.racha.domain.library.CategoryRoot(root, CategoryKey.COURSES, "file:///demo", 0))
+            val srt = awsIamLesson.relativePath.value.substringBeforeLast('.') + ".en.srt"
+            db.library.upsertSubtitle(io.github.roberbarras.racha.domain.library.Subtitle(
+                ContentId.forSubtitle(CategoryKey.COURSES, root, RelativePath.of(srt)), awsIamLesson.id,
+                io.github.roberbarras.racha.domain.library.LanguageCode("en"), RelativePath.of(srt), now,
+            ))
+        }
+        val subtitleFiles = object : io.github.roberbarras.racha.application.resource.ResourceFiles {
+            override suspend fun readText(location: String, path: RelativePath, maxBytes: Int) =
+                io.github.roberbarras.racha.application.resource.ResourceTextFile("1\n00:00:01,000 --> 00:00:04,000\nIAM users, groups and policies.\n", false)
+            override fun localPath(location: String, path: RelativePath): String? = null
+        }
         return RachaDependencies(
             clock = clock,
             localDates = utc,
@@ -116,6 +140,7 @@ object DemoLibrary {
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = picked
                 override val deepLinks = links
+                override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = saved.add(suggestedName to text)
             },
             resourceViewer = {
                 io.github.roberbarras.racha.application.resource.ResourceViewer(
@@ -148,6 +173,10 @@ object DemoLibrary {
             loadPersonalStats = io.github.roberbarras.racha.application.stats.LoadPersonalStats(
                 db.categories, db.library, db.progress, db.history, db.stats, utc, clock,
             ),
+            summaries = chat?.let {
+                io.github.roberbarras.racha.application.ai.SummarizeWithAi(db.library, db.categories, subtitleFiles, db.summaries, it, preferences, summaryKeys, clock) { "en" }
+            },
+            summaryProviders = chat?.let { io.github.roberbarras.racha.application.ai.SummaryProviders(preferences, summaryKeys) },
         )
     }
 

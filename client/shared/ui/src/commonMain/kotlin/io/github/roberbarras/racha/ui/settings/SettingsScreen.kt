@@ -163,6 +163,7 @@ fun SettingsScreen(deps: RachaDependencies, onFolders: () -> Unit, onAccount: ((
         item(key = "player") { PlayerSection(vm) }
         item(key = "progress") { ProgressSection(vm) }
         item(key = "scan") { ScanSection(vm) }
+        if (deps.summaryProviders != null) item(key = "summaries") { SummariesSection(deps) }
         item(key = "sync") { SyncSection(vm, onAccount) }
         item(key = "notifications") { NotificationsSection(vm) }
         item(key = "storage") { StorageSection(vm) }

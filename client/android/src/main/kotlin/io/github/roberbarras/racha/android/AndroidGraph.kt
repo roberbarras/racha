@@ -50,6 +50,10 @@ import io.github.roberbarras.racha.application.sync.SyncScheduler
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.remote.KtorSyncServer
 import io.github.roberbarras.racha.remote.KtorImageGenerator
+import io.github.roberbarras.racha.remote.KtorChatClient
+import io.github.roberbarras.racha.application.ai.ProviderKeys
+import io.github.roberbarras.racha.application.ai.SummarizeWithAi
+import io.github.roberbarras.racha.application.ai.SummaryProviders
 import io.github.roberbarras.racha.application.library.GenerateCover
 import io.github.roberbarras.racha.android.sync.KeystoreSecretStore
 import io.github.roberbarras.racha.files.DirectoryCoverFiles
@@ -119,6 +123,8 @@ class AndroidGraph(context: Context) {
     }
     private val syncServer = KtorSyncServer(options = httpOptions)
     private val aiApiKey = KeystoreSecretStore(context, "ai-key.bin")
+    /** One key per summary provider (H17), each in its own Keystore-encrypted file. */
+    private val summaryKeys = ProviderKeys { id -> KeystoreSecretStore(context, "ai-summary-$id.bin") }
     private val covers = DirectoryCoverFiles(File(context.filesDir, "covers").toPath())
     val account = AccountService(
         syncServer, KeystoreCredentialStore(context), database.sync, database.accounts, preferences,
@@ -213,6 +219,11 @@ class AndroidGraph(context: Context) {
         ),
         generateCover = GenerateCover(database.library, preferences, aiApiKey, KtorImageGenerator(options = httpOptions), covers),
         aiApiKey = aiApiKey,
+        summaries = SummarizeWithAi(
+            database.library, database.categories, NioResourceFiles(), database.summaries, KtorChatClient(options = httpOptions), preferences,
+            summaryKeys, clock,
+        ) { platform.player?.language() ?: "en" },
+        summaryProviders = SummaryProviders(preferences, summaryKeys),
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.util.TimeZone.getDefault().id },

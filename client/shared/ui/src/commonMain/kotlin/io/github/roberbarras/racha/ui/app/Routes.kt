@@ -44,3 +44,7 @@ data class PlayerRoute(val elementId: String, private val start: String = StartM
 /** Resource viewer (HTML/URL/TXT/PDF), H7. */
 @Serializable
 data class ResourceRoute(val elementId: String)
+
+/** "Resumen y claves" (H17) of a lesson, or of a section of [itemId]. */
+@Serializable
+data class SummaryRoute(val targetId: String, val itemId: String, val section: Boolean, val title: String)

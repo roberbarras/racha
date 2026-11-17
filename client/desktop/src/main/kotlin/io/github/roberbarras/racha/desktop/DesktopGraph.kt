@@ -51,6 +51,10 @@ import io.github.roberbarras.racha.desktop.sync.LibSecretCredentialStore
 import io.github.roberbarras.racha.desktop.sync.NetworkMonitor
 import io.github.roberbarras.racha.remote.KtorSyncServer
 import io.github.roberbarras.racha.remote.KtorImageGenerator
+import io.github.roberbarras.racha.remote.KtorChatClient
+import io.github.roberbarras.racha.application.ai.ProviderKeys
+import io.github.roberbarras.racha.application.ai.SummarizeWithAi
+import io.github.roberbarras.racha.application.ai.SummaryProviders
 import io.github.roberbarras.racha.application.library.GenerateCover
 import io.github.roberbarras.racha.desktop.sync.LibSecretStore
 import io.github.roberbarras.racha.files.DirectoryCoverFiles
@@ -130,6 +134,8 @@ class DesktopGraph(
     }
     private val syncServer = KtorSyncServer(options = httpOptions)
     private val aiApiKey = LibSecretStore(DesktopPaths.data.resolve("ai-key"), "racha-image-ai-key", "Racha image AI key")
+    /** One key per summary provider (H17), each its own keyring entry. */
+    private val summaryKeys = ProviderKeys { id -> LibSecretStore(DesktopPaths.data.resolve("ai-summary-$id"), "racha-summary-$id", "Racha AI key ($id)") }
     val account = AccountService(
         syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(), "linux", appVersion) }, clock,
@@ -204,6 +210,11 @@ class DesktopGraph(
         ),
         generateCover = GenerateCover(database.library, preferences, aiApiKey, KtorImageGenerator(options = httpOptions), DirectoryCoverFiles(DesktopPaths.data.resolve("covers"))),
         aiApiKey = aiApiKey,
+        summaries = SummarizeWithAi(
+            database.library, database.categories, NioResourceFiles(), database.summaries, KtorChatClient(options = httpOptions), preferences,
+            summaryKeys, clock,
+        ) { platform.player?.language() ?: "en" },
+        summaryProviders = SummaryProviders(preferences, summaryKeys),
         loadPersonalStats = LoadPersonalStats(
             database.categories, database.library, database.progress, database.history, database.stats, localDates, clock,
             RemoteStatsSource(syncServer, account, preferences) { java.time.ZoneId.systemDefault().id },

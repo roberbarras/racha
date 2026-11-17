@@ -61,6 +61,12 @@ import io.github.roberbarras.racha.ui.resources.subtitles_off
 import io.github.roberbarras.racha.ui.resources.track_default
 import io.github.roberbarras.racha.ui.resources.delete_bookmark
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import io.github.roberbarras.racha.ui.resources.summary_action
+import io.github.roberbarras.racha.ui.summary.SummaryContent
+import io.github.roberbarras.racha.ui.summary.SummarySubject
+import io.github.roberbarras.racha.ui.summary.summaryViewModel
 
 /** Right side panel (spec §4.2 "barra lateral derecha desplegable" and the player pickers). */
 @Composable
@@ -71,6 +77,7 @@ internal fun PlayerPanelHost(vm: PlayerViewModel, state: PlaybackState, panel: P
         PlayerPanel.Subtitles -> Res.string.subtitles
         PlayerPanel.Audio -> Res.string.audio_track
         PlayerPanel.Bookmarks -> Res.string.bookmarks
+        PlayerPanel.Summary -> Res.string.summary_action
         PlayerPanel.Settings, PlayerPanel.None -> Res.string.player_settings
     }
     Column(
@@ -95,9 +102,20 @@ internal fun PlayerPanelHost(vm: PlayerViewModel, state: PlaybackState, panel: P
             ) { vm.controller.selectAudio(it) }
             PlayerPanel.Bookmarks -> BookmarksPanel(vm, state)
             PlayerPanel.Settings -> SkipSettings(vm, state)
+            PlayerPanel.Summary -> SummaryPanel(vm, state)
             PlayerPanel.None -> Unit
         }
     }
+}
+
+/** "Resumen y claves" of the lesson playing (H17), next to the video. */
+@Composable
+private fun SummaryPanel(vm: PlayerViewModel, state: PlaybackState) {
+    val element = state.element ?: return
+    val subject = SummarySubject(element.id, element.libraryItemId, section = false, title = element.displayTitle)
+    SummaryContent(
+        summaryViewModel(vm.deps, subject), Modifier.verticalScroll(rememberScrollState()), onRail = true,
+    )
 }
 
 @Composable

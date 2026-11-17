@@ -30,7 +30,7 @@ class DesktopPlatform(
 
     override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = withContext(Dispatchers.IO) {
         val suggested = Path.of(System.getProperty("user.home"), suggestedName).toString()
-        val chosen = native("kdialog", "--getsavefilename", suggested, "*.json")
+        val chosen = native("kdialog", "--getsavefilename", suggested, "*." + suggestedName.substringAfterLast('.', "json"))
             ?: native("zenity", "--file-selection", "--save", "--confirm-overwrite", "--filename=$suggested")
             ?: swingFile(save = true, suggested)
             ?: return@withContext false

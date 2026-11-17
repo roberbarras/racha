@@ -71,6 +71,9 @@ class RachaDependencies(
     /** Optional AI covers (spec §3) and the key they use; null where not offered. */
     val generateCover: GenerateCover? = null,
     val aiApiKey: SecretStore? = null,
+    /** AI summaries of lessons and sections (H17) and their providers; null where not offered. */
+    val summaries: io.github.roberbarras.racha.application.ai.SummarizeWithAi? = null,
+    val summaryProviders: io.github.roberbarras.racha.application.ai.SummaryProviders? = null,
 )
 
 /** Platform capabilities the shared UI needs. */
