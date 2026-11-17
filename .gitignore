@@ -1,6 +1,9 @@
 # Gradle / build
 # Local release builds (CI publishes the real ones)
 /dist/
+# Server data and backups (docker compose)
+/data/
+/backups/
 .gradle/
 build/
 !**/src/**/build/

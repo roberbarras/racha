@@ -1,4 +1,8 @@
 # Racha backend: `docker compose up -d` and the API is served on http://localhost:${RACHA_PORT:-8080}.
+# Everything that matters lives in folders next to this file (create them first: `mkdir -p data backups`):
+#   data/postgres  the database (bind mount: `docker compose down -v` cannot delete it)
+#   backups/       daily dumps, the way to restore or move the server (tools/restore-backup.sh)
+# `:z` lets containers use these folders on hosts with SELinux (Fedora, openSUSE…); elsewhere it changes nothing.
 services:
   db:
     image: postgres:18-alpine
@@ -8,12 +12,33 @@ services:
       POSTGRES_USER: ${RACHA_DB_USER:-racha}
       POSTGRES_PASSWORD: ${RACHA_DB_PASSWORD:-racha}
     volumes:
-      - racha-db:/var/lib/postgresql
+      - ${RACHA_DATA_DIR:-./data}/postgres:/var/lib/postgresql:z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backup:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/usr/local/bin/racha-backup"]
+    environment:
+      PGHOST: db
+      PGDATABASE: ${RACHA_DB_NAME:-racha}
+      PGUSER: ${RACHA_DB_USER:-racha}
+      PGPASSWORD: ${RACHA_DB_PASSWORD:-racha}
+      TZ: ${RACHA_TZ:-Europe/Madrid}
+      # Daily at this time; keeps the newest N daily dumps plus one per week (Mondays) for M weeks.
+      RACHA_BACKUP_TIME: ${RACHA_BACKUP_TIME:-03:30}
+      RACHA_BACKUP_KEEP_DAILY: ${RACHA_BACKUP_KEEP_DAILY:-14}
+      RACHA_BACKUP_KEEP_WEEKLY: ${RACHA_BACKUP_KEEP_WEEKLY:-8}
+    volumes:
+      - ${RACHA_BACKUP_DIR:-./backups}:/backups:z
+      - ./server/backup/racha-backup.sh:/usr/local/bin/racha-backup:ro,z
 
   server:
     build: ./server
@@ -31,8 +56,16 @@ services:
       RACHA_JWT_SECRET: ${RACHA_JWT_SECRET:-}
       # open | closed: closed lets only existing users in (create yours first).
       RACHA_REGISTRATION: ${RACHA_REGISTRATION:-open}
+      # Who may tell the client's address: local (Cloudflare Tunnel, nginx, Caddy on this machine or LAN),
+      # cloudflare (Cloudflare's proxy pointing at this server; add `local` too if both), none, or CIDRs.
+      RACHA_TRUSTED_PROXIES: ${RACHA_TRUSTED_PROXIES:-local}
+      RACHA_BACKUP_DIR: /backups
+      TZ: ${RACHA_TZ:-Europe/Madrid}
+    volumes:
+      - ${RACHA_BACKUP_DIR:-./backups}:/backups:ro,z # listed in the admin screen
+      - racha-logs:/app/logs
     ports:
       - "${RACHA_PORT:-8080}:8080"
 
 volumes:
-  racha-db:
+  racha-logs:

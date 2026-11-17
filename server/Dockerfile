@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon bootJar -x tes
     && cp build/libs/*-SNAPSHOT.jar /workspace/app.jar
 
 FROM eclipse-temurin:25-jre-alpine
-RUN addgroup -S racha && adduser -S racha -G racha
+RUN addgroup -S racha && adduser -S racha -G racha && mkdir -p /app/logs && chown racha:racha /app/logs
 WORKDIR /app
 COPY --from=build /workspace/app.jar app.jar
 USER racha
