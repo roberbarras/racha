@@ -135,7 +135,12 @@ class RemoteStatsSource(
         val address = ServerAddress.from(preferences) ?: return null
         val token = account.accessToken() ?: return null
         return try {
-            server.personalStats(address, token, zone())
+            try {
+                server.personalStats(address, token, zone())
+            } catch (e: RemoteError.Unauthorized) {
+                // The server restarted with another access-token key: the session is still good, renew the token once.
+                server.personalStats(address, account.accessToken(forceRefresh = true) ?: return null, zone())
+            }
         } catch (e: RemoteError) {
             null
         }

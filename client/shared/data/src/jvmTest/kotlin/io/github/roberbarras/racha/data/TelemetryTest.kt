@@ -2,7 +2,11 @@ package io.github.roberbarras.racha.data
 
 import io.github.roberbarras.racha.application.preferences.Preferences
 import io.github.roberbarras.racha.application.shared.Clock
+import io.github.roberbarras.racha.application.stats.RemoteStats
+import io.github.roberbarras.racha.application.stats.RemoteStatsSource
+import io.github.roberbarras.racha.application.stats.StatsServer
 import io.github.roberbarras.racha.application.sync.AccountService
+import io.github.roberbarras.racha.application.sync.AccountState
 import io.github.roberbarras.racha.application.sync.AuthServer
 import io.github.roberbarras.racha.application.sync.CredentialStore
 import io.github.roberbarras.racha.application.sync.DeviceDescriptor
@@ -22,6 +26,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -148,6 +153,27 @@ class TelemetryTest {
                 throw RemoteError.Unauthorized()
             }
         }
+    }
+
+    /** Stats share the account with telemetry: after a server restart with another key they renew the token once. */
+    @Test
+    fun statsRenewTheAccessTokenWhenTheServerRestartedWithAnotherKey() = runBlocking {
+        signIn()
+        var calls = 0
+        val server = object : StatsServer {
+            override suspend fun personalStats(address: ServerAddress, accessToken: String, zone: String): RemoteStats {
+                calls++
+                if (calls == 1) throw RemoteError.Unauthorized() // the access token was signed with the old key
+                return RemoteStats(0, emptyMap(), emptyMap())
+            }
+        }
+        val stats = RemoteStatsSource(server, account, preferences) { "UTC" }
+        val refreshesBefore = auth.refreshes
+
+        assertNotNull(stats(), "the session is still valid: the figures come back")
+        assertEquals(2, calls)
+        assertEquals(refreshesBefore + 1, auth.refreshes)
+        assertTrue(account.state.value is AccountState.SignedIn)
     }
 
     private class FakeAuth : AuthServer {
