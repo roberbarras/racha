@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.roberbarras.racha.application.playback.PlaybackState
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.playback.StartMode
+import io.github.roberbarras.racha.domain.playback.Shortcuts
 import io.github.roberbarras.racha.domain.preferences.Settings
 import io.github.roberbarras.racha.domain.preferences.VideoScale
 import io.github.roberbarras.racha.ui.app.RachaDependencies
@@ -26,6 +27,8 @@ data class PlayerPreferences(
     val pinchZoom: Boolean = true,
     val longPressSpeed: Boolean = true,
     val longPressRate: Double = Settings.LongPressSpeed.default,
+    /** Keyboard shortcuts of this device (H15). */
+    val shortcuts: Shortcuts = Shortcuts.DEFAULT,
 )
 
 enum class PlayerPanel { None, Queue, Speed, Subtitles, Audio, Bookmarks, Settings }
@@ -64,6 +67,7 @@ class PlayerViewModel(
                 pinchZoom = p.get(Settings.GesturePinchZoom),
                 longPressSpeed = p.get(Settings.GestureLongPressSpeed),
                 longPressRate = p.get(Settings.LongPressSpeed),
+                shortcuts = Shortcuts.decode(p.get(Settings.PlayerShortcuts)),
             )
             scale.value = p.get(Settings.Zoom)
             if (p.get(Settings.ShowSidebar)) panel.value = PlayerPanel.Queue

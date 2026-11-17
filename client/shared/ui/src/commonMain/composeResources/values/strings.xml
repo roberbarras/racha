@@ -444,4 +444,33 @@
     <string name="password_invalid_code">The code is wrong or has expired.</string>
     <string name="password_mail_unavailable">This server cannot send e-mail. Ask its administrator.</string>
     <string name="password_reset_done">Password changed. You can sign in with the new one.</string>
+    <!-- Keyboard shortcuts (H15) -->
+    <string name="shortcut_PLAY_PAUSE">Play / pause</string>
+    <string name="shortcut_SEEK_BACK">Back</string>
+    <string name="shortcut_SEEK_FORWARD">Forward</string>
+    <string name="shortcut_VOLUME_UP">Volume up</string>
+    <string name="shortcut_VOLUME_DOWN">Volume down</string>
+    <string name="shortcut_MUTE">Mute</string>
+    <string name="shortcut_SPEED_DOWN">Slower</string>
+    <string name="shortcut_SPEED_UP">Faster</string>
+    <string name="shortcut_SUBTITLES">Switch subtitles</string>
+    <string name="shortcut_FULLSCREEN">Full screen</string>
+    <string name="shortcut_NEXT">Next</string>
+    <string name="shortcut_PREVIOUS">Previous</string>
+    <string name="shortcut_BOOKMARK">Add bookmark</string>
+    <string name="shortcut_HELP">Show shortcuts</string>
+    <string name="shortcut_escape">Back, or leave full screen</string>
+    <string name="shortcuts_title">Keyboard shortcuts</string>
+    <string name="shortcuts_hint">Press "Add" and then the combination you want. A key does one thing only: if another action had it, it is taken from it. Escape always goes back.</string>
+    <string name="shortcuts_edit">Set shortcuts</string>
+    <string name="shortcuts_add">Add</string>
+    <string name="shortcuts_press">Press the combination… (Escape to cancel)</string>
+    <string name="shortcuts_taken">Taken from "%1$s".</string>
+    <string name="shortcuts_none">No key</string>
+    <string name="shortcuts_reset">Reset</string>
+    <string name="shortcuts_reset_all">Reset all</string>
+    <string name="key_space">Space</string>
+    <string name="player_muted">Muted</string>
+    <string name="player_bookmark_added">Bookmark added</string>
+    <string name="player_subtitles">Subtitles: %1$s</string>
 </resources>

@@ -444,4 +444,33 @@
     <string name="password_invalid_code">El código no es correcto o ha caducado.</string>
     <string name="password_mail_unavailable">Este servidor no puede enviar correos. Habla con quien lo administra.</string>
     <string name="password_reset_done">Contraseña cambiada. Ya puedes entrar con la nueva.</string>
+    <!-- Atajos de teclado (H15) -->
+    <string name="shortcut_PLAY_PAUSE">Reproducir / pausar</string>
+    <string name="shortcut_SEEK_BACK">Retroceder</string>
+    <string name="shortcut_SEEK_FORWARD">Avanzar</string>
+    <string name="shortcut_VOLUME_UP">Subir volumen</string>
+    <string name="shortcut_VOLUME_DOWN">Bajar volumen</string>
+    <string name="shortcut_MUTE">Silenciar</string>
+    <string name="shortcut_SPEED_DOWN">Más lento</string>
+    <string name="shortcut_SPEED_UP">Más rápido</string>
+    <string name="shortcut_SUBTITLES">Cambiar subtítulos</string>
+    <string name="shortcut_FULLSCREEN">Pantalla completa</string>
+    <string name="shortcut_NEXT">Siguiente</string>
+    <string name="shortcut_PREVIOUS">Anterior</string>
+    <string name="shortcut_BOOKMARK">Añadir marcador</string>
+    <string name="shortcut_HELP">Ver los atajos</string>
+    <string name="shortcut_escape">Volver o salir de pantalla completa</string>
+    <string name="shortcuts_title">Atajos de teclado</string>
+    <string name="shortcuts_hint">Pulsa «Añadir» y después la combinación que quieras. Una tecla solo puede hacer una cosa: si ya la usaba otra acción, se le quita. Esc siempre vuelve atrás.</string>
+    <string name="shortcuts_edit">Configurar atajos</string>
+    <string name="shortcuts_add">Añadir</string>
+    <string name="shortcuts_press">Pulsa la combinación… (Esc para cancelar)</string>
+    <string name="shortcuts_taken">Se ha quitado de «%1$s».</string>
+    <string name="shortcuts_none">Sin tecla</string>
+    <string name="shortcuts_reset">Restaurar</string>
+    <string name="shortcuts_reset_all">Restaurar todos</string>
+    <string name="key_space">Espacio</string>
+    <string name="player_muted">Silencio</string>
+    <string name="player_bookmark_added">Marcador añadido</string>
+    <string name="player_subtitles">Subtítulos: %1$s</string>
 </resources>

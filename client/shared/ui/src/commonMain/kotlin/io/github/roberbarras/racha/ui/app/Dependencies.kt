@@ -97,6 +97,9 @@ interface PlatformHooks {
     /** Whether the player offers a hardware-decoding switch (Linux; Android always decodes in hardware). */
     val hardwareDecodingSwitch: Boolean get() = false
 
+    /** Whether Settings offers configurable keyboard shortcuts for the player (Linux, H15). */
+    val keyboardShortcuts: Boolean get() = false
+
     /** Lets the user save [text] as a file; false if cancelled or it could not be written. */
     suspend fun saveTextFile(suggestedName: String, text: String): Boolean = false
 

@@ -1,5 +1,10 @@
 package io.github.roberbarras.racha.ui.player
 
+import io.github.roberbarras.racha.ui.resources.subtitles_off
+import io.github.roberbarras.racha.ui.resources.player_subtitles
+import io.github.roberbarras.racha.ui.resources.player_muted
+import io.github.roberbarras.racha.ui.resources.player_bookmark_added
+import io.github.roberbarras.racha.domain.playback.PlayerAction
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.animation.AnimatedVisibility
@@ -135,6 +140,53 @@ fun PlayerScreen(
     var brightness by remember { mutableFloatStateOf(hooks.brightness()) }
     var volume by remember { mutableFloatStateOf(hooks.volume()) }
     var position by remember { mutableLongStateOf(0L) }
+    var mutedFrom by remember { mutableStateOf<Float?>(null) }
+    var help by remember { mutableStateOf(false) }
+    val mutedText = stringResource(Res.string.player_muted)
+    val bookmarkText = stringResource(Res.string.player_bookmark_added)
+    val subtitlesOffText = stringResource(Res.string.subtitles_off)
+    val subtitlesTemplate = stringResource(Res.string.player_subtitles, "%s")
+    fun setVolume(value: Float) {
+        volume = value.coerceIn(0f, 1f)
+        hooks.setVolume(volume)
+        feedback = if (volume == 0f) mutedText else "${(volume * 100).toInt()} %"
+    }
+
+    /** What a configured shortcut does (H15); Escape is handled apart and is not configurable. */
+    fun perform(action: PlayerAction) {
+        when (action) {
+            PlayerAction.PLAY_PAUSE -> vm.controller.togglePlay()
+            PlayerAction.SEEK_BACK -> vm.controller.seekBy(-prefs.seekStep)
+            PlayerAction.SEEK_FORWARD -> vm.controller.seekBy(prefs.seekStep)
+            PlayerAction.VOLUME_UP -> { mutedFrom = null; setVolume(volume + 0.05f) }
+            PlayerAction.VOLUME_DOWN -> { mutedFrom = null; setVolume(volume - 0.05f) }
+            PlayerAction.MUTE -> {
+                val restore = mutedFrom
+                if (restore != null) { mutedFrom = null; setVolume(restore) } else { mutedFrom = volume.takeIf { it > 0f } ?: 0.5f; setVolume(0f) }
+            }
+            PlayerAction.SPEED_DOWN, PlayerAction.SPEED_UP -> {
+                val steps = state.speedSteps
+                val current = steps.indexOfFirst { it >= state.speed - 0.001 }.coerceAtLeast(0)
+                val target = steps.getOrNull(current + if (action == PlayerAction.SPEED_UP) 1 else -1) ?: return
+                vm.controller.setSpeed(target)
+                feedback = "${target}×"
+            }
+            PlayerAction.SUBTITLES -> {
+                // Off → each language in turn → off.
+                val subs = state.subtitles
+                if (subs.isEmpty()) return
+                val index = subs.indexOfFirst { it.id.value == state.engine.selectedSubtitle }
+                val next = subs.getOrNull(index + 1)
+                vm.controller.selectSubtitle(next)
+                feedback = subtitlesTemplate.replace("%s", next?.language?.value ?: subtitlesOffText)
+            }
+            PlayerAction.FULLSCREEN -> vm.setFullscreen(!fullscreen)
+            PlayerAction.NEXT -> vm.next()
+            PlayerAction.PREVIOUS -> vm.previous()
+            PlayerAction.BOOKMARK -> { vm.addBookmark(""); feedback = bookmarkText }
+            PlayerAction.HELP -> help = !help
+        }
+    }
     fun touch() {
         controlsVisible = true
         lastInteraction++
@@ -178,25 +230,17 @@ fun PlayerScreen(
                 .onKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                     touch()
-                    when (event.key) {
-                        Key.Spacebar, Key.K -> vm.controller.togglePlay()
-                        Key.DirectionLeft, Key.J -> vm.controller.seekBy(-prefs.seekStep)
-                        Key.DirectionRight, Key.L -> vm.controller.seekBy(prefs.seekStep)
-                        Key.DirectionUp, Key.DirectionDown -> {
-                            volume = (volume + if (event.key == Key.DirectionUp) 0.05f else -0.05f).coerceIn(0f, 1f)
-                            hooks.setVolume(volume)
-                            feedback = "${(volume * 100).toInt()} %"
-                        }
-                        Key.F -> vm.setFullscreen(!fullscreen)
-                        Key.N -> vm.next()
-                        Key.P -> vm.previous()
-                        Key.Escape -> when {
+                    if (event.key == Key.Escape) {
+                        when {
+                            help -> help = false
                             inPip -> hooks.exitPictureInPicture()
                             fullscreen -> vm.setFullscreen(false)
                             else -> onBack()
                         }
-                        else -> return@onKeyEvent false
+                        return@onKeyEvent true
                     }
+                    val action = Keys.combo(event)?.let(prefs.shortcuts::actionFor) ?: return@onKeyEvent false
+                    perform(action)
                     true
                 },
         ) {
@@ -286,6 +330,7 @@ fun PlayerScreen(
             if (state.unavailable) Unavailable(onBack, Modifier.align(Alignment.Center))
             val belowTopBar = Modifier.statusBarsPadding().padding(top = topBarHeight(container.maxWidth) + 8.dp)
             notice?.let { Notice(it, Modifier.align(Alignment.TopCenter).then(belowTopBar)) }
+            if (help) ShortcutsHelp(prefs.shortcuts, { help = false }, Modifier.align(Alignment.Center).padding(Racha.space.l))
             if (state.loopA != null) LoopBadge(state, Modifier.align(Alignment.TopStart).then(belowTopBar).padding(start = 16.dp))
         }
     }

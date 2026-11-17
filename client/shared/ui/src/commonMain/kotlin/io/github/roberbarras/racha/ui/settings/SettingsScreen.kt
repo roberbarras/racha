@@ -1,5 +1,11 @@
 package io.github.roberbarras.racha.ui.settings
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import io.github.roberbarras.racha.ui.resources.shortcuts_title
+import io.github.roberbarras.racha.ui.resources.shortcuts_edit
+import io.github.roberbarras.racha.ui.player.ShortcutsEditor
+import io.github.roberbarras.racha.domain.playback.Shortcuts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
@@ -260,6 +266,17 @@ private fun PlayerSection(vm: SettingsViewModel) = SettingsSection(stringResourc
     if (vm.deps.platform.hardwareDecodingSwitch) {
         val hw by vm.state(Settings.HardwareDecoding)
         SwitchRow(stringResource(Res.string.setting_player_hardwareDecoding), hw, { vm.set(Settings.HardwareDecoding, it) }, stringResource(Res.string.hardware_decoding_hint))
+    }
+    if (vm.deps.platform.keyboardShortcuts) {
+        Hairline()
+        RText(stringResource(Res.string.shortcuts_title).uppercase(), style = Racha.type.overline, color = Racha.colors.inkMuted)
+        val raw by vm.state(Settings.PlayerShortcuts)
+        var editing by remember { mutableStateOf(false) }
+        if (editing) {
+            ShortcutsEditor(Shortcuts.decode(raw)) { vm.set(Settings.PlayerShortcuts, it.encode()) }
+        } else {
+            RButton(stringResource(Res.string.shortcuts_edit), { editing = true }, kind = ButtonKind.Secondary)
+        }
     }
     Hairline()
     RText(stringResource(Res.string.gestures_title).uppercase(), style = Racha.type.overline, color = Racha.colors.inkMuted)

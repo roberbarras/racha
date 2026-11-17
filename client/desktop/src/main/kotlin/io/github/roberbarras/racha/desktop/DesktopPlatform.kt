@@ -26,6 +26,7 @@ class DesktopPlatform(
     override val detectedUiScale: Float get() = DesktopUiScale.detected
 
     override val hardwareDecodingSwitch: Boolean get() = player != null
+    override val keyboardShortcuts: Boolean get() = true
 
     override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = withContext(Dispatchers.IO) {
         val suggested = Path.of(System.getProperty("user.home"), suggestedName).toString()
