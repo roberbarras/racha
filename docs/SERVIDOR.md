@@ -37,6 +37,7 @@ El `.env` va junto a `docker-compose.yml`, una línea `VARIABLE=valor` por ajust
 - **Mover el servidor**: copia a la máquina nueva el repositorio (o `docker-compose.yml`, `server/` y `tools/`), tu `.env` y la copia más reciente; `mkdir -p data backups && docker compose up -d` y `tools/restore-backup.sh <copia>`. Los dispositivos siguen con su sesión si la dirección pública no cambia.
 - **Si ya lo tenías arrancado con la versión anterior** (volumen `racha_racha-db`), antes de actualizar: `docker compose exec db pg_dump -U racha -Fc racha > antes.dump`; después de actualizar, `tools/restore-backup.sh antes.dump`. El volumen antiguo no se borra solo (`docker volume rm racha_racha-db` cuando todo funcione).
 - Las carpetas llevan `:z` para hosts con SELinux (Fedora, openSUSE); en el resto no cambia nada.
+- **Llevar solo tu cuenta a otro servidor** (sin el resto de usuarios): en el panel web del antiguo, Cuenta → «Descargar mis datos»; en el nuevo, crea tu cuenta, entra en su panel e «Importar datos» ([ADR-0015](adr/0015-copia-de-seguridad-y-portabilidad.md)). Se puede repetir sin duplicar nada.
 
 ## Detrás de un proxy (Cloudflare, nginx, Caddy)
 
@@ -80,7 +81,7 @@ Descripción completa (OpenAPI 3): `GET /v3/api-docs`, navegable en `/docs`. Err
 
 | Grupo | Endpoints |
 |---|---|
-| Cuenta | `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/reset`; `GET /account/me`, `POST /account/password` |
+| Cuenta | `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/reset`; `GET /account/me`, `POST /account/password`; `GET /account/export`, `POST /account/import` (`racha-backup`) |
 | Administración | `GET /admin/overview`, `/admin/users`, `/admin/backups`, `/admin/logs?level=&lines=`; `POST /admin/users/{id}/role`, `/admin/users/{id}/disabled`, `/admin/mail/test` |
 | Dispositivos | `POST /devices/register`, `GET /devices` |
 | Sync | `POST /sync/push`, `GET /sync/pull?since=<cursor>&limit=` |

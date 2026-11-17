@@ -104,6 +104,7 @@ DDD **táctico donde hay reglas de negocio reales**; CRUD ligero donde no las ha
 | Qué contiene una carpeta | El usuario elige biblioteca o un solo curso/serie al añadirla, con vista previa; cambiable sin perder progreso | [ADR-0013](adr/0013-que-contiene-una-carpeta.md) |
 | Operación del servidor | Datos y copias en carpetas, IP real tras proxies, administrador, recuperación de contraseña por correo, logs y métricas | [ADR-0014](adr/0014-operacion-del-servidor.md) |
 | Panel web | Servido por el propio servidor, sin bibliotecas externas; refresh en cookie HttpOnly, CSP estricta | [PANEL-WEB.md](PANEL-WEB.md) |
+| Copias y portabilidad | Un formato (`racha-backup`) para la copia completa de las apps y para llevar una cuenta a otro servidor | [ADR-0015](adr/0015-copia-de-seguridad-y-portabilidad.md) |
 
 ## 6. Flujo de trabajo
 

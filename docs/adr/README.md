@@ -18,3 +18,4 @@ Formato: Estado · Contexto · Decisión · Alternativas descartadas · Consecue
 | [0012](0012-protocolo-sync-y-modelo-remoto.md) | Modelo remoto por entidad, LWW atómico en SQL, pull con cursor de secuencia | Aceptada |
 | [0013](0013-que-contiene-una-carpeta.md) | Cada carpeta es una biblioteca o un solo curso/serie, a elección del usuario | Aceptada |
 | [0014](0014-operacion-del-servidor.md) | Datos en carpetas, copias con rotación, IP real tras proxies, bloqueos por cuenta+IP, administrador, recuperación por correo, logs y métricas | Aceptada |
+| [0015](0015-copia-de-seguridad-y-portabilidad.md) | Formato `racha-backup`: copia completa en las apps y datos de una cuenta de un servidor a otro | Aceptada |

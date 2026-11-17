@@ -15,7 +15,7 @@ Pantalla **Ajustes** (en el móvil, desde Progreso). Todo se aplica al momento, 
 | Escaneo | Al abrir, vigilar carpetas, miniaturas, detección de cambios (fecha y tamaño / contenido), **portadas con IA** |
 | Sincronización | Estado y acceso a Cuenta ([SYNC.md](SYNC.md)) |
 | Notificaciones | Novedades, sincronización fallida, recordatorio diario y su hora; si el sistema no las permite, lo dice y ofrece permitirlas |
-| Almacenamiento | Borrar la caché de miniaturas, borrar la caché de metadatos (se releen duraciones y códecs), borrar el historial **de este dispositivo**, exportar e importar la configuración |
+| Almacenamiento | Borrar la caché de miniaturas, borrar la caché de metadatos (se releen duraciones y códecs), borrar el historial **de este dispositivo**, exportar e importar la configuración y la **copia de seguridad completa** (exportar y restaurar: progreso, marcadores, historial, favoritos, ajustes, carpetas y estadísticas; [ADR-0015](adr/0015-copia-de-seguridad-y-portabilidad.md)) |
 | Avanzado | Nivel de log, endpoint de telemetría, proxy (`http://` o `socks5://host:puerto`) y User-Agent: se aplican a todas las peticiones al servidor y a la IA de portadas |
 | Acerca de | Versión, licencia MIT, código fuente |
 

@@ -23,7 +23,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
-| H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
+| H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | 🔄 En curso |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
 | H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
@@ -55,6 +55,29 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H16 · Estadísticas, copias y datos portables — 🔄 en curso
+
+Decisión: [ADR-0015](docs/adr/0015-copia-de-seguridad-y-portabilidad.md). Documentos: [ESTADISTICAS.md](docs/ESTADISTICAS.md#en-las-apps-h16), [AJUSTES.md](docs/AJUSTES.md), [PANEL-WEB.md](docs/PANEL-WEB.md). Evidencias: [docs/evidence/h16](docs/evidence/h16).
+
+**Hecho**
+- **Panel de estadísticas completo en las apps**: indicadores, mapa del año, 12 semanas, hora del día, día de la semana, sesiones (duración, velocidad, subtítulos), categorías, dispositivos (con cuenta), cursos con progreso y tiempo, visto recientemente y completados. Funciona sin servidor; con cuenta suma todos los dispositivos.
+- **Copia de seguridad completa en las apps** (Ajustes → Almacenamiento): exportar y restaurar progreso, marcadores, historial, favoritos, ajustes, carpetas, categorías y estadísticas; sin secretos.
+- **Tus datos de un servidor a otro** (petición del usuario): el panel web descarga todo lo de la cuenta en un fichero y lo importa en otra cuenta u otro servidor; repetirlo no duplica nada. El mismo formato que la copia de las apps (se entienden entre sí).
+- **Corrección**: los retoques de títulos y orden se perdían en un dispositivo nuevo (el escaneo era "más reciente"); ahora llegan.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Reproductor: totales por hora, día, curso y sesiones al terminar de ver | ✅ |
+| Estadísticas: solo este dispositivo; combinadas con el servidor (la mayor, dispositivos del servidor) | ✅ |
+| UI escritorio: pantalla de Progreso completa (captura) | ✅ |
+| Copia completa: dispositivo A → B (carpeta, curso retocado, progreso, historial, ajustes, memoria, estadísticas), dos veces sin duplicar; fichero del servidor; ficheros ajenos rechazados | ✅ |
+| Servidor: exportar, "otro servidor" (cuenta borrada, otra nueva) e importar con estadísticas; repetir; formatos ajenos; fichero de una app | ✅ |
+| Sync: un retoque antiguo llega a un curso escaneado después, sin pisar uno propio más reciente | ✅ |
+| CI | CI_LINK |
 
 ---
 

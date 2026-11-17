@@ -107,4 +107,18 @@ class PortabilityApiTest {
         assertThat(newer.body().get("detail").asString()).contains("newer");
         assertThat(api.post("/account/import", Map.of("format", "racha-backup", "schemaVersion", 1), null).status()).isEqualTo(401);
     }
+    @Test
+    void anAppsOwnBackupImportsIgnoringItsDevicePart() {
+        var s = api.register("x");
+        // As the apps write it (FullBackup): source "device", no events, plus folders and device settings.
+        var file = Map.of(
+                "format", "racha-backup", "schemaVersion", 1, "createdAt", "2026-11-17T20:00:00Z",
+                "source", Map.of("kind", "device", "app", "Racha 1.1.0 (Linux)"),
+                "records", List.of(Api.change("progress", "e9", "2026-11-17T19:00:00Z", Map.of("positionSec", 30, "completed", false))),
+                "device", Map.of("roots", List.of(Map.of("key", UUID.randomUUID().toString(), "categoryKey", "courses", "location", "file:///x")),
+                        "settings", Map.of("player.hardwareDecoding", "true"), "localStats", List.of(List.of("watchSeconds", "2026-11-17", 60.0))));
+        var r = api.post("/account/import", file, s.access());
+        assertThat(r.status()).isEqualTo(200);
+        assertThat(r.body().get("applied").asInt()).isEqualTo(1);
+    }
 }

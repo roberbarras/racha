@@ -56,3 +56,15 @@ Tiempo total y de los últimos 7 días, racha actual y mejor racha, días activo
 - Cliente (JVM, SQLite real): `PlaybackControllerTest` (sesión de visionado con sus campos y uso de funciones), `TelemetryTest` (nada sin cuenta, lotes, backoff, lote rechazado, token renovado, endpoint propio, cola acotada y vaciada al salir), `PersonalStatsTest` (local, rachas y fusión con el servidor).
 - UI de escritorio: `StatsUiTest` y capturas de Progreso (escritorio y móvil oscuro).
 - `EndToEndSyncTest` contra el servidor real: eventos, error y fallo de sync de un cliente llegan al servidor y el tiempo visto en el portátil aparece en las estadísticas del móvil.
+
+## En las apps (H16)
+
+La pantalla Progreso suma, además de lo anterior:
+- las últimas 12 semanas;
+- el tiempo por hora del día y por día de la semana;
+- las sesiones: cuántas, su duración media, la velocidad media ponderada por tiempo y el % con subtítulos;
+- el tiempo por dispositivo (con cuenta);
+- los cursos y series con su progreso y tiempo;
+- lo visto recientemente.
+
+Sin cuenta salen de totales que el reproductor guarda en este dispositivo (`local_stat`, periodo `all`): por hora, día de la semana, curso y sesiones. Con cuenta se combinan con `/stats/me/details`, que suma todos los dispositivos: en cada caso se toma la cifra mayor, y los dispositivos solo los conoce el servidor. Un servidor anterior a H14 sigue dando los totales.
