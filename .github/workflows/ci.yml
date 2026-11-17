@@ -180,9 +180,59 @@ jobs:
         run: docker compose -p racha-e2e down -v
 
   android-device:
-    name: Android instrumented tests (emulator) and release smoke
+    name: Android instrumented tests (emulator)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Scanning, database, UI and player on a device
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: "37.0"
+          target: google_apis
+          arch: x86_64
+          ram-size: 2048M
+          # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
+          # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
+          disable-animations: true
+          working-directory: client
+          script: ./gradlew :android:connectedDebugAndroidTest --console=plain
+      - name: Failing Android tests (public annotations; logs need a login)
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, html, re
+          for path in glob.glob("android/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
+              text = open(path, encoding="utf-8").read()
+              for m in re.finditer(r'<testcase name="([^"]*)" classname="([^"]*)"[^>]*>\s*<failure>(.*?)</failure>', text, re.S):
+                  lines = [l.strip() for l in html.unescape(m.group(3)).splitlines() if l.strip() and not l.strip().startswith("at ")]
+                  print(f"::error title={m.group(2)}.{m.group(1)}::{' / '.join(lines[:4])[:900]}")
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: android-test-reports
+          path: client/android/build/reports/androidTests/
+          retention-days: 7
+
+  android-release:
+    name: Android release APK (R8) and its smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     env:
       # Release signing (ADR-0009); empty in forks and until the secrets are set: debug-signed release then.
       RACHA_KEYSTORE_PASSWORD: ${{ secrets.RACHA_KEYSTORE_PASSWORD }}
@@ -215,32 +265,22 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Scanning, database, UI and player on a device
+      - name: Release smoke on a device
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: "37.0"
-          target: google_apis
+          # The plain AOSP image: on google_apis, Chrome, WebView and Trichrome fill the 774 MB data partition (an
+          # enlarged one breaks app data directories), and the app needs nothing from Google Play services.
+          target: default
           arch: x86_64
           ram-size: 2048M
-          # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
-          # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
-          # Instrumented tests first (the system has settled by then), then the release smoke; both always run and
-          # either failing fails the step. The smoke uninstalls the release afterwards.
-          script: ./gradlew :android:connectedDebugAndroidTest --console=plain; t=$?; android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk; s=$?; [ $t -eq 0 ] && [ $s -eq 0 ]
-      - name: Failing Android tests and release smoke (public annotations; logs need a login)
+          script: android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk
+      - name: Release smoke report (public annotation; logs need a login)
         if: failure()
         run: |
-          python3 - <<'PY'
-          import glob, html, re
-          for path in glob.glob("android/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
-              text = open(path, encoding="utf-8").read()
-              for m in re.finditer(r'<testcase name="([^"]*)" classname="([^"]*)"[^>]*>\s*<failure>(.*?)</failure>', text, re.S):
-                  lines = [l.strip() for l in html.unescape(m.group(3)).splitlines() if l.strip() and not l.strip().startswith("at ")]
-                  print(f"::error title={m.group(2)}.{m.group(1)}::{' / '.join(lines[:4])[:900]}")
-          PY
           if [ -f /tmp/racha-release-smoke.txt ]; then
             echo "::error title=Release smoke::$(tail -c 2500 /tmp/racha-release-smoke.txt | tr '\n' ' ')"
           fi
@@ -249,17 +289,11 @@ jobs:
           name: racha-android-release-apk
           path: client/android/build/outputs/apk/release/android-release.apk
           retention-days: 14
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: android-test-reports
-          path: client/android/build/reports/androidTests/
-          retention-days: 7
 
   release:
     name: GitHub release (tags v*)
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [server, client, appimage, sync-e2e, android-device]
+    needs: [server, client, appimage, sync-e2e, android-device, android-release]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

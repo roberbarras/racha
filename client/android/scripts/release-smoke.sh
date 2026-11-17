@@ -19,26 +19,19 @@ trap '$adb uninstall "$pkg" >/dev/null 2>&1 || true' EXIT
 package_service_ready() {
   [ "$($adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && $adb shell pm path android >/dev/null 2>&1
 }
-# The default data partition (774 MB) is nearly full on this image: most of it is updates of preinstalled apps under
-# /data/app. Record what is there, and if the release does not fit, roll those updates back on this throwaway
-# emulator (the app needs none of them) before trying again.
 $adb uninstall "$pkg.test" >/dev/null 2>&1 || true
-{ $adb root >/dev/null 2>&1 && sleep 3 && $adb wait-for-device && $adb shell 'du -xsk /data/app/*/* 2>/dev/null | sort -rn | head -12'; } >>"$report" 2>&1 || true
 installed=no
-$adb shell pm trim-caches 64G >/dev/null 2>&1 || true
 for attempt in 1 2 3 4; do
   for _ in $(seq 60); do package_service_ready && break; sleep 5; done
   $adb shell df -h /data >>"$report" 2>&1 || true
   if $adb install -r "$apk" >>"$report" 2>&1; then installed=yes; break; fi
   echo "install attempt $attempt failed" >>"$report"
-  if [ "$attempt" = 1 ]; then
-    $adb shell cmd package uninstall-system-updates >>"$report" 2>&1 || true
-  fi
   $adb shell pm trim-caches 64G >/dev/null 2>&1 || true
   sleep 20
 done
 if [ "$installed" != yes ]; then
-  { $adb shell 'du -xsk /data/* /data/app/*/* 2>/dev/null | sort -rn | head -15'; } >>"$report" 2>&1 || true
+  # What fills /data (emulator images other than Google Play ones allow root).
+  { $adb root >/dev/null 2>&1 && sleep 3 && $adb wait-for-device && $adb shell 'du -xsk /data/* /data/app/*/* 2>/dev/null | sort -rn | head -15'; } >>"$report" 2>&1 || true
   exit 1
 fi
 $adb logcat -c
