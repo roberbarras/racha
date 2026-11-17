@@ -8,7 +8,7 @@ Requisitos: Docker con Compose.
 
 ```bash
 cp .env.example .env                                  # puertos y credenciales de la base de datos
-echo "RACHA_JWT_SECRET=$(openssl rand -base64 48)" >> .env   # guárdalo: si cambia, todos los dispositivos vuelven a entrar
+echo "RACHA_JWT_SECRET=$(openssl rand -base64 48)" >> .env   # fíjala una vez y no la cambies
 docker compose up -d --build
 curl http://localhost:8080/actuator/health            # {"status":"UP"}
 ```

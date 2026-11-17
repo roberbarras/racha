@@ -30,7 +30,8 @@ server:
 racha:
   auth:
     # HS256 key for access tokens, at least 32 bytes (base64 or plain text). Without it a random key is generated at
-    # start-up: fine for trying the server, but every restart signs everybody out.
+    # start-up: sessions survive restarts anyway (refresh tokens are in the database), devices just renew their
+    # access token once after each restart.
     jwt-secret: ${RACHA_JWT_SECRET:}
     access-token-minutes: ${RACHA_ACCESS_TOKEN_MINUTES:15}
     refresh-token-days: ${RACHA_REFRESH_TOKEN_DAYS:60}

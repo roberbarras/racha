@@ -45,7 +45,9 @@ public class SecurityConfiguration {
     SecretKey accessTokenKey(RachaProperties properties) {
         var configured = properties.auth().jwtSecret();
         if (configured == null || configured.isBlank()) {
-            log.warn("RACHA_JWT_SECRET is not set: using a random key, every restart signs all devices out");
+            // Sessions (refresh tokens) are in the database and survive; only access tokens issued before a restart stop
+            // working, and devices renew them on their next request.
+            log.warn("RACHA_JWT_SECRET is not set: using a random key; after each restart devices renew their access token once");
             var random = new byte[MIN_KEY_BYTES];
             new SecureRandom().nextBytes(random);
             return new SecretKeySpec(random, "HmacSHA256");

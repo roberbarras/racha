@@ -5,7 +5,7 @@ Spec §6.2, §7 y §8. ADRs: [0006 (autenticación)](adr/0006-autenticacion.md),
 ## Arrancarlo
 
 ```bash
-export RACHA_JWT_SECRET="$(openssl rand -base64 48)"   # guárdalo: si cambia, todos los dispositivos vuelven a iniciar sesión
+export RACHA_JWT_SECRET="$(openssl rand -base64 48)"   # guárdalo y no lo cambies (ver «Sesiones»)
 docker compose up -d                                   # PostgreSQL 18 + servidor en http://localhost:8080
 ```
 
@@ -13,7 +13,7 @@ docker compose up -d                                   # PostgreSQL 18 + servido
 |---|---|---|
 | `RACHA_PORT` | 8080 | Puerto publicado |
 | `RACHA_BASE_PATH` | (vacío) | Ruta base (p. ej. `/racha` detrás de un proxy) |
-| `RACHA_JWT_SECRET` | aleatorio | Clave HS256 de los tokens de acceso (≥ 32 bytes) |
+| `RACHA_JWT_SECRET` | aleatorio en cada arranque | Clave HS256 de los tokens de acceso (≥ 32 bytes). Recomendado fijarla |
 | `RACHA_REGISTRATION` | `open` | `closed`: solo usuarios existentes (crea el tuyo y ciérralo) |
 | `RACHA_ACCESS_TOKEN_MINUTES` / `RACHA_REFRESH_TOKEN_DAYS` | 15 / 60 | Vida de los tokens |
 | `RACHA_API_DOCS` | `true` | OpenAPI en `/v3/api-docs` y Swagger UI en `/docs` |
@@ -34,7 +34,7 @@ Descripción completa (OpenAPI 3): `GET /v3/api-docs`, navegable en `/docs`. Err
 | Telemetría | `POST /analytics/events`, `POST /errors` (lotes, idempotentes por `id`) |
 | Estadísticas | `GET /stats/me?zone=Europe/Madrid` (totales, racha, tiempo por día y por categoría); vistas SQL `stats_*` para el panel de administración: ver [ESTADISTICAS.md](ESTADISTICAS.md) |
 
-**Sesiones**: token de acceso JWT (15 min, `sub` = usuario, `did` = dispositivo) + refresh opaco de un solo uso. Cada refresh devuelve uno nuevo; si alguien usa uno ya usado (copiado), se cierran todas las sesiones de ese inicio de sesión. Contraseñas con BCrypt, mínimo 10 caracteres; 10 fallos seguidos bloquean la cuenta 15 min (y 50 por dirección).
+**Sesiones**: token de acceso JWT (15 min, `sub` = usuario, `did` = dispositivo) + refresh opaco de un solo uso. Cada refresh devuelve uno nuevo; si alguien usa uno ya usado (copiado), se cierran todas las sesiones de ese inicio de sesión. **Las sesiones sobreviven a los reinicios**: los refresh se guardan (su SHA-256) en PostgreSQL, en el volumen `racha-db`. Si la clave de los tokens de acceso cambia (sin `RACHA_JWT_SECRET`, cada arranque usa una aleatoria), el primer acceso de cada dispositivo recibe un 401 y renueva su token solo. Lo único que borra las sesiones es borrar el volumen (`docker compose down -v`). Contraseñas con BCrypt, mínimo 10 caracteres; 10 fallos seguidos bloquean la cuenta 15 min (y 50 por dirección).
 
 **Sync** (ADR-0012): cada cambio lleva `updatedAt`; gana el más reciente, decidido en una sola sentencia SQL. El progreso conserva siempre la posición más lejana (`maxPositionSec`); el historial solo se añade; un ajuste que pierde vuelve como `stale` con el valor del servidor para que la app pregunte. Un reloj adelantado más de 5 min se recorta. El pull usa un cursor de secuencia del servidor (no fechas).
 
