@@ -63,6 +63,8 @@ object Settings {
 
     /** Desktop only, experimental (ADR-0011). Android always uses the platform decoders. */
     val HardwareDecoding = BooleanSetting("player.hardwareDecoding", DEVICE, false)
+    /** AI summary providers in the user's order (`SummaryProvider.encode`); per device, like their keys (H17). */
+    val SummaryProviders = StringSetting("ai.summaryProviders", DEVICE, "")
     /** Keyboard shortcuts changed by the user, over the defaults (`Shortcuts.encode`); per device, keyboards differ (H15). */
     val PlayerShortcuts = StringSetting("player.shortcuts", DEVICE, "")
 
@@ -109,7 +111,7 @@ object Settings {
         DefaultSpeed, SpeedSteps, SubtitlesEnabled, SubtitleLanguage, SeekStepSeconds,
         GestureTapEdges, GestureDoubleTap, GestureSwipeSeek, GestureSwipeBrightness, GestureSwipeVolume,
         GesturePinchZoom, GestureLongPressSpeed, LongPressSpeed, AutoplayNext, SkipIntroSeconds, SkipOutroSeconds,
-        ShowSidebar, Zoom, HardwareDecoding, PlayerShortcuts, SaveIntervalSeconds,
+        ShowSidebar, Zoom, HardwareDecoding, PlayerShortcuts, SummaryProviders, SaveIntervalSeconds,
         AutoScan, FileWatcher, Thumbnails, ChangeDetectionMode, AiCoverEnabled, AiCoverEndpoint, AiCoverPrompt,
         SyncEnabled, SyncHost, SyncPort, SyncHttps, SyncBasePath, SyncUsername, SyncIntervalMinutes, SyncConflictPolicy,
         NotifyNewContent, NotifySyncFailed, DailyReminder, DailyReminderTime,
