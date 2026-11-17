@@ -208,6 +208,8 @@ jobs:
           else
             echo "::notice title=Android release::No signing secrets: the release APK is signed with the debug key (not for distribution)."
           fi
+      - name: Release APK (R8)
+        run: ./gradlew :android:assembleRelease --console=plain
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -224,7 +226,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
-          script: ./gradlew :android:connectedDebugAndroidTest :android:assembleRelease --console=plain && android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk
+          script: ./gradlew :android:connectedDebugAndroidTest --console=plain && android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk
       - name: Failing Android tests and release smoke (public annotations; logs need a login)
         if: failure()
         run: |

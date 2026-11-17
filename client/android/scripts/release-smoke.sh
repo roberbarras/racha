@@ -4,12 +4,15 @@
 # ANR of the app. Instrumented tests run on the debug build; this catches what minification alone could break.
 # usage: android/scripts/release-smoke.sh <release.apk>
 set -euo pipefail
+report=${SMOKE_REPORT:-/tmp/racha-release-smoke.txt}
+: >"$report"
+trap 'echo "release smoke failed at line $LINENO: $BASH_COMMAND" >>"$report"' ERR
 apk=$1
 pkg=io.github.roberbarras.racha
 adb=${ADB:-adb}
 
 $adb uninstall "$pkg" >/dev/null 2>&1 || true
-$adb install -r "$apk" >/dev/null
+$adb install -r "$apk" >>"$report" 2>&1
 $adb logcat -c
 $adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
 sleep 5
@@ -27,12 +30,11 @@ monkey_crash=$(grep -c "CRASH: $pkg" /tmp/racha-monkey.log || true)
 running=$($adb shell pidof "$pkg" >/dev/null && echo yes || echo no)
 summary="release smoke: crashes=$crashes anrs=$anrs monkey_crash=$monkey_crash still_running=$running"
 echo "$summary"
-report=${SMOKE_REPORT:-/tmp/racha-release-smoke.txt}
 {
   echo "$summary"
   $adb logcat -d -b crash | grep -A12 "Process: $pkg" | head -40
   $adb logcat -d | grep -A12 "ANR in $pkg" | head -30
-} >"$report"
+} >>"$report"
 if [ "$crashes" != 0 ] || [ "$anrs" != 0 ] || [ "$monkey_crash" != 0 ]; then
   cat "$report"
   exit 1
