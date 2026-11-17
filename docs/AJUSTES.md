@@ -10,7 +10,7 @@ Pantalla **Ajustes** (en el móvil, desde Progreso). Todo se aplica al momento, 
 |---|---|
 | General | Idioma (sistema / español / inglés: **toda la app cambia al momento**, sin reiniciar), tema, color de acento, tamaño del texto; en Linux, **tamaño de la interfaz** (automático = la escala del escritorio, o de 75 % a 300 %) |
 | Categorías | Crear, renombrar (en blanco, una integrada vuelve a su nombre traducido), borrar (las del usuario, con confirmación), reordenar, categoría principal, en qué modo se ve cada una (Estudio/Ocio), patrones a omitir al escanear (se reescanea al guardar). Las carpetas, en su pantalla |
-| Reproductor | Velocidad por defecto y pasos de velocidad, salto (5/10/30 s), subtítulos y su idioma preferido, reproducir el siguiente, barra lateral, saltar intro/outro, escalado del vídeo, los siete gestos y la velocidad al mantener; en Linux, decodificación por hardware |
+| Reproductor | Velocidad por defecto y pasos de velocidad, salto (5/10/30 s), subtítulos y su idioma preferido (lo que se usa mientras no hayas elegido otra cosa: después se recuerda por curso, [REPRODUCTOR.md](REPRODUCTOR.md#comodidad-h15)), reproducir el siguiente, barra lateral, saltar intro/outro, escalado del vídeo, los siete gestos y la velocidad al mantener; en Linux, decodificación por hardware y **atajos de teclado** |
 | Progreso | Intervalo de guardado (15/30/60/300 s) |
 | Escaneo | Al abrir, vigilar carpetas, miniaturas, detección de cambios (fecha y tamaño / contenido), **portadas con IA** |
 | Sincronización | Estado y acceso a Cuenta ([SYNC.md](SYNC.md)) |

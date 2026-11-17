@@ -43,6 +43,14 @@ adaptadores en [`android/player`](../client/android/src/main/kotlin/io/github/ro
 | Barra lateral | Lista del curso con progreso por elemento; se abre sola si el ajuste lo pide |
 | Recursos en la cola | "Siguiente" o el autoplay sobre un HTML/URL/TXT/PDF abre el visor (provisional hasta H7) |
 
+## Comodidad (H15)
+
+- **Recuerda lo que eliges** (velocidad, pista de audio y subtítulos) **por curso o serie**, y lo último que usaste en cualquiera como punto de partida de los que aún no tienen elección propia. Cada cosa por separado: lo del curso → lo último → los ajustes (primera pista de audio, subtítulos desactivados). El audio se recuerda por idioma (y por posición si la pista no lo dice) y se aplica en cuanto el vídeo anuncia sus pistas; desactivar los subtítulos también se recuerda. Solo en este dispositivo (tabla `playback_memory`, esquema v8).
+- **Marcar visto / no visto**: lección, sección (ahora en los dos sentidos) y curso entero, y "visto hasta aquí".
+- **Atajos de teclado configurables** (Ajustes → Reproductor, en Linux): cada acción con sus teclas, capturadas al pulsarlas; una tecla solo hace una cosa (si otra acción la tenía, se le quita y se dice); se guardan por dispositivo solo los cambios. Acciones: reproducir/pausar, retroceder, avanzar, volumen ±, silenciar, más lento/rápido (por los pasos de velocidad), cambiar subtítulos, pantalla completa, siguiente, anterior, añadir marcador y ver los atajos (**H** o **F1**). **Esc** siempre vuelve o sale de pantalla completa.
+- **Solo audio** (botón de auriculares): el motor deja de decodificar vídeo (ExoPlayer desactiva la pista; mpv `vid=no`, por el mismo camino seguro con que suelta su ventana), se ve la portada y lo que suena, y se mantiene al pasar al siguiente. En Android la pantalla puede apagarse y salir de la app no pausa: un servicio en primer plano de tipo *mediaPlayback* (Media3 `MediaSessionService`) mantiene la sesión, con controles en la notificación y en la pantalla de bloqueo; en solo audio no se entra en PiP automático.
+- **PiP** ya estaba en las dos plataformas (Android del sistema; Linux, ventana pequeña siempre encima).
+
 ## Linux (ADR-0011)
 
 - **Vídeo**: mpv presenta por su cuenta (`vo=gpu-next`) dentro de un `Canvas` AWT (ventana X11 hija, `wid`); los fotogramas nunca pasan por Compose. Decodificación por software por defecto (`hwdec=no`); "Decodificación por hardware" en Ajustes la activa (`auto-safe`).

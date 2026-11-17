@@ -22,7 +22,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
-| H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ⏳ Planificado |
+| H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | 🔄 En curso |
 | H16 | Estadísticas completas y copia de seguridad local | ⏳ Planificado |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
@@ -55,6 +55,28 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H15 · Reproducción cómoda — 🔄 en curso
+
+Documento: [docs/REPRODUCTOR.md](docs/REPRODUCTOR.md#comodidad-h15). Evidencias: [docs/evidence/h15](docs/evidence/h15).
+
+**Hecho**
+- **Recordar velocidad, pista de audio y subtítulos** por curso o serie, con lo último usado como punto de partida; por defecto, la primera pista de audio y sin subtítulos (esquema v8).
+- **Desmarcar una sección** (curso y lección ya iban en los dos sentidos).
+- **Atajos de teclado configurables en Linux** (Ajustes → Reproductor), con ayuda en el reproductor (H o F1) y acciones nuevas: silenciar, más lento/rápido, cambiar subtítulos, añadir marcador.
+- **Solo audio**: sin decodificar vídeo; en Android sigue sonando con la pantalla apagada o la app en segundo plano (servicio de reproducción con controles en la notificación y la pantalla de bloqueo). PiP ya existía en las dos plataformas.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: elección por curso/última, audio por idioma/posición, subtítulos; atajos (conflictos, codificación) | ✅ |
+| SQLite y controlador: lo elegido sigue en el siguiente vídeo y al volver a abrir la app; "sin subtítulos" también; migración v7 → v8 | ✅ |
+| UI escritorio: desmarcar sección; editor de atajos (capturar, mover entre acciones, Esc, restaurar) | ✅ |
+| Linux, harness con mpv real en Xvfb: solo audio (`vid=no`, sigue avanzando, vuelve el vídeo) | ✅ |
+| Android en el emulador: solo audio (sin vídeo, servicio activo, pantalla puede apagarse, sigue en segundo plano) | CI |
+| CI | CI_LINK |
 
 ---
 
