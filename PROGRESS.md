@@ -23,7 +23,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H13 | Servidor seguro y operable: IP real y bloqueos por cuenta+IP, datos y copias, admin, contraseñas, métricas y logs | ✅ Cerrado |
 | H14 | Panel web (usuario y administración) | ✅ Cerrado |
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
-| H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | 🔄 En curso |
+| H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | ✅ Cerrado |
 | H17 | Resúmenes con IA (NVIDIA o Gemini) a partir de subtítulos | ⏳ Planificado |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
 | H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H16 · Estadísticas, copias y datos portables — 🔄 en curso
+## H16 · Estadísticas, copias y datos portables — ✅ cerrado
 
 Decisión: [ADR-0015](docs/adr/0015-copia-de-seguridad-y-portabilidad.md). Documentos: [ESTADISTICAS.md](docs/ESTADISTICAS.md#en-las-apps-h16), [AJUSTES.md](docs/AJUSTES.md), [PANEL-WEB.md](docs/PANEL-WEB.md). Evidencias: [docs/evidence/h16](docs/evidence/h16).
 
@@ -77,7 +77,7 @@ Decisión: [ADR-0015](docs/adr/0015-copia-de-seguridad-y-portabilidad.md). Docum
 | Copia completa: dispositivo A → B (carpeta, curso retocado, progreso, historial, ajustes, memoria, estadísticas), dos veces sin duplicar; fichero del servidor; ficheros ajenos rechazados | ✅ |
 | Servidor: exportar, "otro servidor" (cuenta borrada, otra nueva) e importar con estadísticas; repetir; formatos ajenos; fichero de una app | ✅ |
 | Sync: un retoque antiguo llega a un curso escaneado después, sin pisar uno propio más reciente | ✅ |
-| CI | CI_LINK |
+| CI | ✅ [run 44182046166](https://github.com/roberbarras/racha/actions/runs/44182046166) |
 
 ---
 
