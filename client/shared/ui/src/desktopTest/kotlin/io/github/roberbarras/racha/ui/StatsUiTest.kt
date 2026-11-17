@@ -1,5 +1,12 @@
 package io.github.roberbarras.racha.ui
 
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.toAwtImage
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onRoot
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasContentDescription
@@ -21,6 +28,7 @@ import kotlin.test.Test
 @OptIn(ExperimentalTestApi::class)
 class StatsUiTest {
     private val originalLocale = Locale.getDefault()
+    private val out = java.io.File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
 
     @AfterTest
     fun restoreLocale() = Locale.setDefault(originalLocale)
@@ -41,8 +49,32 @@ class StatsUiTest {
         onNode(hasText("7") and hasText("Day streak")).assertExists() // the tile merges its value and label
         onNodeWithText("Total watched").assertExists()
         onNode(hasContentDescription("active days in the last year", substring = true)).assertExists()
-        onNodeWithText("TIME BY CATEGORY").assertExists() // section headers are shown in capitals
+        // Further down the list (only what is on screen is composed): scroll to it.
+        onNode(hasScrollToNodeAction()).performScrollToNode(hasText("TIME BY CATEGORY")) // section headers are shown in capitals
         onAllNodesWithText("Courses").assertCountEquals(2) // the sidebar category and the bar
         onNodeWithText("Series").assertExists()
+    }
+    @Test
+    fun theBreakdownsShowWhenHowAndWhatIsWatched() = runDesktopComposeUiTest(1100, 3400) {
+        Locale.setDefault(Locale.forLanguageTag("es"))
+        val deps = DemoLibrary.dependencies()
+        setContent {
+            val owner = object : ViewModelStoreOwner { override val viewModelStore = ViewModelStore() }
+            CompositionLocalProvider(LocalViewModelStoreOwner provides owner) {
+                io.github.roberbarras.racha.ui.design.RachaTheme(dark = false) {
+                    androidx.compose.foundation.layout.Box(
+                        androidx.compose.ui.Modifier.fillMaxSize().background(io.github.roberbarras.racha.ui.design.Racha.colors.background),
+                    ) { io.github.roberbarras.racha.ui.stats.StatsScreen(deps, {}, null) }
+                }
+            }
+        }
+        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("SESIONES").fetchSemanticsNodes().isNotEmpty() }
+        listOf("ÚLTIMAS 12 SEMANAS", "POR HORA DEL DÍA", "POR DÍA DE LA SEMANA", "CURSOS Y SERIES", "VISTO RECIENTEMENTE").forEach {
+            onNodeWithText(it).assertExists()
+        }
+        onNodeWithText("46").assertExists() // sessions
+        onNodeWithText("1.4×").assertExists() // 50 400 / 36 000
+        onNodeWithText("46 %").assertExists() // 21 of 46 with subtitles
+        javax.imageio.ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", java.io.File(out, "desktop-stats-breakdowns-es.png"))
     }
 }

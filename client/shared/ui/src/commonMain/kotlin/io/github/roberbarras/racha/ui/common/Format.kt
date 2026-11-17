@@ -90,3 +90,11 @@ fun categoryIcon(category: Category) = when (category.key) {
 }
 
 fun parseColor(hex: String) = androidx.compose.ui.graphics.Color(("FF" + hex.removePrefix("#")).toLong(16))
+
+/** How a device's platform is called (statistics by device). */
+fun platformName(platform: String): String = when (platform) {
+    "android" -> "Android"
+    "linux" -> "Linux"
+    "web" -> "Web"
+    else -> platform
+}

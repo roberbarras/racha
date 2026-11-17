@@ -475,4 +475,17 @@
     <string name="player_subtitles">Subtitles: %1$s</string>
     <string name="audio_only">Audio only</string>
     <string name="audio_only_hint">Audio only: you can lock or turn off the screen and it keeps playing.</string>
+    <!-- Statistics (H16) -->
+    <string name="weeks_title">Last 12 weeks</string>
+    <string name="by_hour_title">By hour of day</string>
+    <string name="by_weekday_title">By weekday</string>
+    <string name="weekday_initials">M,T,W,T,F,S,S</string>
+    <string name="sessions_title">Sessions</string>
+    <string name="stat_sessions">Viewing sessions</string>
+    <string name="stat_avg_session">Average length</string>
+    <string name="stat_avg_speed">Average speed</string>
+    <string name="stat_with_subtitles">With subtitles</string>
+    <string name="by_device_title">By device</string>
+    <string name="titles_title">Courses and series</string>
+    <string name="recent_title">Recently watched</string>
 </resources>

@@ -475,4 +475,17 @@
     <string name="player_subtitles">Subtítulos: %1$s</string>
     <string name="audio_only">Solo audio</string>
     <string name="audio_only_hint">Solo audio: puedes bloquear o apagar la pantalla y seguirá sonando.</string>
+    <!-- Estadísticas (H16) -->
+    <string name="weeks_title">Últimas 12 semanas</string>
+    <string name="by_hour_title">Por hora del día</string>
+    <string name="by_weekday_title">Por día de la semana</string>
+    <string name="weekday_initials">L,M,X,J,V,S,D</string>
+    <string name="sessions_title">Sesiones</string>
+    <string name="stat_sessions">Sesiones de visionado</string>
+    <string name="stat_avg_session">Duración media</string>
+    <string name="stat_avg_speed">Velocidad media</string>
+    <string name="stat_with_subtitles">Con subtítulos</string>
+    <string name="by_device_title">Por dispositivo</string>
+    <string name="titles_title">Cursos y series</string>
+    <string name="recent_title">Visto recientemente</string>
 </resources>

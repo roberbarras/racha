@@ -120,7 +120,24 @@ fun StatsScreen(deps: RachaDependencies, onFolders: () -> Unit, onAccount: (() -
             else -> {
                 item(key = "tiles") { Tiles(s) }
                 item(key = "activity") { ActivityCard(s) }
+                item(key = "weeks") { WeeksCard(s) }
+                if (s.byHour.any { it > 0 } || s.byWeekday.any { it > 0 }) {
+                    item(key = "when") {
+                        if (compact) {
+                            Column(verticalArrangement = Arrangement.spacedBy(Racha.space.l)) { HoursCard(s); WeekdaysCard(s) }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
+                                HoursCard(s, Modifier.weight(1f))
+                                WeekdaysCard(s, Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                if (s.sessions.count > 0) item(key = "sessions") { SessionsCard(s) }
                 if (s.byCategory.isNotEmpty()) item(key = "categories") { CategoriesCard(s) }
+                if (s.devices.isNotEmpty()) item(key = "devices") { DevicesCard(s) }
+                if (s.titles.isNotEmpty()) item(key = "titles") { TitlesCard(s) }
+                if (s.recent.isNotEmpty()) item(key = "recent") { RecentCard(s) { at -> deps.localDates.dateOf(at).let { d -> "${d.day}/${d.month}/${d.year} · ${deps.localDates.hourOf(at)} h" } } }
                 if (s.completedItems.isNotEmpty()) item(key = "completed") { CompletedCard(s) }
             }
         }

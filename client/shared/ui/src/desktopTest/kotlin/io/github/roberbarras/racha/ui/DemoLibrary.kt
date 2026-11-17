@@ -195,6 +195,14 @@ object DemoLibrary {
             db.stats.save(io.github.roberbarras.racha.domain.learning.LocalStat("watchSeconds", day, seconds, now))
             db.stats.save(io.github.roberbarras.racha.domain.learning.LocalStat("watchSeconds.category:" + (if (d % 4 == 0) "series" else "courses"), day, seconds, now))
         }
+        // Running totals for the breakdowns (H16): evenings and early mornings, weekends heavier, a few titles.
+        suspend fun total(metric: String, value: Double) = db.stats.save(io.github.roberbarras.racha.domain.learning.LocalStat(metric, "all", value, now))
+        mapOf(7 to 40, 8 to 55, 13 to 20, 19 to 60, 20 to 110, 21 to 150, 22 to 120, 23 to 45).forEach { (h, m) -> total("watchSeconds.hour:$h", m * 60.0) }
+        listOf(70, 55, 80, 60, 40, 140, 160).forEachIndexed { i, m -> total("watchSeconds.weekday:${i + 1}", m * 60.0) }
+        total("sessions", 46.0); total("sessions.seconds", 36_000.0); total("sessions.speedSeconds", 50_400.0); total("sessions.withSubtitles", 21.0)
+        total("watchSeconds.item:" + aws.id.value, 21_600.0)
+        total("watchSeconds.item:" + created.getValue("Advanced Go Patterns").first.id.value, 9_000.0)
+        total("watchSeconds.item:" + created.getValue("Introduction to PostgreSQL").first.id.value, 3_300.0)
         // Newly detected: two AWS lessons and a Git lesson that appeared recently.
         listOf(
             awsElements.first { it.title.startsWith("S3") } to 2.hours,
