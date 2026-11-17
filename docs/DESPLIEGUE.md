@@ -7,15 +7,17 @@ Spec §15.6. Tres piezas independientes: el **servidor** es opcional (solo para 
 Requisitos: Docker con Compose.
 
 ```bash
-cp .env.example .env                                  # puertos y credenciales de la base de datos
-echo "RACHA_JWT_SECRET=$(openssl rand -base64 48)" >> .env   # fíjala una vez y no la cambies
+cp .env.example .env                                   # junto a docker-compose.yml; una línea VARIABLE=valor
+sed -i "s|^RACHA_JWT_SECRET=.*|RACHA_JWT_SECRET=$(openssl rand -base64 48)|" .env
+sed -i "s|^RACHA_DB_PASSWORD=.*|RACHA_DB_PASSWORD=$(openssl rand -hex 24)|" .env   # antes del primer arranque
+mkdir -p data backups
 docker compose up -d --build
-curl http://localhost:8080/actuator/health            # {"status":"UP"}
+curl http://localhost:8080/actuator/health             # {"status":"UP"}
 ```
 
-- Variables (`RACHA_PORT`, `RACHA_BASE_PATH`, `RACHA_REGISTRATION=closed` tras crear tu cuenta…): [SERVIDOR.md](SERVIDOR.md).
-- **HTTPS**: el servidor habla HTTP; para usarlo fuera de casa ponlo detrás de un proxy con certificado (Caddy, Traefik, nginx). Ejemplo con Caddy: `racha.midominio.es { reverse_proxy localhost:8080 }`.
-- **Copias de seguridad**: todo está en el volumen de PostgreSQL `racha-db` (`docker compose exec db pg_dump -U racha racha > racha.sql`).
+- Todo lo configurable (cuenta administradora, correo para recuperar contraseñas, proxies, copias, métricas): [SERVIDOR.md](SERVIDOR.md).
+- **Datos y copias**: la base de datos vive en `data/postgres` y cada día queda una copia en `backups/` (14 diarias + 8 semanales). Restaurar o mover el servidor: `tools/restore-backup.sh backups/<copia>.dump` ([SERVIDOR.md](SERVIDOR.md#datos-copias-y-migración-a-otro-servidor)).
+- **HTTPS**: el servidor habla HTTP; para usarlo fuera de casa ponlo detrás de un proxy con certificado (Cloudflare Tunnel o proxy, Caddy, Traefik, nginx) y ajusta `RACHA_TRUSTED_PROXIES` para que vea la IP real de cada cliente.
 - **API**: OpenAPI en `/v3/api-docs` y Swagger UI en `/docs`; copia versionada en [api/openapi.json](api/openapi.json).
 - **Estadísticas**: vistas `stats_*` en la base de datos ([ESTADISTICAS.md](ESTADISTICAS.md)).
 

@@ -41,7 +41,10 @@ services:
       - ./server/backup/racha-backup.sh:/usr/local/bin/racha-backup:ro,z
 
   server:
-    build: ./server
+    build:
+      context: ./server
+      args:
+        RACHA_VERSION: ${RACHA_VERSION:-1.0.0}
     restart: unless-stopped
     depends_on:
       db:
@@ -59,6 +62,19 @@ services:
       # Who may tell the client's address: local (Cloudflare Tunnel, nginx, Caddy on this machine or LAN),
       # cloudflare (Cloudflare's proxy pointing at this server; add `local` too if both), none, or CIDRs.
       RACHA_TRUSTED_PROXIES: ${RACHA_TRUSTED_PROXIES:-local}
+      # This account administers the server (users, metrics, logs, backups); empty: the first to register.
+      RACHA_ADMIN_EMAIL: ${RACHA_ADMIN_EMAIL:-}
+      # How users reach the server (https://racha.example.com): the link in password recovery e-mails.
+      RACHA_PUBLIC_URL: ${RACHA_PUBLIC_URL:-}
+      # SMTP for password recovery; no host: recovery is unavailable. Security: starttls (587), ssl (465) or none.
+      RACHA_MAIL_HOST: ${RACHA_MAIL_HOST:-}
+      RACHA_MAIL_PORT: ${RACHA_MAIL_PORT:-587}
+      RACHA_MAIL_USERNAME: ${RACHA_MAIL_USERNAME:-}
+      RACHA_MAIL_PASSWORD: ${RACHA_MAIL_PASSWORD:-}
+      RACHA_MAIL_SECURITY: ${RACHA_MAIL_SECURITY:-starttls}
+      RACHA_MAIL_FROM: ${RACHA_MAIL_FROM:-}
+      # Bearer token for Prometheus at /actuator/prometheus; empty: closed.
+      RACHA_METRICS_TOKEN: ${RACHA_METRICS_TOKEN:-}
       RACHA_BACKUP_DIR: /backups
       TZ: ${RACHA_TZ:-Europe/Madrid}
     volumes:
