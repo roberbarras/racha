@@ -222,6 +222,8 @@ jobs:
           target: google_apis
           arch: x86_64
           ram-size: 2048M
+          # The instrumented tests copy clips to the device; the release smoke then needs room to install the APK.
+          disk-size: 6000M
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true

@@ -12,6 +12,8 @@ pkg=io.github.roberbarras.racha
 adb=${ADB:-adb}
 
 $adb uninstall "$pkg" >/dev/null 2>&1 || true
+$adb uninstall "$pkg.test" >/dev/null 2>&1 || true
+$adb shell pm trim-caches 64G >/dev/null 2>&1 || true   # room for the install after the instrumented tests
 $adb install -r "$apk" >>"$report" 2>&1
 $adb logcat -c
 $adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
