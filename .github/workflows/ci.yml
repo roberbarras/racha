@@ -228,8 +228,9 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
-          # The release smoke first, while the device has room; it uninstalls the release afterwards.
-          script: android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk && ./gradlew :android:connectedDebugAndroidTest --console=plain
+          # Instrumented tests first (the system has settled by then), then the release smoke; both always run and
+          # either failing fails the step. The smoke uninstalls the release afterwards.
+          script: ./gradlew :android:connectedDebugAndroidTest --console=plain; t=$?; android/scripts/release-smoke.sh android/build/outputs/apk/release/android-release.apk; s=$?; [ $t -eq 0 ] && [ $s -eq 0 ]
       - name: Failing Android tests and release smoke (public annotations; logs need a login)
         if: failure()
         run: |

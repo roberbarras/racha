@@ -14,14 +14,21 @@ adb=${ADB:-adb}
 $adb uninstall "$pkg" >/dev/null 2>&1 || true
 # Leave the device as found (the debug build and its tests may run next, possibly with another signature).
 trap '$adb uninstall "$pkg" >/dev/null 2>&1 || true' EXIT
-$adb shell df -h /data >>"$report" 2>&1 || true
-# Right after a cold boot the emulator may still be optimising packages and report too little space: once more.
-if ! $adb install -r "$apk" >>"$report" 2>&1; then
-  $adb shell pm trim-caches 64G >/dev/null 2>&1 || true
-  sleep 30
+# Right after a cold boot the package service may not be up yet (broken pipe, null PackageManagerInternal) or the
+# emulator may still be optimising packages: wait until it answers, then install, a few times at most.
+package_service_ready() {
+  [ "$($adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && $adb shell pm path android >/dev/null 2>&1
+}
+installed=no
+for attempt in 1 2 3 4; do
+  for _ in $(seq 60); do package_service_ready && break; sleep 5; done
   $adb shell df -h /data >>"$report" 2>&1 || true
-  $adb install -r "$apk" >>"$report" 2>&1
-fi
+  if $adb install -r "$apk" >>"$report" 2>&1; then installed=yes; break; fi
+  echo "install attempt $attempt failed" >>"$report"
+  $adb shell pm trim-caches 64G >/dev/null 2>&1 || true
+  sleep 20
+done
+[ "$installed" = yes ]
 $adb logcat -c
 $adb shell am start -W -n "$pkg/io.github.roberbarras.racha.android.MainActivity" >/dev/null
 sleep 5
