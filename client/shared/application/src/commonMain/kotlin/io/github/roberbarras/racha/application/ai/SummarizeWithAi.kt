@@ -199,15 +199,20 @@ class SummarizeWithAi(
         fun reason(e: RemoteError): String = when (e) {
             is RemoteError.Unreachable -> "unreachable"
             is RemoteError.Unauthorized -> "key"
-            is RemoteError.Rejected -> when (e.status) {
-                429 -> "quota"
-                401, 403 -> "key"
-                402 -> "payment"
-                404 -> "model"
-                413 -> "too_long"
-                in 500..599 -> "server"
-                else -> "rejected:${e.status}"
+            is RemoteError.Rejected -> when {
+                e.code?.contains("context_length") == true -> "too_long"
+                else -> statusReason(e.status)
             }
+        }
+
+        private fun statusReason(status: Int) = when (status) {
+            429 -> "quota"
+            401, 403 -> "key"
+            402 -> "payment"
+            404 -> "model"
+            413 -> "too_long"
+            in 500..599 -> "server"
+            else -> "rejected:$status"
         }
     }
 }
