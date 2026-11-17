@@ -10,7 +10,7 @@ public record DeviceInfo(UUID id, String name, String platform, String appVersio
         try {
             return Platform.fromWire(platform);
         } catch (RuntimeException e) {
-            throw new AuthErrors.InvalidInput("platform must be android or linux");
+            throw new AuthErrors.InvalidInput("platform must be android, linux or web");
         }
     }
 

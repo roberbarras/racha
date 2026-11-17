@@ -51,6 +51,39 @@ public final class JdbcAdminQueries implements AdminPorts.Queries {
     }
 
     @Override
+    public AdminPorts.Activity activity(Instant since) {
+        var from = time(since);
+        var daily = jdbc.sql("select day, users from stats_active_users_daily where day >= cast(:from as date) order by day")
+                .param("from", from).query((rs, row) -> new AdminPorts.DayCount(rs.getDate("day").toLocalDate(), rs.getLong("users"))).list();
+        var hours = jdbc.sql("""
+                select u.email, h.hours, h.sessions from stats_watch_hours_by_user h join users u on u.id = h.user_id
+                order by h.hours desc limit 50""")
+                .query((rs, row) -> new AdminPorts.UserHours(rs.getString("email"), rs.getDouble("hours"), rs.getLong("sessions"))).list();
+        var features = jdbc.sql("select feature, uses, users, last_used_at from stats_feature_usage order by uses desc limit 50")
+                .query((rs, row) -> new AdminPorts.FeatureUse(rs.getString("feature"), rs.getLong("uses"), rs.getLong("users"),
+                        instant(rs.getTimestamp("last_used_at"))))
+                .list();
+        var versions = jdbc.sql("select platform, app_version, errors, users, last_at from stats_errors_by_version order by last_at desc limit 50")
+                .query((rs, row) -> new AdminPorts.VersionErrors(rs.getString("platform"), rs.getString("app_version"), rs.getLong("errors"),
+                        rs.getLong("users"), instant(rs.getTimestamp("last_at"))))
+                .list();
+        var errors = jdbc.sql("""
+                select e.occurred_at, u.email, e.platform, e.app_version, e.message from errors e join users u on u.id = e.user_id
+                order by e.received_at desc limit 50""")
+                .query((rs, row) -> new AdminPorts.ClientError(instant(rs.getTimestamp("occurred_at")), rs.getString("email"), rs.getString("platform"),
+                        rs.getString("app_version"), rs.getString("message")))
+                .list();
+        var failures = jdbc.sql("""
+                select f.occurred_at, u.email, f.kind, f.detail from stats_sync_failures f join users u on u.id = f.user_id
+                where f.occurred_at >= :from order by f.occurred_at desc limit 50""")
+                .param("from", from)
+                .query((rs, row) -> new AdminPorts.SyncFailure(instant(rs.getTimestamp("occurred_at")), rs.getString("email"), rs.getString("kind"),
+                        rs.getString("detail")))
+                .list();
+        return new AdminPorts.Activity(daily, hours, features, versions, errors, failures);
+    }
+
+    @Override
     public List<AdminPorts.UserSummary> users(Instant now) {
         return jdbc.sql("""
                 select u.id, u.email, u.display_name, u.role, u.disabled, u.created_at,

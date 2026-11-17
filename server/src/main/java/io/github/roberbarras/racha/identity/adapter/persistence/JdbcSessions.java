@@ -61,6 +61,24 @@ public final class JdbcSessions implements IdentityPorts.Sessions {
                 .param("now", Sql.time(now)).param("user", userId).param("keep", keepDevice).update();
     }
 
+    @Override
+    public boolean revokeDevice(UUID userId, UUID deviceId, Instant now) {
+        return jdbc.sql("update sessions set revoked_at = :now where user_id = :user and device_id = :device and revoked_at is null")
+                .param("now", Sql.time(now)).param("user", userId).param("device", deviceId).update() > 0;
+    }
+
+    @Override
+    public java.util.Map<UUID, Integer> activeByDevice(UUID userId, Instant now) {
+        var counts = new java.util.HashMap<UUID, Integer>();
+        jdbc.sql("""
+                select device_id, count(*) as n from sessions
+                where user_id = :user and device_id is not null and revoked_at is null and used_at is null and expires_at > :now
+                group by device_id""")
+                .param("user", userId).param("now", Sql.time(now))
+                .query((rs, row) -> counts.put(rs.getObject("device_id", UUID.class), rs.getInt("n"))).list();
+        return counts;
+    }
+
     private static RefreshSession session(ResultSet rs, int row) throws SQLException {
         return new RefreshSession(rs.getObject("id", UUID.class), rs.getObject("user_id", UUID.class), rs.getObject("device_id", UUID.class),
                 rs.getObject("family_id", UUID.class), rs.getBytes("token_hash"), Sql.instant(rs, "created_at"), Sql.instant(rs, "expires_at"),

@@ -33,6 +33,9 @@ public final class IdentityPorts {
         List<Device> ofUser(UUID userId);
 
         void touch(UUID id, Instant now);
+
+        /** Removes one of the user's devices and its sessions; false if it is not theirs. */
+        boolean delete(UUID userId, UUID deviceId);
     }
 
     public interface Sessions {
@@ -47,6 +50,12 @@ public final class IdentityPorts {
 
         /** Ends every session of the user except those of [keepDevice] (null: all of them). */
         void revokeAllOfUser(UUID userId, UUID keepDevice, Instant now);
+
+        /** Ends the sessions of one of the user's devices; false if none was active. */
+        boolean revokeDevice(UUID userId, UUID deviceId, Instant now);
+
+        /** Active (not expired, not revoked, not yet rotated) sessions per device of the user. */
+        java.util.Map<UUID, Integer> activeByDevice(UUID userId, Instant now);
     }
 
     /** Password recovery codes (hashes only). */

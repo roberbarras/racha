@@ -1,6 +1,7 @@
 package io.github.roberbarras.racha.stats.application;
 
 import io.github.roberbarras.racha.stats.domain.PersonalStats;
+import io.github.roberbarras.racha.stats.domain.StatsDetails;
 import io.github.roberbarras.racha.stats.domain.Streak;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -9,11 +10,19 @@ import java.util.UUID;
 
 public final class StatsService {
     private final PersonalStats.Queries queries;
+    private final StatsDetails.Queries details;
     private final Clock clock;
 
-    public StatsService(PersonalStats.Queries queries, Clock clock) {
+    public StatsService(PersonalStats.Queries queries, StatsDetails.Queries details, Clock clock) {
         this.queries = queries;
+        this.details = details;
         this.clock = clock;
+    }
+
+    /** The web panel's breakdowns (H14): sessions, best streak, hours, weekdays, categories, devices, titles, recent. */
+    public StatsDetails details(UUID userId, ZoneId zone) {
+        return new StatsDetails(details.sessions(userId), details.bestStreak(userId), details.byHour(userId, zone), details.byWeekday(userId, zone),
+                details.byCategory(userId), details.byDevice(userId), details.titles(userId, 30), details.recent(userId, 20));
     }
 
     /** Days in the per-day breakdown: a year of weeks for the activity heat map. */

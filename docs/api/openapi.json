@@ -6,7 +6,7 @@
     "version" : "1"
   },
   "servers" : [ {
-    "url" : "http://localhost:36709",
+    "url" : "http://localhost:42283",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -21,6 +21,9 @@
   }, {
     "name" : "Sync",
     "description" : "Batches of local changes up, remote changes since a cursor down; last writer wins"
+  }, {
+    "name" : "Web session",
+    "description" : "Sign-in for the web panel: refresh token in an HttpOnly cookie"
   } ],
   "paths" : {
     "/settings" : {
@@ -731,6 +734,27 @@
         }
       }
     },
+    "/devices/{id}/sign-out" : {
+      "post" : {
+        "tags" : [ "Devices" ],
+        "summary" : "Sign one of your devices out (a lost phone); it keeps its local data and can sign in again",
+        "operationId" : "signOut",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/devices/register" : {
       "post" : {
         "tags" : [ "Devices" ],
@@ -896,6 +920,66 @@
         }
       }
     },
+    "/auth/web/refresh" : {
+      "post" : {
+        "tags" : [ "Web session" ],
+        "summary" : "A new access token from the refresh cookie (rotates it); needs the X-Racha-Web header",
+        "operationId" : "refresh",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WebSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/web/logout" : {
+      "post" : {
+        "tags" : [ "Web session" ],
+        "summary" : "Sign the browser out and clear its cookie; needs the X-Racha-Web header",
+        "operationId" : "logout",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/auth/web/login" : {
+      "post" : {
+        "tags" : [ "Web session" ],
+        "summary" : "Sign the browser in; sets the refresh cookie",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WebLoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WebSessionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/register" : {
       "post" : {
         "tags" : [ "Auth" ],
@@ -929,7 +1013,7 @@
       "post" : {
         "tags" : [ "Auth" ],
         "summary" : "Exchange a refresh token for new tokens (the old one stops working)",
-        "operationId" : "refresh",
+        "operationId" : "refresh_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1002,7 +1086,7 @@
       "post" : {
         "tags" : [ "Auth" ],
         "summary" : "End this device's session",
-        "operationId" : "logout",
+        "operationId" : "logout_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1024,7 +1108,7 @@
       "post" : {
         "tags" : [ "Auth" ],
         "summary" : "Sign a device in with email and password",
-        "operationId" : "login",
+        "operationId" : "login_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -1253,6 +1337,34 @@
         }
       }
     },
+    "/stats/me/details" : {
+      "get" : {
+        "tags" : [ "Stats" ],
+        "summary" : "The web panel's breakdowns: sessions, best streak, by hour and weekday (in `zone`), categories, devices, titles, recent",
+        "operationId" : "details",
+        "parameters" : [ {
+          "name" : "zone",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "UTC"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StatsDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/history" : {
       "get" : {
         "tags" : [ "History" ],
@@ -1294,7 +1406,7 @@
     "/devices" : {
       "get" : {
         "tags" : [ "Devices" ],
-        "summary" : "The signed-in user's devices",
+        "summary" : "The signed-in user's devices, with their active sessions and which one is calling",
         "operationId" : "list_7",
         "responses" : {
           "200" : {
@@ -1416,6 +1528,25 @@
         }
       }
     },
+    "/admin/activity" : {
+      "get" : {
+        "tags" : [ "Admin" ],
+        "summary" : "Last 30 days across the server: active users per day, watch hours per user, features, errors, sync failures",
+        "operationId" : "activity",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Activity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/me" : {
       "get" : {
         "tags" : [ "Account" ],
@@ -1431,6 +1562,27 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/devices/{id}" : {
+      "delete" : {
+        "tags" : [ "Devices" ],
+        "summary" : "Forget one of your devices (and sign it out)",
+        "operationId" : "delete_3",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -1642,6 +1794,50 @@
           "lastSeenAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "activeSessions" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "current" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "WebSessionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "deviceId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          }
+        }
+      },
+      "WebLoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "password" : {
+            "type" : "string"
           }
         }
       },
@@ -1867,6 +2063,184 @@
           }
         }
       },
+      "DeviceWatch" : {
+        "type" : "object",
+        "properties" : {
+          "deviceId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "platform" : {
+            "type" : "string"
+          },
+          "seconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "HourWatch" : {
+        "type" : "object",
+        "properties" : {
+          "hour" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "seconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "RecentWatch" : {
+        "type" : "object",
+        "properties" : {
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "element" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "completed" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "Sessions" : {
+        "type" : "object",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "averageSeconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "averageSpeed" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "withSubtitles" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "StatsDetails" : {
+        "type" : "object",
+        "properties" : {
+          "sessions" : {
+            "$ref" : "#/components/schemas/Sessions"
+          },
+          "bestStreak" : {
+            "$ref" : "#/components/schemas/Streak"
+          },
+          "byHour" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/HourWatch"
+            }
+          },
+          "byWeekday" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WeekdayWatch"
+            }
+          },
+          "byCategory" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryWatch"
+            }
+          },
+          "byDevice" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DeviceWatch"
+            }
+          },
+          "titles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TitleProgress"
+            }
+          },
+          "recent" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecentWatch"
+            }
+          }
+        }
+      },
+      "Streak" : {
+        "type" : "object",
+        "properties" : {
+          "days" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
+      "TitleProgress" : {
+        "type" : "object",
+        "properties" : {
+          "itemId" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "categoryId" : {
+            "type" : "string"
+          },
+          "completed" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "elements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "seconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastWatchedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "WeekdayWatch" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "seconds" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "UserSummary" : {
         "type" : "object",
         "properties" : {
@@ -2056,6 +2430,137 @@
           },
           "error" : {
             "type" : "string"
+          }
+        }
+      },
+      "Activity" : {
+        "type" : "object",
+        "properties" : {
+          "activeUsersByDay" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DayCount"
+            }
+          },
+          "watchHoursByUser" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UserHours"
+            }
+          },
+          "features" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FeatureUse"
+            }
+          },
+          "errorsByVersion" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VersionErrors"
+            }
+          },
+          "recentErrors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClientError"
+            }
+          },
+          "recentSyncFailures" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncFailure"
+            }
+          }
+        }
+      },
+      "DayCount" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "FeatureUse" : {
+        "type" : "object",
+        "properties" : {
+          "feature" : {
+            "type" : "string"
+          },
+          "uses" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "users" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastUsedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "SyncFailure" : {
+        "type" : "object",
+        "properties" : {
+          "at" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "detail" : {
+            "type" : "string"
+          }
+        }
+      },
+      "UserHours" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "hours" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "sessions" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "VersionErrors" : {
+        "type" : "object",
+        "properties" : {
+          "platform" : {
+            "type" : "string"
+          },
+          "appVersion" : {
+            "type" : "string"
+          },
+          "errors" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "users" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "lastAt" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         }
       },

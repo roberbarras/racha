@@ -23,7 +23,27 @@ public final class AdminPorts {
     /** One log event; [error] is the exception's first line, if any. */
     public record LogEntry(Instant at, String level, String logger, String message, String error) {}
 
+    /** What the apps report, server-wide (§8): who is active, what is used, what breaks. */
+    public record Activity(
+            List<DayCount> activeUsersByDay, List<UserHours> watchHoursByUser, List<FeatureUse> features, List<VersionErrors> errorsByVersion,
+            List<ClientError> recentErrors, List<SyncFailure> recentSyncFailures) {}
+
+    public record DayCount(java.time.LocalDate day, long count) {}
+
+    public record UserHours(String email, double hours, long sessions) {}
+
+    public record FeatureUse(String feature, long uses, long users, Instant lastUsedAt) {}
+
+    public record VersionErrors(String platform, String appVersion, long errors, long users, Instant lastAt) {}
+
+    public record ClientError(Instant at, String email, String platform, String appVersion, String message) {}
+
+    public record SyncFailure(Instant at, String email, String kind, String detail) {}
+
     public interface Queries {
+        /** Server-wide activity; per-day counts since [since]. */
+        Activity activity(Instant since);
+
         Counts counts(Instant now);
 
         List<UserSummary> users(Instant now);

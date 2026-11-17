@@ -41,6 +41,12 @@ public class AdminController {
         return admin.overview();
     }
 
+    @GetMapping("/activity")
+    @Operation(summary = "Last 30 days across the server: active users per day, watch hours per user, features, errors, sync failures")
+    public AdminPorts.Activity activity() {
+        return admin.activity();
+    }
+
     @GetMapping("/users")
     @Operation(summary = "Every account with its role, devices, sessions and last activity")
     public List<AdminPorts.UserSummary> users() {

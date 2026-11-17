@@ -54,6 +54,12 @@ public final class JdbcDevices implements IdentityPorts.Devices {
         jdbc.sql("update devices set last_seen_at = :now where id = :id").param("now", Sql.time(now)).param("id", id).update();
     }
 
+    @Override
+    public boolean delete(UUID userId, UUID deviceId) {
+        // Its sessions go with it (on delete cascade).
+        return jdbc.sql("delete from devices where id = :id and user_id = :user").param("id", deviceId).param("user", userId).update() == 1;
+    }
+
     private static Device device(ResultSet rs, int row) throws SQLException {
         return new Device(rs.getObject("id", UUID.class), rs.getObject("user_id", UUID.class), rs.getString("name"),
                 Platform.fromWire(rs.getString("platform")), rs.getString("app_version"), Sql.instant(rs, "created_at"), Sql.instant(rs, "last_seen_at"));

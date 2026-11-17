@@ -52,6 +52,11 @@ public final class AdminService {
                 files.stream().limit(5).toList(), files.stream().mapToLong(AdminPorts.BackupFile::bytes).sum(), logs.location());
     }
 
+    /** The last 30 days of activity across the server. */
+    public AdminPorts.Activity activity() {
+        return queries.activity(clock.instant().minus(Duration.ofDays(30)));
+    }
+
     public List<AdminPorts.UserSummary> users() {
         return queries.users(clock.instant());
     }

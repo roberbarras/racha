@@ -1,7 +1,8 @@
 package io.github.roberbarras.racha.identity.domain;
 
+/** Where a device runs: the two apps, or the web panel (H14). */
 public enum Platform {
-    ANDROID, LINUX;
+    ANDROID, LINUX, WEB;
 
     public String wire() {
         return name().toLowerCase(java.util.Locale.ROOT);

@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.config;
 
+import io.github.roberbarras.racha.stats.adapter.persistence.JdbcStatsDetails;
 import io.github.roberbarras.racha.stats.adapter.persistence.JdbcStatsQueries;
 import io.github.roberbarras.racha.stats.application.StatsService;
 import io.github.roberbarras.racha.sync.adapter.persistence.JdbcSyncStore;
@@ -49,7 +50,7 @@ public class ApiConfiguration {
 
     @Bean
     StatsService statsService(JdbcClient jdbc, Clock clock) {
-        return new StatsService(new JdbcStatsQueries(jdbc), clock);
+        return new StatsService(new JdbcStatsQueries(jdbc), new JdbcStatsDetails(jdbc), clock);
     }
 
     @Bean
