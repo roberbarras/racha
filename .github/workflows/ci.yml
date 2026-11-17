@@ -222,6 +222,8 @@ jobs:
           target: google_apis
           arch: x86_64
           ram-size: 2048M
+          # The default data partition (774 MB) is full after boot: room to install the release for its smoke test.
+          disk-size: 2048M
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
