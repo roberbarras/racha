@@ -19,7 +19,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H10 | Estadísticas y telemetría | ✅ Cerrado |
 | H11 | Ajustes completos, notificaciones, widget, deep links, export/import, onboarding | ✅ Cerrado |
 | H12 | Pulido UI/UX, empaquetado AppImage/APK firmado, entrega | ✅ Cerrado |
-| 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | 🔄 En curso |
+| 1.0 | Tras la entrega: qué contiene una carpeta (ADR-0013), sesiones tras reiniciar el servidor, versión 1.0.0 | ✅ Hecho; publicación de `v1.0.0` pendiente de tu OK |
 
 ## Criterios de aceptación (§12)
 
@@ -51,7 +51,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## 1.0 · Mejoras tras la entrega y versión 1.0.0 — 🔄 en curso
+## 1.0 · Mejoras tras la entrega y versión 1.0.0 — ✅ hecho
 
 Peticiones del usuario tras H12. Decisión en [ADR-0013](docs/adr/0013-que-contiene-una-carpeta.md). Evidencias: [docs/evidence/v1.0](docs/evidence/v1.0).
 
@@ -69,7 +69,9 @@ Peticiones del usuario tras H12. Decisión en [ADR-0013](docs/adr/0013-que-conti
 | Sync: el tipo viaja, cambiarlo se encola, dispositivo antiguo = automático, vincular adopta el tipo remoto; migración v6 → v7 | ✅ |
 | UI escritorio: vista previa, cambio de opción, añadir y cambiar después (capturas); onboarding con las dos opciones | ✅ |
 | Estadísticas: 401 tras reinicio → renovación y datos | ✅ |
-| CI | CI_LINK |
+| AppImage 1.0.0 local: `--self-test` aislado (sin tocar los datos reales) | ✅ |
+| APK 1.0.0 (versionCode 10000, R8, 3,1 MB) | ✅ firmado con la clave de depuración: no hay clave de release |
+| CI (todas las piezas, emulador y release con su *smoke*) | ✅ [run 44068465931](https://github.com/roberbarras/racha/actions/runs/44068465931) |
 
 ---
 
