@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.config;
 
+import io.github.roberbarras.racha.portability.application.PortabilityService;
 import io.github.roberbarras.racha.stats.adapter.persistence.JdbcStatsDetails;
 import io.github.roberbarras.racha.stats.adapter.persistence.JdbcStatsQueries;
 import io.github.roberbarras.racha.stats.application.StatsService;
@@ -44,8 +45,18 @@ public class ApiConfiguration {
     }
 
     @Bean
-    TelemetryService telemetryService(JdbcClient jdbc, JsonMapper json, Clock clock, RachaProperties properties) {
-        return new TelemetryService(new JdbcTelemetryStore(jdbc, json), clock, properties.limits().maxBatch());
+    JdbcTelemetryStore telemetryStore(JdbcClient jdbc, JsonMapper json) {
+        return new JdbcTelemetryStore(jdbc, json);
+    }
+
+    @Bean
+    TelemetryService telemetryService(JdbcTelemetryStore store, Clock clock, RachaProperties properties) {
+        return new TelemetryService(store, clock, properties.limits().maxBatch());
+    }
+
+    @Bean
+    PortabilityService portabilityService(SyncService sync, JdbcTelemetryStore telemetryStore, Clock clock, RachaProperties properties) {
+        return new PortabilityService(sync, telemetryStore, clock, properties.limits().maxBatch());
     }
 
     @Bean

@@ -59,5 +59,8 @@ public final class Telemetry {
         int saveEvents(UUID userId, UUID deviceId, List<Event> events, Instant receivedAt);
 
         int saveErrors(UUID userId, UUID deviceId, List<ClientError> errors, Instant receivedAt);
+
+        /** Every event of the user, oldest first (exporting their data, H16). */
+        List<Event> eventsOf(UUID userId);
     }
 }

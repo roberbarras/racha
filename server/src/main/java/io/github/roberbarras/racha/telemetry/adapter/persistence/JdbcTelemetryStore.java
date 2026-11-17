@@ -34,6 +34,16 @@ public final class JdbcTelemetryStore implements Telemetry.Store {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public List<Telemetry.Event> eventsOf(UUID userId) {
+        return jdbc.sql("select id, type, occurred_at, properties::text as properties from analytics_events where user_id = :user order by occurred_at, id")
+                .param("user", userId)
+                .query((rs, row) -> new Telemetry.Event(rs.getObject("id", UUID.class), rs.getString("type"), rs.getTimestamp("occurred_at").toInstant(),
+                        (Map<String, Object>) json.readValue(rs.getString("properties"), Map.class)))
+                .list();
+    }
+
+    @Override
     public int saveErrors(UUID userId, UUID deviceId, List<Telemetry.ClientError> errors, Instant receivedAt) {
         int inserted = 0;
         for (var e : errors) {
