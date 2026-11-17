@@ -51,6 +51,7 @@
     <string name="mark_all_watched">Marcar todo como visto</string>
     <string name="mark_all_unwatched">Marcar todo como no visto</string>
     <string name="mark_section_watched">Marcar sección como vista</string>
+    <string name="mark_section_unwatched">Marcar sección como no vista</string>
     <string name="unavailable">No está en disco</string>
     <string name="unavailable_detail">El fichero ya no está. Tu progreso se conserva y vuelve si lo añades de nuevo.</string>
     <string name="detected_minutes_ago">Detectado hace %1$d min</string>

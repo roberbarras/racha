@@ -85,6 +85,7 @@ import io.github.roberbarras.racha.ui.resources.kind_url
 import io.github.roberbarras.racha.ui.resources.kind_video
 import io.github.roberbarras.racha.ui.resources.mark_all_unwatched
 import io.github.roberbarras.racha.ui.resources.mark_all_watched
+import io.github.roberbarras.racha.ui.resources.mark_section_unwatched
 import io.github.roberbarras.racha.ui.resources.mark_section_watched
 import io.github.roberbarras.racha.ui.resources.mark_unwatched
 import io.github.roberbarras.racha.ui.resources.mark_up_to_here
@@ -107,7 +108,7 @@ class DetailViewModel(private val deps: RachaDependencies, private val id: Conte
 
     fun toggleFavorite(favorite: Boolean) = viewModelScope.launch { deps.toggleFavorite(FavoriteTarget.Item(id), favorite) }
     fun markItem(watched: Boolean) = viewModelScope.launch { deps.markProgress.item(id, watched) }
-    fun markSection(section: ContentId) = viewModelScope.launch { deps.markProgress.section(id, section, watched = true) }
+    fun markSection(section: ContentId, watched: Boolean) = viewModelScope.launch { deps.markProgress.section(id, section, watched) }
     fun markElement(element: ContentId, watched: Boolean) = viewModelScope.launch { deps.markProgress.element(element, watched) }
     fun markUpTo(element: ContentId) = viewModelScope.launch { deps.markProgress.upTo(id, element) }
 
@@ -219,11 +220,15 @@ private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boo
         else -> section.section.title
     }
     Column(verticalArrangement = Arrangement.spacedBy(Racha.space.m)) {
+        // A toggle: a section all watched can be marked unwatched again (H15).
+        val allWatched = section.elements.isNotEmpty() && section.elements.all { it.watched }
+        val label = stringResource(if (allWatched) Res.string.mark_section_unwatched else Res.string.mark_section_watched)
+        val icon = if (allWatched) RachaIcons.CircleDashed else RachaIcons.CircleCheck
         SectionHeader(title) {
             if (compact) {
-                RIconButton(RachaIcons.CircleCheck, stringResource(Res.string.mark_section_watched), { vm.markSection(section.section.id) }, tint = Racha.colors.inkMuted)
+                RIconButton(icon, label, { vm.markSection(section.section.id, !allWatched) }, tint = Racha.colors.inkMuted)
             } else {
-                RButton(stringResource(Res.string.mark_section_watched), onClick = { vm.markSection(section.section.id) }, kind = ButtonKind.Ghost)
+                RButton(label, onClick = { vm.markSection(section.section.id, !allWatched) }, kind = ButtonKind.Ghost, icon = icon)
             }
         }
         val shape = RoundedCornerShape(Racha.radius.l)

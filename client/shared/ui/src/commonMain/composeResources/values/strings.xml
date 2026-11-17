@@ -51,6 +51,7 @@
     <string name="mark_all_watched">Mark all as watched</string>
     <string name="mark_all_unwatched">Mark all as unwatched</string>
     <string name="mark_section_watched">Mark section as watched</string>
+    <string name="mark_section_unwatched">Mark section as unwatched</string>
     <string name="unavailable">Not on disk</string>
     <string name="unavailable_detail">The file is gone. Your progress is kept and comes back if you add it again.</string>
     <string name="detected_minutes_ago">Detected %1$d min ago</string>
