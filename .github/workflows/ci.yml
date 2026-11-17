@@ -259,7 +259,17 @@ jobs:
             echo "::notice title=Android release::No signing secrets: the release APK is signed with the debug key (not for distribution)."
           fi
       - name: Release APK (R8)
-        run: ./gradlew :android:assembleRelease --console=plain
+        # It has failed early twice in CI and never locally: say why (logs need a login), and try once more.
+        run: |
+          set -o pipefail
+          why() { grep -A12 'What went wrong' "$1" | head -14 | tr '\n' ' ' | cut -c1-1500; }
+          if ! ./gradlew :android:assembleRelease --console=plain 2>&1 | tee "$RUNNER_TEMP/release1.log"; then
+            echo "::warning title=Release APK, first attempt::$(why "$RUNNER_TEMP/release1.log")"
+            if ! ./gradlew :android:assembleRelease --console=plain 2>&1 | tee "$RUNNER_TEMP/release2.log"; then
+              echo "::error title=Release APK::$(why "$RUNNER_TEMP/release2.log")"
+              exit 1
+            fi
+          fi
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
