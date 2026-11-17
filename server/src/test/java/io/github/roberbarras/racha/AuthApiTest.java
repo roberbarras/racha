@@ -97,14 +97,38 @@ class AuthApiTest {
     }
 
     @Test
-    void tooManyFailedLoginsAreThrottled() {
+    void failedLoginsLockThatAccountFromThatAddressOnly() {
         var email = "t-" + UUID.randomUUID() + "@example.com";
-        api.post("/auth/register", Map.of("email", email, "password", "correct horse battery", "device", Api.device("x")), null);
-        for (int i = 0; i < 10; i++) {
-            assertThat(api.post("/auth/login", Map.of("email", email, "password", "wrong password " + i, "device", Api.device("x")), null).status()).isEqualTo(401);
+        var other = "o-" + UUID.randomUUID() + "@example.com";
+        for (var e : java.util.List.of(email, other)) {
+            api.post("/auth/register", Map.of("email", e, "password", "correct horse battery", "device", Api.device("x")), null);
         }
-        var blocked = api.post("/auth/login", Map.of("email", email, "password", "correct horse battery", "device", Api.device("x")), null);
+        var attacker = "203.0.113." + (1 + new java.util.Random().nextInt(250));
+        for (int i = 0; i < 10; i++) {
+            assertThat(login(email, "wrong password " + i, attacker).status()).isEqualTo(401);
+        }
+        var blocked = login(email, "correct horse battery", attacker);
         assertThat(blocked.status()).isEqualTo(429);
         assertThat(blocked.body().get("code").asString()).isEqualTo("too_many_attempts");
+
+        // The owner, elsewhere, is not locked out; nor is anybody else, even from the attacker's address.
+        assertThat(login(email, "correct horse battery", "198.51.100.40").status()).isEqualTo(200);
+        assertThat(login(other, "correct horse battery", attacker).status()).isEqualTo(200);
+    }
+
+    @Test
+    void anAddressFailingTooOftenIsLockedForEveryAccountButNobodyElseIs() {
+        var email = "c-" + UUID.randomUUID() + "@example.com";
+        api.post("/auth/register", Map.of("email", email, "password", "correct horse battery", "device", Api.device("x")), null);
+        var attacker = "2001:db8::" + Integer.toHexString(1 + new java.util.Random().nextInt(60000));
+        for (int i = 0; i < 50; i++) {
+            assertThat(login("nobody-" + i + "@example.com", "wrong password", attacker).status()).isEqualTo(401);
+        }
+        assertThat(login(email, "correct horse battery", attacker).status()).isEqualTo(429);
+        assertThat(login(email, "correct horse battery", "198.51.100.41").status()).isEqualTo(200);
+    }
+
+    private Api.Response login(String email, String password, String from) {
+        return api.call("POST", "/auth/login", Map.of("email", email, "password", password, "device", Api.device("x")), null, from);
     }
 }

@@ -2,6 +2,8 @@ package io.github.roberbarras.racha.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import io.github.roberbarras.racha.identity.adapter.security.JwtAccessTokens;
+import io.github.roberbarras.racha.shared.adapter.web.ClientAddressFilter;
+import io.github.roberbarras.racha.shared.adapter.web.TrustedProxies;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -9,8 +11,10 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -39,6 +43,15 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(rs -> rs.jwt(Customizer.withDefaults()))
                 .build();
+    }
+
+    /** Real client addresses behind a trusted proxy, before anything else (security, throttling, logs) reads them. */
+    @Bean
+    FilterRegistrationBean<ClientAddressFilter> clientAddressFilter(RachaProperties properties) {
+        var proxies = TrustedProxies.parse(properties.network() == null ? null : properties.network().trustedProxies());
+        var registration = new FilterRegistrationBean<>(new ClientAddressFilter(proxies));
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 
     @Bean

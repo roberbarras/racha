@@ -40,9 +40,13 @@ racha:
   limits:
     max-batch: 1000
     max-change-bytes: 65536
-    login-failures-per-email: 10
+    login-failures-per-account-and-client: 10
     login-failures-per-client: 50
     registrations-per-client: 20
+  network:
+    # Proxies allowed to tell the client's address (X-Forwarded-For, CF-Connecting-IP): `local` (same machine or LAN,
+    # e.g. Cloudflare Tunnel, nginx, Caddy), `cloudflare` (Cloudflare's proxy pointing at this server), `none`, or CIDRs.
+    trusted-proxies: ${RACHA_TRUSTED_PROXIES:local}
 
 springdoc:
   api-docs:

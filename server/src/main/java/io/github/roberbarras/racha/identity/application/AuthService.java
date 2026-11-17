@@ -69,9 +69,11 @@ public final class AuthService {
         } catch (IllegalArgumentException e) {
             throw new AuthErrors.InvalidCredentials();
         }
-        var emailKey = "login:" + email.value();
+        // Failures lock this account from this address only, and this address for every account: someone guessing a
+        // password can neither lock its owner out from elsewhere nor anybody else.
+        var accountKey = "login:" + email.value() + "|" + clientKey;
         var clientLimit = "login-client:" + clientKey;
-        if (!limiter.allowed(emailKey, now) || !limiter.allowed(clientLimit, now)) throw new AuthErrors.TooManyAttempts();
+        if (!limiter.allowed(accountKey, now) || !limiter.allowed(clientLimit, now)) throw new AuthErrors.TooManyAttempts();
         var user = users.byEmail(email).filter(u -> !u.disabled());
         var given = password == null ? "" : password;
         boolean ok;
@@ -82,11 +84,11 @@ public final class AuthService {
             ok = false;
         }
         if (!ok) {
-            limiter.failed(emailKey, now);
+            limiter.failed(accountKey, now);
             limiter.failed(clientLimit, now);
             throw new AuthErrors.InvalidCredentials();
         }
-        limiter.succeeded(emailKey);
+        limiter.succeeded(accountKey);
         return startSession(user.get(), device, now, null);
     }
 

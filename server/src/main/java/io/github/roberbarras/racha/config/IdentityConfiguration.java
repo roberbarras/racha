@@ -42,7 +42,7 @@ public class IdentityConfiguration {
     IdentityPorts.AttemptLimiter attemptLimiter(RachaProperties properties) {
         var limits = properties.limits();
         return new InMemoryAttemptLimiter(java.util.Map.of(
-                "login", limits.loginFailuresPerEmail(),
+                "login", limits.loginFailuresPerAccountAndClient(),
                 "login-client", limits.loginFailuresPerClient(),
                 "register", limits.registrationsPerClient()), Duration.ofMinutes(15));
     }

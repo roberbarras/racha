@@ -25,9 +25,15 @@ public final class Api {
     }
 
     public Response call(String method, String path, Object body, String token) {
+        return call(method, path, body, token, null);
+    }
+
+    /** [from]: the client address a local proxy reports (X-Forwarded-For); the tests connect from loopback. */
+    public Response call(String method, String path, Object body, String token, String from) {
         try {
             var builder = HttpRequest.newBuilder(URI.create(base + path)).header("Content-Type", "application/json");
             if (token != null) builder.header("Authorization", "Bearer " + token);
+            if (from != null) builder.header("X-Forwarded-For", from);
             var publisher = body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body));
             var response = http.send(builder.method(method, publisher).build(), HttpResponse.BodyHandlers.ofString());
             var text = response.body();
