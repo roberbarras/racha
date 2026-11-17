@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -191,7 +193,8 @@ private fun ProviderCard(vm: SummariesSettingsViewModel, deps: RachaDependencies
                 RText(provider.model.ifEmpty { "—" }, style = Racha.type.caption, color = Racha.colors.inkMuted, maxLines = 1)
             }
             if (needsKey && !hasKey) Tag(stringResource(Res.string.provider_no_key))
-            RSwitch(provider.enabled, { vm.update(provider.copy(enabled = it)) })
+            val enabledLabel = stringResource(Res.string.provider_enabled)
+            RSwitch(provider.enabled, { vm.update(provider.copy(enabled = it)) }, Modifier.semantics { contentDescription = enabledLabel })
             if (index > 0) RIconButton(RachaIcons.ChevronDown, stringResource(Res.string.provider_up), { vm.move(provider.id, -1) }, Modifier.rotate(180f))
             if (index < count - 1) RIconButton(RachaIcons.ChevronDown, stringResource(Res.string.provider_down), { vm.move(provider.id, 1) })
             RIconButton(RachaIcons.Settings, stringResource(Res.string.provider_edit), { open = !open }, tint = if (open) Racha.colors.accent else Racha.colors.ink)
@@ -208,7 +211,6 @@ private fun ProviderEditor(
     val checks by vm.checks.collectAsStateWithLifecycle()
     val models by vm.models.collectAsStateWithLifecycle()
     Column(verticalArrangement = Arrangement.spacedBy(Racha.space.m)) {
-        SwitchRow(stringResource(Res.string.provider_enabled), provider.enabled, { vm.update(provider.copy(enabled = it)) })
         TextRow(stringResource(Res.string.provider_name), provider.name, { vm.update(provider.copy(name = it.ifBlank { provider.name })) })
         TextRow(
             stringResource(Res.string.provider_url), provider.baseUrl, { vm.update(provider.copy(baseUrl = it)) }, null, KeyboardType.Uri,

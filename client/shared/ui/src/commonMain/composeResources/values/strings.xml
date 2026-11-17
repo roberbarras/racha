@@ -361,7 +361,7 @@
     <string name="onboarding_mode_title">What will you use it for?</string>
     <string name="onboarding_mode_message">You can switch at any time from Home.</string>
     <string name="onboarding_mode_study">Study</string>
-    <string name="onboarding_mode_study_hint">Courses first, with streaks and today\'s lesson.</string>
+    <string name="onboarding_mode_study_hint">Courses first, with streaks and today's lesson.</string>
     <string name="onboarding_mode_leisure">Leisure</string>
     <string name="onboarding_mode_leisure_hint">Series and the rest, without pressure.</string>
     <string name="onboarding_folders_title">Choose your folders</string>
@@ -387,7 +387,7 @@
     <string name="ai_prompt">Base prompt</string>
     <string name="ai_prompt_hint">{title} is replaced by the course or series title. Empty uses a default.</string>
     <string name="ai_key">API key</string>
-    <string name="ai_key_hint">Kept in the system\'s keychain; never exported or synced.</string>
+    <string name="ai_key_hint">Kept in the system's keychain; never exported or synced.</string>
     <string name="ai_key_saved">A key is saved</string>
     <string name="ai_key_remove">Remove key</string>
     <!-- What a folder holds (ADR-0013) -->
@@ -505,11 +505,11 @@
     <string name="summary_export">Save as .md</string>
     <string name="summary_exported">Saved.</string>
     <string name="summary_working">Writing the summary… long lessons take a while.</string>
-    <string name="summary_empty">No summary yet. It is written from the lesson\'s subtitles by the AI providers you set up and kept with your data (synced, in backups), never in your folders.</string>
-    <string name="summary_empty_section">No summary yet. It is written from the summaries of the section\'s lessons with subtitles (the missing ones are written first).</string>
+    <string name="summary_empty">No summary yet. It is written from the lesson's subtitles by the AI providers you set up and kept with your data (synced, in backups), never in your folders.</string>
+    <string name="summary_empty_section">No summary yet. It is written from the summaries of the section's lessons with subtitles (the missing ones are written first).</string>
     <string name="summary_not_configured">Set up an AI provider first, in Settings → AI summaries.</string>
     <string name="summary_open_settings">Open Settings</string>
-    <string name="summary_unavailable">This lesson\'s folder is not on this device.</string>
+    <string name="summary_unavailable">This lesson's folder is not on this device.</string>
     <string name="summary_failed">No provider could write it:</string>
     <string name="summary_by">By %1$s · %2$s · %3$s</string>
     <string name="summary_reason_quota">no free quota left for now</string>
@@ -523,7 +523,7 @@
     <string name="summary_reason_empty">empty answer</string>
     <string name="summary_reason_other">error %1$s</string>
     <string name="section_summaries">AI summaries</string>
-    <string name="summaries_intro">Summaries and key points of lessons, written from their subtitles. Providers are tried in this order: when one fails (no free quota left, wrong key, down), the next one takes over. Only the subtitles\' text is sent.</string>
+    <string name="summaries_intro">Summaries and key points of lessons, written from their subtitles. Providers are tried in this order: when one fails (no free quota left, wrong key, down), the next one takes over. Only the subtitles' text is sent.</string>
     <string name="summaries_none">No provider yet: add one, then its key.</string>
     <string name="summaries_add">Add provider</string>
     <string name="summaries_free">Free tier</string>

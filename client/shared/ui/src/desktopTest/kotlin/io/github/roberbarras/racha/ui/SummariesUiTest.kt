@@ -12,6 +12,10 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runDesktopComposeUiTest
 import androidx.lifecycle.ViewModelStore
@@ -41,6 +45,11 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalTestApi::class)
 class SummariesUiTest {
     private val originalLocale = Locale.getDefault()
+    private val out = java.io.File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
+
+    private fun androidx.compose.ui.test.ComposeUiTest.shot(name: String) = javax.imageio.ImageIO.write(
+        onRoot().captureToImage().toAwtImage(), "png", java.io.File(out, "$name.png"),
+    )
 
     @AfterTest
     fun restoreLocale() = Locale.setDefault(originalLocale)
@@ -128,6 +137,7 @@ class SummariesUiTest {
         assertEquals("IAM Introduction Users, Groups, Policies.md", name)
         assertTrue(text.startsWith("# IAM Introduction: Users, Groups, Policies\n\n## Summary"))
         assertTrue(text.contains("Groq · llama"))
+        shot("desktop-summary-lesson-en")
     }
 
     @Test
@@ -150,5 +160,8 @@ class SummariesUiTest {
             runBlocking { SummaryProvider.decode(deps.preferences.get(Settings.SummaryProviders)) }.map { it.id } == listOf("gemini")
         }
         waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("gemini-2.5-flash").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithContentDescription("Edit").performClick()
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Get a key").fetchSemanticsNodes().isNotEmpty() }
+        shot("desktop-summary-providers-en")
     }
 }
