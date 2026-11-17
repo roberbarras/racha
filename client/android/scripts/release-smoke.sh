@@ -51,10 +51,11 @@ monkey_crash=$(grep -c "CRASH: $pkg" /tmp/racha-monkey.log || true)
 running=$($adb shell pidof "$pkg" >/dev/null && echo yes || echo no)
 summary="release smoke: crashes=$crashes anrs=$anrs monkey_crash=$monkey_crash still_running=$running"
 echo "$summary"
+# Details for the report; nothing found (grep 1) or head closing the pipe early is not a failure.
 {
   echo "$summary"
-  $adb logcat -d -b crash | grep -A12 "Process: $pkg" | head -40
-  $adb logcat -d | grep -A12 "ANR in $pkg" | head -30
+  $adb logcat -d -b crash | grep -A12 "Process: $pkg" | head -40 || true
+  $adb logcat -d | grep -A12 "ANR in $pkg" | head -30 || true
 } >>"$report"
 if [ "$crashes" != 0 ] || [ "$anrs" != 0 ] || [ "$monkey_crash" != 0 ]; then
   cat "$report"
