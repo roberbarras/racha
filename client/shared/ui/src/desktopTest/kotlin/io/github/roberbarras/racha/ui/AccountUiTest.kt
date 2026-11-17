@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.runDesktopComposeUiTest
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.lifecycle.ViewModelStore
@@ -118,20 +119,29 @@ class AccountUiTest {
             db.sync.applyRemote(listOf(remote), ConflictPolicy.ASK)
         }
         setContent { App(deps) }
-        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings to review").fetchSemanticsNodes().isNotEmpty() }
+        waitOrDump("home banner") { onAllNodesWithText("Settings to review").fetchSemanticsNodes().isNotEmpty() }
 
         onNodeWithText("Review").performClick()
-        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isNotEmpty() }
+        waitOrDump("conflicts card") { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isNotEmpty() }
         onNodeWithText("Theme").assertExists()
         onNodeWithText("This device: dark").assertExists()
         onNodeWithText("Other device: light").assertExists()
 
         onNodeWithText("Use the other").performClick()
-        waitUntil(timeoutMillis = 30_000) { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isEmpty() }
+        waitOrDump("conflict resolved") { onAllNodesWithText("Settings changed on another device").fetchSemanticsNodes().isEmpty() }
         runBlocking { assertEquals(ThemeMode.LIGHT, preferences.get(Settings.Theme)) }
     }
 
     private val out = java.io.File(System.getProperty("racha.screenshots") ?: "build/screenshots").apply { mkdirs() }
+
+    /** Like waitUntil, but a timeout says which step it was and leaves the screen's texts and a capture behind. */
+    private fun androidx.compose.ui.test.ComposeUiTest.waitOrDump(step: String, condition: () -> Boolean) = try {
+        waitUntil(timeoutMillis = 30_000, condition = condition)
+    } catch (e: Throwable) {
+        javax.imageio.ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", java.io.File(out, "FAILED-account-$step.png"))
+        val texts = onRoot().printToString(maxDepth = 30).lines().filter { "Text" in it }.joinToString(" | ").take(2000)
+        throw AssertionError("timed out waiting for $step; screen: $texts", e)
+    }
 
     private fun shoot(
         name: String, width: Int, height: Int, signedIn: Boolean, route: Any = io.github.roberbarras.racha.ui.app.AccountRoute,
