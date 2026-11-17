@@ -473,4 +473,6 @@
     <string name="player_muted">Muted</string>
     <string name="player_bookmark_added">Bookmark added</string>
     <string name="player_subtitles">Subtitles: %1$s</string>
+    <string name="audio_only">Audio only</string>
+    <string name="audio_only_hint">Audio only: you can lock or turn off the screen and it keeps playing.</string>
 </resources>

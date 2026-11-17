@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.ui.player
 
+import io.github.roberbarras.racha.ui.resources.audio_only_hint
+import io.github.roberbarras.racha.ui.design.Poster
 import io.github.roberbarras.racha.ui.resources.subtitles_off
 import io.github.roberbarras.racha.ui.resources.player_subtitles
 import io.github.roberbarras.racha.ui.resources.player_muted
@@ -117,7 +119,8 @@ fun PlayerScreen(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && !hooks.inPictureInPicture.value) vm.onBackground()
+            // Leaving the app pauses, except in PiP or audio only (that is what they are for).
+            if (event == Lifecycle.Event.ON_STOP && !hooks.inPictureInPicture.value && !vm.audioOnly.value) vm.onBackground()
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
@@ -245,6 +248,8 @@ fun PlayerScreen(
                 },
         ) {
             val container = this
+            val audioOnly by vm.audioOnly.collectAsStateWithLifecycle()
+            if (audioOnly) AudioOnlyCover(state, Modifier.fillMaxSize())
             state.engine.subtitleText?.let { SubtitleText(it, Modifier.align(Alignment.BottomCenter).padding(bottom = if (controlsVisible && !inPip) 120.dp else 40.dp)) }
             if (inPip) {
                 // Only reachable where the app drives PiP (desktop): click toggles playback, double click goes back.
@@ -502,3 +507,19 @@ internal fun ControlButton(icon: androidx.compose.ui.graphics.vector.ImageVector
 }
 
 internal val ControlsScrim = Color.Black.copy(alpha = 0.45f)
+
+/** Audio only (H15): the course's cover and what is playing, instead of the (stopped) video. */
+@Composable
+private fun AudioOnlyCover(state: PlaybackState, modifier: Modifier) {
+    val item = state.item ?: return
+    Column(
+        modifier.background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Racha.space.l, Alignment.CenterVertically),
+    ) {
+        Poster(item.posterPath, item.displayTitle, Modifier.widthIn(max = 360.dp).fillMaxWidth(0.6f))
+        RText(state.element?.displayTitle ?: "", style = Racha.type.title, color = Color.White, textAlign = TextAlign.Center)
+        RText(item.displayTitle, style = Racha.type.body, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+        RText(stringResource(Res.string.audio_only_hint), style = Racha.type.caption, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center)
+    }
+}

@@ -1,5 +1,8 @@
 package io.github.roberbarras.racha.ui.player
 
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.roberbarras.racha.ui.resources.audio_only
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
@@ -159,6 +162,8 @@ private fun Tools(vm: PlayerViewModel, state: PlaybackState, panelOpen: Boolean,
     }, active = state.loopA != null)
     ControlButton(RachaIcons.Camera, stringResource(Res.string.screenshot), act(onScreenshot))
     ControlButton(RachaIcons.PictureInPicture2, stringResource(Res.string.picture_in_picture), act { vm.enterPictureInPicture() })
+    val audioOnly by vm.audioOnly.collectAsStateWithLifecycle()
+    ControlButton(RachaIcons.Headphones, stringResource(Res.string.audio_only), act { vm.setAudioOnly(!audioOnly) }, active = audioOnly)
     ControlButton(RachaIcons.Settings, stringResource(Res.string.player_settings), act { vm.togglePanel(PlayerPanel.Settings) })
     ControlButton(RachaIcons.ListVideo, stringResource(Res.string.elements), act { vm.togglePanel(PlayerPanel.Queue) }, active = panelOpen)
 }

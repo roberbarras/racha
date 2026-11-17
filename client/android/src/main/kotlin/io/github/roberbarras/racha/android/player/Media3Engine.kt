@@ -70,6 +70,19 @@ class Media3Engine(context: Context) : PlayerEngine {
         })
     }
 
+    /** The engine's media session, handed to the background playback service in audio-only mode (H15). */
+    val mediaSession: MediaSession get() = session
+
+    /** Whether video is decoded (false in audio only); read by device tests. */
+    val videoEnabled: Boolean get() = C.TRACK_TYPE_VIDEO !in player.trackSelectionParameters.disabledTrackTypes
+
+    /** Disabling the video track stops its decoder: with the screen off only audio is decoded (H15). */
+    override fun setVideoEnabled(enabled: Boolean) {
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, !enabled)
+            .build()
+    }
+
     fun attach(view: SurfaceView) = player.setVideoSurfaceView(view)
 
     fun detach(view: SurfaceView) = player.clearVideoSurfaceView(view)

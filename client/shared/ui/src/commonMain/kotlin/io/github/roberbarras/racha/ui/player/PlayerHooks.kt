@@ -45,6 +45,12 @@ interface PlayerHooks {
 
     val inPictureInPicture: StateFlow<Boolean>
 
+    /**
+     * Audio only (H15): the platform lets the screen turn off and, on Android, keeps playing in the background with
+     * media controls in the notification and on the lock screen. The engine itself stops decoding video.
+     */
+    fun setAudioOnly(engine: PlayerEngine, enabled: Boolean) = Unit
+
     /** Tells the platform whether playback is running (automatic PiP on leaving the app, screen kept on). */
     fun onPlayingChanged(playing: Boolean, videoWidth: Int, videoHeight: Int)
 

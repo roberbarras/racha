@@ -79,6 +79,18 @@ class PlayerViewModel(
         }
     }
 
+    private val mutableAudioOnly = MutableStateFlow(false)
+    /** Audio only (H15): survives autoplay-next like full screen; the screen may turn off and playback goes on. */
+    val audioOnly: StateFlow<Boolean> = mutableAudioOnly.asStateFlow()
+
+    fun setAudioOnly(enabled: Boolean) {
+        if (mutableAudioOnly.value == enabled) return
+        mutableAudioOnly.value = enabled
+        engine.setVideoEnabled(!enabled)
+        hooks.setAudioOnly(engine, enabled)
+        if (enabled) controller.usedFeature("audio_only")
+    }
+
     fun setFullscreen(enabled: Boolean) {
         mutableFullscreen.value = enabled
         hooks.setFullscreen(enabled)
@@ -112,6 +124,7 @@ class PlayerViewModel(
     }
 
     override fun onCleared() {
+        if (mutableAudioOnly.value) hooks.setAudioOnly(engine, false)
         hooks.setFullscreen(false)
         hooks.onPlayingChanged(false, 0, 0)
         hooks.onClosed()

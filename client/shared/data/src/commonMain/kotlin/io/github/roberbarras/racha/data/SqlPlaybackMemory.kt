@@ -37,6 +37,9 @@ class SqlPlaybackMemory(private val db: RachaDatabase, private val io: Coroutine
         Unit
     }
 
+    /** Forgets every choice (device tests start from a known state). */
+    suspend fun clear() = withContext(io) { q.clearMemory(); Unit }
+
     private companion object {
         const val OFF = "off"
     }

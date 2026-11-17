@@ -52,5 +52,11 @@ interface PlayerEngine {
 
     fun selectAudio(id: String?)
 
+    /**
+     * Audio only (H15) when false: the engine stops decoding and presenting video (battery, CPU) and keeps the sound,
+     * also for the next videos it loads, until it is enabled again.
+     */
+    fun setVideoEnabled(enabled: Boolean) = Unit
+
     fun release()
 }

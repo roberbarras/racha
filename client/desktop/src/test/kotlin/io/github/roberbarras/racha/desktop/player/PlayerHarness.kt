@@ -108,6 +108,19 @@ fun main() {
                     checks["positionAfterPipMs"] = engine.positionMs()
                     checks["snapshotAfterPip"] = engine.snapshot.value
 
+                    // Audio only (H15): mpv stops decoding and drawing video, playback goes on, and video comes back.
+                    System.err.println("STEP audio only")
+                    val beforeAudioOnly = engine.positionMs()
+                    engine.setVideoEnabled(false)
+                    waitFor("video off", 5_000) { engine.property("vid") == "no" }
+                    checks["vidInAudioOnly"] = engine.property("vid")
+                    delay(2_000)
+                    checks["advancedInAudioOnlyMs"] = engine.positionMs() - beforeAudioOnly
+                    check(engine.positionMs() > beforeAudioOnly + 1_000) { "playback stopped in audio only" }
+                    engine.setVideoEnabled(true)
+                    waitFor("video back", 10_000) { engine.property("vo-configured") == "yes" }
+                    checks["videoAfterAudioOnly"] = engine.property("current-vo")
+
                     val frame = hooks.screenshot(engine, "harness-frame")
                     checks["frameCapture"] = frame
                     check(frame != null && Files.size(Path.of(frame)) > 0) { "no frame capture" }
@@ -126,8 +139,10 @@ fun main() {
                     System.err.println("STEP reopen and close window")
                     nav.navigate(PlayerRoute(lesson.value, StartMode.RESUME))
                     waitFor("playing again", 20_000) { hooks.currentEngine?.let { it !== engine && it.snapshot.value.playing } == true }
-                    val savedBefore = (checks["savedSec"] as Long) * 1000
-                    waitFor("advanced after reopening", 15_000) { hooks.currentEngine!!.positionMs() >= savedBefore + 3_000 }
+                    // From wherever it starts (near the end of the clip it starts over: PlaybackRules), it must advance.
+                    val reopenedAt = hooks.currentEngine!!.positionMs()
+                    checks["reopenedAtMs"] = reopenedAt
+                    waitFor("advanced after reopening", 15_000) { hooks.currentEngine!!.positionMs() >= reopenedAt + 3_000 }
                     val reopened = hooks.currentEngine!!.positionMs()
                     checks["positionAtWindowCloseMs"] = reopened
                     hooks.finishOpenSession()

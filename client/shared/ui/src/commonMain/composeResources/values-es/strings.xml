@@ -473,4 +473,6 @@
     <string name="player_muted">Silencio</string>
     <string name="player_bookmark_added">Marcador añadido</string>
     <string name="player_subtitles">Subtítulos: %1$s</string>
+    <string name="audio_only">Solo audio</string>
+    <string name="audio_only_hint">Solo audio: puedes bloquear o apagar la pantalla y seguirá sonando.</string>
 </resources>

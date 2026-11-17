@@ -1,5 +1,7 @@
 package io.github.roberbarras.racha.android.player
 
+import kotlin.test.assertFalse
+import androidx.compose.ui.test.hasClickAction
 import android.graphics.Bitmap
 import android.provider.MediaStore
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -71,6 +73,7 @@ class PlayerUiTest {
             graph.ensureBuiltInCategories()
             graph.database.categories.upsertRoot(CategoryRoot(root, CategoryKey.COURSES, NioLibrarySource.locationOf(course.toPath()), 0))
             graph.scanLibrary.category(CategoryKey.COURSES)
+            graph.database.playbackMemory.clear() // speed, audio and subtitles are remembered (H15): start from none
             val now = Clock.System.now()
             graph.database.progress.save(Progress.start(lesson, 30, now).recordPosition(12, 30, now))
         }
@@ -117,7 +120,7 @@ class PlayerUiTest {
         save("android-player-subtitles")
         compose.onNode(hasContentDescription("Close")).performClick()
 
-        withControls { compose.onNode(hasText("1×")).performClick() }
+        withControls { compose.onNode(hasText("×", substring = true) and hasClickAction()).performClick() }
         compose.onNode(hasText("1.5×")).performClick()
         compose.waitUntil(timeoutMillis = 5_000) { engine()?.speed == 1.5f }
         compose.onNode(hasContentDescription("Close")).performClick()
@@ -141,6 +144,37 @@ class PlayerUiTest {
         }
         assertNotNull(saved)
         assertTrue(saved.positionSec >= 13, "position saved on leaving: ${saved.positionSec}")
+    }
+
+    @Test
+    fun audioOnlyStopsTheVideoAndKeepsPlayingWithTheAppInTheBackground() {
+        openPlayerFromContinueWatching()
+        val media = app.playerHooks.visibleEngines.first() as Media3Engine
+        clickDescription("Audio only")
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodes(hasText("Audio only: you can lock", substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
+        assertFalse(instrumentation.runOnMainSyncResult { media.videoEnabled }, "no video decoding")
+        assertTrue(PlaybackService.active, "the session is kept by the playback service")
+        val keepOn = instrumentation.runOnMainSyncResult {
+            compose.activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+        }
+        assertEquals(0, keepOn, "the screen may turn off")
+        save("android-player-audio-only")
+
+        // Out of sight (as with the screen off): it keeps playing.
+        instrumentation.runOnMainSync { compose.activity.moveTaskToBack(true) }
+        val before = instrumentation.runOnMainSyncResult { media.positionMs() }
+        Thread.sleep(3_000)
+        assertTrue(instrumentation.runOnMainSyncResult { media.positionMs() } > before + 1_500, "still playing in the background")
+        assertTrue(media.snapshot.value.playing)
+
+        instrumentation.startActivitySync(
+            android.content.Intent(context, MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+        clickDescription("Audio only")
+        compose.waitUntil(timeoutMillis = 10_000) { instrumentation.runOnMainSyncResult { media.videoEnabled } }
+        assertFalse(PlaybackService.active, "back to video: no background service")
     }
 
     @Test

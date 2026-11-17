@@ -104,7 +104,7 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
             }
             guarded(Unit) {
                 mpv.setProperty("wid", windowId.toString())
-                mpv.setProperty("vid", "auto")
+                if (videoEnabled) mpv.setProperty("vid", "auto")
             }
             return
         }
@@ -169,6 +169,21 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
     /** Runs [block] against a live core, or returns [fallback] once it is being destroyed. */
     private inline fun <T> guarded(fallback: T, block: () -> T): T = gate.read { if (destroyed || closing) fallback else block() }
 
+    /** False in audio-only mode (H15): kept so the next videos load without video too. */
+    @Volatile
+    private var videoEnabled = true
+
+    /**
+     * Audio only: video off the same safe way as [detachVideo] (toolkit lock, wait until the output is gone), so mpv
+     * stops decoding and drawing; back on as [attach] does. Called on the EDT.
+     */
+    override fun setVideoEnabled(enabled: Boolean) {
+        if (videoEnabled == enabled) return
+        videoEnabled = enabled
+        if (!initialized) return
+        if (enabled) guarded(Unit) { mpv.setProperty("vid", "auto") } else detachVideo()
+    }
+
     override fun load(source: MediaSource, startMs: Long, playWhenReady: Boolean) {
         synchronized(lock) {
             if (!initialized) {
@@ -181,6 +196,7 @@ class MpvEngine(hardwareDecoding: Boolean = false, audio: Boolean = true) : Play
         wantedSubtitle = null
         guarded(Unit) {
             mpv.setProperty("sid", "no")
+            if (!videoEnabled) mpv.setProperty("vid", "no") // already off: no output to tear down
             mpv.setProperty("pause", if (playWhenReady) "no" else "yes")
             mpv.setProperty("start", String.format(Locale.ROOT, "%.3f", startMs / 1000.0))
             mpv.command("loadfile", pathOf(source.uri), "replace")

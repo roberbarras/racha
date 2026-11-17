@@ -52,10 +52,11 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
     private val pip = MutableStateFlow(false)
     private val surfaces = HashMap<PlayerEngine, SurfaceView>()
     private var playing = false
+    private var audioOnly = false
     private var aspect = Rational(16, 9)
     private val audio = context.getSystemService(AudioManager::class.java)
     private val pipListener = Consumer<PictureInPictureModeChangedInfo> { pip.value = it.isInPictureInPictureMode }
-    private val leaveHint = Runnable { if (playing && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) enterPip() }
+    private val leaveHint = Runnable { if (playing && !audioOnly && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) enterPip() }
 
     override val inPictureInPicture: StateFlow<Boolean> = pip.asStateFlow()
 
@@ -118,12 +119,21 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
         return runCatching { activity.enterPictureInPictureMode(pipParams()) }.getOrDefault(false)
     }
 
+    /** Audio only: the screen may turn off and the service keeps the session (and the app) alive meanwhile (H15). */
+    override fun setAudioOnly(engine: PlayerEngine, enabled: Boolean) {
+        audioOnly = enabled
+        val media = engine as Media3Engine
+        if (enabled) PlaybackService.start(context, media.mediaSession) else PlaybackService.stop(context, media.mediaSession)
+        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (!enabled) onPlayingChanged(playing, 0, 0)
+    }
+
     override fun onPlayingChanged(playing: Boolean, videoWidth: Int, videoHeight: Int) {
         this.playing = playing
         if (videoWidth > 0 && videoHeight > 0) aspect = aspectOf(videoWidth, videoHeight)
         val activity = activity ?: return
-        // The screen stays on only while a video actually plays; paused, the normal timeout applies (battery).
-        if (playing) {
+        // The screen stays on only while a video actually plays; paused or audio only, the normal timeout applies.
+        if (playing && !audioOnly) {
             activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } else {
             activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -135,7 +145,7 @@ class AndroidPlayerHooks(private val context: Context) : PlayerHooks {
         .setAspectRatio(aspect)
         // The system animates from where the video is on screen instead of from the whole window.
         .setSourceRectHint(surfaces.values.firstOrNull()?.let { view -> Rect().takeIf { view.getGlobalVisibleRect(it) } })
-        .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(playing).setSeamlessResizeEnabled(true) }
+        .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setAutoEnterEnabled(playing && !audioOnly).setSeamlessResizeEnabled(true) }
         .build()
 
     override fun brightness(): Float {
