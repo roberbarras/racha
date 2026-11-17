@@ -11,6 +11,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.roberbarras.racha.application.browse.HistoryRow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import io.github.roberbarras.racha.application.library.ElementInItem
 import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.ui.app.RachaDependencies
@@ -55,9 +62,15 @@ fun MyListScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
 }
 
 /** "Historial" (spec §2.2), grouped by local day. */
+/** History rows kept by the screen's view model (database work off the composition, like the other lists). */
+class HistoryViewModel(deps: RachaDependencies) : ViewModel() {
+    val rows: StateFlow<List<HistoryRow>?> = deps.observeHistory().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+}
+
 @Composable
 fun HistoryScreen(deps: RachaDependencies, onOpenItem: (ContentId) -> Unit) {
-    val rows by remember { deps.observeHistory() }.collectAsStateWithLifecycle(null)
+    val vm = viewModel { HistoryViewModel(deps) }
+    val rows by vm.rows.collectAsStateWithLifecycle()
     val today = deps.localDates.dateOf(deps.clock.now())
     ResponsiveColumn(maxContentWidth = Racha.layout.readingMaxWidth) { _ ->
         item { ScreenTitle(stringResource(Res.string.nav_history)) }

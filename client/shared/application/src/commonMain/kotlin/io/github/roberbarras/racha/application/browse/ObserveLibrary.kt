@@ -90,11 +90,9 @@ data class HistoryRow(val entry: HistoryEntry, val element: PlayableElement, val
 class ObserveHistory(private val history: HistoryRepository, private val library: LibraryRepository) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(limit: Int = 200): Flow<List<HistoryRow>> = history.observeRecent(limit).mapLatest { entries ->
-        entries.mapNotNull { entry ->
-            val element = library.element(entry.elementId) ?: return@mapNotNull null
-            val item = library.item(element.libraryItemId) ?: return@mapNotNull null
-            HistoryRow(entry, element, item)
-        }
+        // One lookup for every element shown (not two queries per entry on each change).
+        val found = library.elementsInItems(entries.map { it.elementId }.distinct()).associateBy { it.element.id }
+        entries.mapNotNull { entry -> found[entry.elementId]?.let { HistoryRow(entry, it.element, it.item) } }
     }
 }
 
