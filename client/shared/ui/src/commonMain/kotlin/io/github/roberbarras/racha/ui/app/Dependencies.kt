@@ -66,6 +66,8 @@ class RachaDependencies(
     val manageCategories: ManageCategories,
     val storage: StorageMaintenance,
     val configTransfer: ConfigTransfer,
+    /** Full local backup and restore (H16); null where it is not offered (previews). */
+    val fullBackup: io.github.roberbarras.racha.application.backup.FullBackup? = null,
     /** Optional AI covers (spec §3) and the key they use; null where not offered. */
     val generateCover: GenerateCover? = null,
     val aiApiKey: SecretStore? = null,

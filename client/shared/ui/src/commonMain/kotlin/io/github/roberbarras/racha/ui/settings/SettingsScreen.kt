@@ -1,5 +1,11 @@
 package io.github.roberbarras.racha.ui.settings
 
+import io.github.roberbarras.racha.ui.resources.restored
+import io.github.roberbarras.racha.ui.resources.restore_working
+import io.github.roberbarras.racha.ui.resources.restore_full_hint
+import io.github.roberbarras.racha.ui.resources.restore_full
+import io.github.roberbarras.racha.ui.resources.backup_full_hint
+import io.github.roberbarras.racha.ui.resources.backup_full
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import io.github.roberbarras.racha.ui.resources.shortcuts_title
@@ -70,6 +76,8 @@ sealed interface StorageResult {
     data object Exported : StorageResult
     data class Imported(val settings: Int, val categories: Int) : StorageResult
     data object InvalidFile : StorageResult
+    data object Working : StorageResult
+    data class Restored(val records: Int, val folders: Int, val settings: Int) : StorageResult
 }
 
 class SettingsViewModel(val deps: RachaDependencies) : ViewModel() {
@@ -109,6 +117,24 @@ class SettingsViewModel(val deps: RachaDependencies) : ViewModel() {
     fun export() = viewModelScope.launch {
         val text = deps.configTransfer.export()
         if (deps.platform.saveTextFile("racha-config.json", text)) result("export", StorageResult.Exported)
+    }
+
+    /** The whole of this device's Racha in one file (H16). */
+    fun backup() = viewModelScope.launch {
+        val full = deps.fullBackup ?: return@launch
+        val text = full.export()
+        if (deps.platform.saveTextFile("racha-backup.json", text)) result("backup", StorageResult.Exported)
+    }
+
+    fun restore() = viewModelScope.launch {
+        val full = deps.fullBackup ?: return@launch
+        val text = deps.platform.openTextFile() ?: return@launch
+        result("restore", StorageResult.Working)
+        result("restore", try {
+            full.import(text).let { StorageResult.Restored(it.records, it.folders, it.settings) }
+        } catch (e: io.github.roberbarras.racha.application.backup.InvalidBackupFile) {
+            StorageResult.InvalidFile
+        })
     }
 
     fun import() = viewModelScope.launch {
@@ -446,6 +472,8 @@ private fun StorageSection(vm: SettingsViewModel) = SettingsSection(stringResour
         StorageResult.Exported -> stringResource(Res.string.exported)
         is StorageResult.Imported -> stringResource(Res.string.imported, r.settings, r.categories)
         StorageResult.InvalidFile -> stringResource(Res.string.import_invalid)
+        StorageResult.Working -> stringResource(Res.string.restore_working)
+        is StorageResult.Restored -> stringResource(Res.string.restored, r.records, r.folders, r.settings)
         null -> null
     }
     ActionRow(stringResource(Res.string.clear_thumbnails), stringResource(Res.string.clear_thumbnails_hint), stringResource(Res.string.clear), vm::clearThumbnails, text("thumbnails"))
@@ -460,6 +488,15 @@ private fun StorageSection(vm: SettingsViewModel) = SettingsSection(stringResour
     ActionRow(stringResource(Res.string.export_config), stringResource(Res.string.export_config_hint), stringResource(Res.string.export), vm::export, text("export"))
     Hairline()
     ActionRow(stringResource(Res.string.import_config), stringResource(Res.string.import_config_hint), stringResource(Res.string.import), vm::import, text("import"))
+    if (vm.deps.fullBackup != null) {
+        Hairline()
+        ActionRow(stringResource(Res.string.backup_full), stringResource(Res.string.backup_full_hint), stringResource(Res.string.export), vm::backup, text("backup"))
+        Hairline()
+        ActionRow(
+            stringResource(Res.string.restore_full), stringResource(Res.string.restore_full_hint), stringResource(Res.string.import), vm::restore,
+            text("restore"), confirmText = stringResource(Res.string.restore_full_hint),
+        )
+    }
 }
 
 @Composable

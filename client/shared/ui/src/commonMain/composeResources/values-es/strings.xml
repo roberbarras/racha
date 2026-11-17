@@ -488,4 +488,11 @@
     <string name="by_device_title">Por dispositivo</string>
     <string name="titles_title">Cursos y series</string>
     <string name="recent_title">Visto recientemente</string>
+    <!-- Copia de seguridad completa (H16) -->
+    <string name="backup_full">Copia de seguridad completa</string>
+    <string name="backup_full_hint">Todo lo de este dispositivo en un fichero: progreso, marcadores, historial, favoritos, ajustes, carpetas, categorías y estadísticas. Nunca la sesión ni las claves. También se puede importar en tu servidor desde el panel web.</string>
+    <string name="restore_full">Restaurar una copia</string>
+    <string name="restore_full_hint">Añade lo de la copia a este dispositivo: de cada dato queda el más reciente, las carpetas que falten se añaden y se vuelven a escanear. Sirve también el fichero que exporta el panel web.</string>
+    <string name="restore_working">Restaurando… (las carpetas se escanean)</string>
+    <string name="restored">Restaurado: %1$d datos, %2$d carpetas y %3$d ajustes.</string>
 </resources>

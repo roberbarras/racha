@@ -1,5 +1,6 @@
 package io.github.roberbarras.racha.desktop
 
+import io.github.roberbarras.racha.application.backup.FullBackup
 import io.github.roberbarras.racha.application.resource.ResourceViewer
 import io.github.roberbarras.racha.files.NioResourceFiles
 import io.github.roberbarras.racha.application.browse.GetElement
@@ -198,6 +199,9 @@ class DesktopGraph(
         manageCategories = ManageCategories(database.categories, scanLibrary, clock),
         storage = StorageMaintenance(database.library, database.history, DirectoryThumbnailCache(DesktopPaths.thumbnails), keepLibraryUpToDate),
         configTransfer = ConfigTransfer(preferences, database.categories, clock, appVersion),
+        fullBackup = FullBackup(
+            database.sync, database.categories, preferences, database.playbackMemory, database.stats, scanLibrary, clock, "Racha $appVersion (Linux)",
+        ),
         generateCover = GenerateCover(database.library, preferences, aiApiKey, KtorImageGenerator(options = httpOptions), DirectoryCoverFiles(DesktopPaths.data.resolve("covers"))),
         aiApiKey = aiApiKey,
         loadPersonalStats = LoadPersonalStats(

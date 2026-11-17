@@ -488,4 +488,11 @@
     <string name="by_device_title">By device</string>
     <string name="titles_title">Courses and series</string>
     <string name="recent_title">Recently watched</string>
+    <!-- Full backup (H16) -->
+    <string name="backup_full">Full backup</string>
+    <string name="backup_full_hint">Everything on this device in one file: progress, bookmarks, history, favourites, settings, folders, categories and statistics. Never the session or keys. It can also be imported into your server from the web panel.</string>
+    <string name="restore_full">Restore a backup</string>
+    <string name="restore_full_hint">Adds the backup to this device: the newest of each item stays, missing folders are added and scanned again. The file the web panel exports works too.</string>
+    <string name="restore_working">Restoring… (folders are being scanned)</string>
+    <string name="restored">Restored: %1$d items, %2$d folders and %3$d settings.</string>
 </resources>
