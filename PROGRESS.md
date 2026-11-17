@@ -70,7 +70,7 @@ Guías: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) (servidor, Android, Linux, firm
 | Android en el emulador (debug): 42 tests | ✅ |
 | Servidor: OpenAPI publicado y comprobado; resto de la batería | ✅ |
 | Escritorio: toda la batería de UI y de datos | ✅ |
-| CI (servidor + cliente + AppImage + e2e de sync + emulador y *smoke* de la release) | CI_LINK |
+| CI (servidor + cliente + AppImage + e2e de sync + emulador + release con su *smoke*) | ✅ [run 44058588616](https://github.com/roberbarras/racha/actions/runs/44058588616) |
 
 **Criterios §12**: ✅ **12**. Todos los criterios cumplidos salvo **9** en su parte de OAuth (aplazado por tu decisión, ADR-0006).
 
@@ -80,6 +80,8 @@ Guías: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md) (servidor, Android, Linux, firm
 - El AppImage requiere glibc 2.39 o posterior (distribuciones de 2024 en adelante).
 - JavaFX sigue en 26.0.2: no hay versión posterior a 27.0.1, la que rompía el pintado de JFXPanel.
 - La release de Android no se prueba con la batería instrumentada completa (la infraestructura de tests choca con R8), sino con el *smoke test* sobre el APK real.
+- En CI, el *smoke* de la release va en su propio trabajo sobre la imagen AOSP del emulador (API 37): en la imagen con Google APIs, Chrome, WebView y Trichrome ocupan ~680 MB de los 774 MB de la partición de datos y no cabía la release; ampliar la partición dejaba a las apps sin sus carpetas de datos. La app no usa nada de Google Play.
+- Fallos puntuales de CI (construcción de la release, `docker compose` del e2e, un test de conflicto de ajustes) quedan ahora explicados en anotaciones públicas; la construcción de la release se reintenta una vez.
 - Las capturas de pantallas con datos de la base de datos se hacen renderizando cada pantalla directamente: a través de la navegación, el reloj virtual del arnés de tests de Compose hace la temporización poco fiable.
 - Durante la prueba del AppImage, un primer arranque usó por error tu carpeta real de datos (Java ignora `$HOME`): migró tu base de datos al esquema actual, sin pérdida y compatible con AppImages anteriores. Las pruebas posteriores van aisladas con `-Duser.home`.
 
