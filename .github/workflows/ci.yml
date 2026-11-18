@@ -51,26 +51,41 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales libgtk-3-0t64 libxtst6
           sudo locale-gen es_ES.UTF-8
-      - name: Tests, APK and desktop jar (thread dumps if a test hangs)
+      - name: Tests, APK and desktop jar
+        id: tests
+        # A hang fails this step (and the report below still runs) instead of the whole job being killed.
+        timeout-minutes: 20
         run: |
-          # Watchdog: after 12 min (normally ~5), publish what each test JVM's "Test worker" thread is doing — the test
-          # running — as annotations (logs need a login). No -e/pipefail in it: finding nothing must not stop it.
-          (
-            set +e +o pipefail
-            sleep 720
-            for pid in $(pgrep -f GradleWorkerMain); do
-              jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1
-              worker=$(awk '/^"Test worker"/{on=1} on&&/^$/{exit} on' "$RUNNER_TEMP/threads-$pid.txt" | grep -E 'at (io\.github|org\.junit|kotlin|java\.net|java\.util\.concurrent|kotlinx)' | head -25 | tr '\n' ' ')
-              echo "::error title=Test JVM $pid still busy after 12 min::${worker:-no Test worker thread}"
-            done
-            echo "::error title=Tests still running after 12 min::$(pgrep -fa GradleWorkerMain | grep -o 'Gradle Test Executor [0-9]*' | sort -u | tr '\n' ' ')"
-          ) &
+          # At 15 min, thread dumps of every JVM (Gradle, its workers, test JVMs) for the report below.
+          ( set +e +o pipefail; sleep 900; for pid in $(pgrep java); do jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1; done ) &
           watchdog=$!
           status=0
-          ./gradlew check :android:assembleDebug :desktop:jar --console=plain || status=$?
-          pkill -P "$watchdog" 2>/dev/null || true # its sleep, or the step would wait for it
-          kill "$watchdog" 2>/dev/null || true
+          ./gradlew check :android:assembleDebug :desktop:jar --console=plain 2>&1 | tee "$RUNNER_TEMP/gradle.log" || status=$?
+          pkill -P "$watchdog" 2>/dev/null; kill "$watchdog" 2>/dev/null
           exit $status
+      - name: Hang report (public annotations; logs need a login)
+        if: always() && steps.tests.outcome != 'success'
+        run: |
+          set +e +o pipefail
+          log="$RUNNER_TEMP/gradle.log"
+          # Tests that started and never ended.
+          python3 - "$log" <<'PY'
+          import re, sys
+          started, ended = [], set()
+          for line in open(sys.argv[1], errors="replace"):
+              m = re.match(r"^(.+?) (STARTED|PASSED|FAILED|SKIPPED)$", line.strip())
+              if m:
+                  (started.append if m.group(2) == "STARTED" else ended.add)(m.group(1))
+          running = [t for t in started if t not in ended]
+          print("::error title=Tests that never ended::" + (" | ".join(running[-10:]) or "none: the build itself hung"))
+          PY
+          echo "::error title=Last lines of the build::$(grep -v '^\s*$' "$log" | tail -25 | tr '\n' ' ' | cut -c1-3500)"
+          for f in "$RUNNER_TEMP"/threads-*.txt; do
+            [ -f "$f" ] || continue
+            who=$(head -3 "$f" | tr '\n' ' ' | cut -c1-150)
+            busy=$(grep -E 'at (io\.github\.roberbarras|org\.gradle\.api\.internal\.tasks\.testing|org\.junit|java\.net\.|sun\.nio)' "$f" | sort | uniq -c | sort -rn | head -12 | tr '\n' ' ' | cut -c1-3000)
+            echo "::error title=Threads $(basename "$f")::$who :: ${busy:-nothing of the app}"
+          done
       - name: Failing tests (public annotations; logs need a login)
         if: failure()
         run: |

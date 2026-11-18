@@ -12,7 +12,7 @@ plugins {
 subprojects {
     tasks.withType<Test>().configureEach {
         testLogging {
-            events("started", "failed", "skipped")
+            events("started", "passed", "failed", "skipped")
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.SHORT
         }
     }
