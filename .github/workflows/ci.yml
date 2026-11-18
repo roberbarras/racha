@@ -53,15 +53,17 @@ jobs:
           sudo locale-gen es_ES.UTF-8
       - name: Tests, APK and desktop jar
         id: tests
-        # A hang fails this step (and the report below still runs) instead of the whole job being killed.
+        # Normally ~5 min. Gradle gets 15: if it is not done by then, the JVMs still running (Gradle, its workers, test
+        # JVMs) are dumped for the report below. Nothing runs in the background, so nothing can hold the step open.
         timeout-minutes: 20
         run: |
-          # At 15 min, thread dumps of every JVM (Gradle, its workers, test JVMs) for the report below.
-          ( set +e +o pipefail; sleep 900; for pid in $(pgrep java); do jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1; done ) &
-          watchdog=$!
-          status=0
-          ./gradlew check :android:assembleDebug :desktop:jar --console=plain 2>&1 | tee "$RUNNER_TEMP/gradle.log" || status=$?
-          pkill -P "$watchdog" 2>/dev/null; kill "$watchdog" 2>/dev/null
+          set +e +o pipefail
+          timeout 15m ./gradlew check :android:assembleDebug :desktop:jar --console=plain 2>&1 | tee "$RUNNER_TEMP/gradle.log"
+          status=${PIPESTATUS[0]}
+          if [ "$status" = 124 ]; then
+            for pid in $(pgrep java); do timeout 30 jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1; done
+          fi
+          ./gradlew --stop > /dev/null 2>&1
           exit $status
       - name: Hang report (public annotations; logs need a login)
         if: always() && steps.tests.outcome != 'success'
@@ -251,7 +253,8 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
-          script: ./gradlew :android:connectedDebugAndroidTest --console=plain
+          # adb sometimes loses the emulator right after boot ("No connected devices!"): restart adb and try once more.
+          script: ./gradlew :android:connectedDebugAndroidTest --console=plain || (adb kill-server; adb start-server; adb wait-for-device; ./gradlew :android:connectedDebugAndroidTest --console=plain)
       - name: Failing Android tests (public annotations; logs need a login)
         if: failure()
         run: |

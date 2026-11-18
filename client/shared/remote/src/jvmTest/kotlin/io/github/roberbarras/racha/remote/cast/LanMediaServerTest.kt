@@ -29,6 +29,8 @@ class LanMediaServerTest {
 
     private fun open(url: String, method: String = "GET", range: String? = null) = (URI(url).toURL().openConnection() as HttpURLConnection).apply {
         requestMethod = method
+        connectTimeout = 5_000
+        readTimeout = 10_000
         range?.let { setRequestProperty("Range", it) }
     }
 

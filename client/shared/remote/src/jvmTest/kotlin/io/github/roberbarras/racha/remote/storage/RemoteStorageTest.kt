@@ -187,9 +187,13 @@ class RemoteStorageTest {
             assertEquals(GoogleDriveAuth.SCOPE, params["scope"])
             assertEquals("S256", params["code_challenge_method"])
             assertEquals("offline", params["access_type"])
+            // A daemon with timeouts: whatever happens, it never keeps the test JVM from exiting.
             Thread {
-                (URI(params["redirect_uri"] + "/?state=${params["state"]}&code=the-code").toURL().openConnection() as HttpURLConnection).inputStream.readBytes()
-            }.start()
+                (URI(params["redirect_uri"] + "/?state=${params["state"]}&code=the-code").toURL().openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 5_000
+                    readTimeout = 10_000
+                }.inputStream.readBytes()
+            }.apply { isDaemon = true }.start()
         }
         assertEquals("rt-1", refresh)
 
