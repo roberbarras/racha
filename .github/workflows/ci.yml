@@ -255,7 +255,9 @@ jobs:
           heap-size: 576M
           # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
+          # Rendering in the guest: with swiftshader_indirect, system_server crashed taking a task snapshot
+          # (TaskSnapshotConvertUtil → ImageReader.getPlanes → lockImageFromBuffer) on runner image 20261116.
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu guest -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
           # Retries once after restarting adb; on failure, reports why as public annotations.
