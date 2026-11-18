@@ -647,4 +647,14 @@
         <item quantity="other">%1$d cursos o series · %2$s</item>
     </plurals>
     <string name="time_watched_left">%1$s vistos · %2$s por ver</string>
+    <string name="setting_general_backgroundColor">Tono del fondo</string>
+    <string name="setting_general_railColor">Paneles oscuros</string>
+    <string name="accent_hint">Botones, progreso y lo seleccionado.</string>
+    <string name="background_hint">El fondo y las superficies toman su tono, claro u oscuro según el tema, para que el texto se lea siempre.</string>
+    <string name="rail_hint">Los paneles oscuros: «Continuar viendo» en Inicio, la barra de navegación estrecha y los paneles del reproductor y del visor.</string>
+    <string name="color_default">El de Racha</string>
+    <string name="color_custom">Otro color</string>
+    <string name="color_hex">Color (#RRGGBB)</string>
+    <string name="color_apply">Aplicar</string>
+    <string name="colors_reset">Restablecer los colores de Racha</string>
 </resources>

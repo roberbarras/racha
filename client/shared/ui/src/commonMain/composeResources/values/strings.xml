@@ -647,4 +647,14 @@
         <item quantity="other">%1$d courses or series · %2$s</item>
     </plurals>
     <string name="time_watched_left">%1$s watched · %2$s left</string>
+    <string name="setting_general_backgroundColor">Background tone</string>
+    <string name="setting_general_railColor">Dark panels</string>
+    <string name="accent_hint">Buttons, progress and what is selected.</string>
+    <string name="background_hint">Backgrounds and surfaces take its tone, light or dark as the theme is, so text always reads.</string>
+    <string name="rail_hint">The dark panels: "Continue watching" on Home, the narrow navigation bar and the player's and viewer's panels.</string>
+    <string name="color_default">Racha's</string>
+    <string name="color_custom">Another colour</string>
+    <string name="color_hex">Colour (#RRGGBB)</string>
+    <string name="color_apply">Apply</string>
+    <string name="colors_reset">Restore Racha's colours</string>
 </resources>

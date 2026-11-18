@@ -60,6 +60,8 @@ object Racha {
 
 /**
  * @param accent user accent from settings (spec §9 "color de acento"); null keeps the brand ember.
+ * @param background tone of backgrounds and surfaces chosen by the user; null keeps Racha's.
+ * @param rail colour of the side bar and the player's panels chosen by the user; null keeps Racha's.
  * @param fontScale user font size setting.
  */
 @Composable
@@ -67,13 +69,13 @@ fun RachaTheme(
     dark: Boolean,
     accent: Color? = null,
     fontScale: Float = 1f,
+    background: Color? = null,
+    rail: Color? = null,
     reduceMotion: Boolean = rememberSystemReduceMotion(),
     content: @Composable () -> Unit,
 ) {
     val base = if (dark) Tokens.Dark else Tokens.Light
-    val palette = remember(base, accent) {
-        if (accent == null) base else base.copy(accent = accent, accentSoft = accent.copy(alpha = if (dark) 0.22f else 0.18f))
-    }
+    val palette = remember(base, dark, accent, background, rail) { ThemeColors.palette(base, dark, accent, background, rail) }
     val family = instrumentSans()
     val typography = remember(family, fontScale) { typography(family, fontScale) }
     val selection = remember(palette) { TextSelectionColors(palette.accent, palette.accent.copy(alpha = 0.3f)) }

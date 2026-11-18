@@ -22,6 +22,8 @@ data class Appearance(
     val accent: String = Settings.AccentColor.default,
     val fontScale: Double = 1.0,
     val language: AppLanguage = AppLanguage.SYSTEM,
+    val background: String = "",
+    val rail: String = "",
 )
 
 /** App-wide state shared by the shell (streak, categories, scan status) and the Home screen. */
@@ -33,11 +35,15 @@ class AppViewModel(private val deps: RachaDependencies) : ViewModel() {
     val storageAccess: StateFlow<Boolean> = deps.platform.storageAccess.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     val appearance: StateFlow<Appearance> = combine(
-        deps.preferences.observe(Settings.Theme),
-        deps.preferences.observe(Settings.AccentColor),
-        deps.preferences.observe(Settings.FontScale),
-        deps.preferences.observe(Settings.Language),
-    ) { theme, accent, scale, language -> Appearance(theme, accent, scale, language) }
+        combine(
+            deps.preferences.observe(Settings.Theme),
+            deps.preferences.observe(Settings.AccentColor),
+            deps.preferences.observe(Settings.FontScale),
+            deps.preferences.observe(Settings.Language),
+        ) { theme, accent, scale, language -> Appearance(theme, accent, scale, language) },
+        deps.preferences.observe(Settings.BackgroundColor),
+        deps.preferences.observe(Settings.RailColor),
+    ) { base, background, rail -> base.copy(background = background, rail = rail) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, Appearance())
 
     private val mutableOnboarding = MutableStateFlow<Boolean?>(null)

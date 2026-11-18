@@ -26,6 +26,10 @@ object Settings {
     val Language = EnumSetting("general.language", USER, AppLanguage.SYSTEM, AppLanguage.entries)
     val Theme = EnumSetting("general.theme", USER, ThemeMode.SYSTEM, ThemeMode.entries)
     val AccentColor = StringSetting("general.accentColor", USER, "#E8812A", Regex("#[0-9A-Fa-f]{6}"))
+    /** The tone of the backgrounds and surfaces; "" keeps Racha's (theme colours chosen by the user). */
+    val BackgroundColor = StringSetting("general.backgroundColor", USER, "", Regex("(#[0-9A-Fa-f]{6})?"))
+    /** The colour of the dark panels (Continue watching, the narrow navigation bar, the player's panels); "" keeps Racha's. */
+    val RailColor = StringSetting("general.railColor", USER, "", Regex("(#[0-9A-Fa-f]{6})?"))
     val FontScale = DoubleSetting("general.fontScale", USER, 1.0, 0.85..1.3)
 
     /** First-run guide finished (or skipped) on this device. */
@@ -107,7 +111,7 @@ object Settings {
     val UserAgent = StringSetting("advanced.userAgent", DEVICE, "")
 
     val all: List<Setting<*>> = listOf(
-        Language, Theme, AccentColor, FontScale, UiScale, OnboardingDone, Mode,
+        Language, Theme, AccentColor, BackgroundColor, RailColor, FontScale, UiScale, OnboardingDone, Mode,
         DefaultSpeed, SpeedSteps, SubtitlesEnabled, SubtitleLanguage, SeekStepSeconds,
         GestureTapEdges, GestureDoubleTap, GestureSwipeSeek, GestureSwipeBrightness, GestureSwipeVolume,
         GesturePinchZoom, GestureLongPressSpeed, LongPressSpeed, AutoplayNext, SkipIntroSeconds, SkipOutroSeconds,

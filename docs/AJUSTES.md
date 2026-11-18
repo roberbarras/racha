@@ -8,7 +8,7 @@ Pantalla **Ajustes** (en el móvil, desde Progreso). Todo se aplica al momento, 
 
 | Sección | Qué hay |
 |---|---|
-| General | Idioma (sistema / español / inglés: **toda la app cambia al momento**, sin reiniciar), tema, color de acento, tamaño del texto; en Linux, **tamaño de la interfaz** (automático = la escala del escritorio, o de 75 % a 300 %) |
+| General | Idioma (sistema / español / inglés: **toda la app cambia al momento**, sin reiniciar), tema, **colores del tema** (acento, tono del fondo y paneles oscuros: muestras o cualquier `#RRGGBB`, y «Restablecer los colores de Racha»), tamaño del texto; en Linux, **tamaño de la interfaz** (automático = la escala del escritorio, o de 75 % a 300 %) |
 | Categorías | Crear, renombrar (en blanco, una integrada vuelve a su nombre traducido), borrar (las del usuario, con confirmación), reordenar, categoría principal, en qué modo se ve cada una (Estudio/Ocio), patrones a omitir al escanear (se reescanea al guardar). Las carpetas, en su pantalla |
 | Reproductor | Velocidad por defecto y pasos de velocidad, salto (5/10/30 s), subtítulos y su idioma preferido (lo que se usa mientras no hayas elegido otra cosa: después se recuerda por curso, [REPRODUCTOR.md](REPRODUCTOR.md#comodidad-h15)), reproducir el siguiente, barra lateral, saltar intro/outro, escalado del vídeo, los siete gestos y la velocidad al mantener; en Linux, decodificación por hardware y **atajos de teclado** |
 | Progreso | Intervalo de guardado (15/30/60/300 s) |
@@ -23,6 +23,16 @@ Pantalla **Ajustes** (en el móvil, desde Progreso). Todo se aplica al momento, 
 **Log**: en Linux `~/.cache/racha/racha.log` (1 MB y uno anterior); en Android, logcat. Registra escaneos, rondas de sync, errores de telemetría y fallos no capturados según el nivel elegido.
 
 **Log detallado en Linux** (para ver qué tarda o qué falla): arrancar con `RACHA_LOG=debug ./Racha-<versión>-x86_64.AppImage` (o `--verbose`). Todo se escribe también en la terminal, desde el primer milisegundo, con cada fase del arranque medida (`startup: +1234 ms …`: JVM, base de datos, ventana, API gráfica elegida, primer fotograma, primera pantalla y primer escaneo con su duración). Los mensajes de las librerías (SQLite, HTTP…) van al mismo log; su nivel de detalle se activa aparte con `RACHA_LOG_LIBS=debug`. `RACHA_LOG` admite `error`, `warn`, `info` o `debug` y gana sobre el nivel de Ajustes.
+
+### Colores del tema
+
+Tres colores a elección del usuario; el resto de la paleta (19 colores por modo) se deriva de ellos (`ThemeColors`):
+
+- **Acento**: exactamente el elegido; el texto encima es oscuro o blanco, el que más contraste dé.
+- **Tono del fondo**: fondo y superficies toman su tono y saturación con la claridad de cada nivel de Racha, en modo claro y oscuro.
+- **Paneles oscuros** («Continuar viendo», la barra de navegación estrecha, paneles del reproductor y del visor): el color elegido, oscurecido lo necesario.
+
+El texto se lee siempre: sobre fondos, superficies y paneles, contraste ≥ 7:1 (WCAG AAA); sobre el acento, ≥ 4,5:1. Si un color no lo cumple, se aclara u oscurece manteniendo su tono. Son ajustes de usuario: viajan con la sincronización y con la exportación de la configuración.
 
 ### Exportar / importar (ADR-0010)
 

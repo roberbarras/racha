@@ -66,7 +66,11 @@ fun RachaApp(deps: RachaDependencies, navController: NavHostController = remembe
     }
     val accent = appearance.accent.takeIf { it != Settings.AccentColor.default }?.let(::parseColor)
     WithAppLanguage(appearance.language) {
-    RachaTheme(dark = dark, accent = accent, fontScale = appearance.fontScale.toFloat()) {
+    RachaTheme(
+        dark = dark, accent = accent, fontScale = appearance.fontScale.toFloat(),
+        background = appearance.background.takeIf { it.isNotEmpty() }?.let(::parseColor),
+        rail = appearance.rail.takeIf { it.isNotEmpty() }?.let(::parseColor),
+    ) {
         val home by app.home.collectAsStateWithLifecycle()
         var showLaunch by rememberSaveable { mutableStateOf(launchAnimation) }
         val scan by app.scan.collectAsStateWithLifecycle()

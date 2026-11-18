@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import io.github.roberbarras.racha.ui.resources.Res
 import io.github.roberbarras.racha.ui.resources.setting_advanced_telemetryEndpoint
 import io.github.roberbarras.racha.ui.resources.setting_general_accentColor
+import io.github.roberbarras.racha.ui.resources.setting_general_backgroundColor
+import io.github.roberbarras.racha.ui.resources.setting_general_railColor
 import io.github.roberbarras.racha.ui.resources.setting_general_fontScale
 import io.github.roberbarras.racha.ui.resources.setting_general_language
 import io.github.roberbarras.racha.ui.resources.setting_general_theme
@@ -42,6 +44,8 @@ private val names: Map<String, StringResource> by lazy {
         "general.language" to Res.string.setting_general_language,
         "general.theme" to Res.string.setting_general_theme,
         "general.accentColor" to Res.string.setting_general_accentColor,
+        "general.backgroundColor" to Res.string.setting_general_backgroundColor,
+        "general.railColor" to Res.string.setting_general_railColor,
         "general.fontScale" to Res.string.setting_general_fontScale,
         "mode.current" to Res.string.setting_mode_current,
         "player.defaultSpeed" to Res.string.setting_player_defaultSpeed,

@@ -68,6 +68,10 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import io.github.roberbarras.racha.ui.resources.accent_hint
+import io.github.roberbarras.racha.ui.resources.background_hint
+import io.github.roberbarras.racha.ui.resources.rail_hint
+import io.github.roberbarras.racha.ui.resources.colors_reset
 
 /** Results of the Storage actions, worded by the screen. */
 sealed interface StorageResult {
@@ -198,8 +202,22 @@ private fun GeneralSection(vm: SettingsViewModel) = SettingsSection(stringResour
         theme, { vm.set(Settings.Theme, it) },
     )
     Hairline()
+    // The theme's colours: the rest of the palette follows from them (ThemeColors).
     val accent by vm.state(Settings.AccentColor)
-    AccentRow(accent) { vm.set(Settings.AccentColor, it) }
+    ColorRow(settingName(Settings.AccentColor.key), stringResource(Res.string.accent_hint), ACCENT_SWATCHES, accent) { vm.set(Settings.AccentColor, it) }
+    val background by vm.state(Settings.BackgroundColor)
+    ColorRow(settingName(Settings.BackgroundColor.key), stringResource(Res.string.background_hint), BACKGROUND_SWATCHES, background) {
+        vm.set(Settings.BackgroundColor, it)
+    }
+    val rail by vm.state(Settings.RailColor)
+    ColorRow(settingName(Settings.RailColor.key), stringResource(Res.string.rail_hint), RAIL_SWATCHES, rail) { vm.set(Settings.RailColor, it) }
+    if (!accent.equals(Settings.AccentColor.default, ignoreCase = true) || background.isNotEmpty() || rail.isNotEmpty()) {
+        RButton(stringResource(Res.string.colors_reset), {
+            vm.set(Settings.AccentColor, Settings.AccentColor.default)
+            vm.set(Settings.BackgroundColor, "")
+            vm.set(Settings.RailColor, "")
+        }, kind = ButtonKind.Ghost, icon = RachaIcons.RotateCcw)
+    }
     Hairline()
     val fontScale by vm.state(Settings.FontScale)
     StepperRow(
@@ -222,34 +240,8 @@ private fun GeneralSection(vm: SettingsViewModel) = SettingsSection(stringResour
 }
 
 private val UI_SCALES = listOf(0.0, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0)
-private val ACCENTS = listOf("#E8812A", "#E05A47", "#D65DB1", "#7B61FF", "#3A86FF", "#2A9D8F", "#2D6A4F", "#C9A227")
 
 private fun round2(value: Double) = kotlin.math.round(value * 100) / 100
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun AccentRow(selected: String, onSelect: (String) -> Unit) {
-    FlowRow(
-        Modifier, horizontalArrangement = Arrangement.spacedBy(Racha.space.m), verticalArrangement = Arrangement.spacedBy(Racha.space.s),
-        itemVerticalAlignment = Alignment.CenterVertically,
-    ) {
-        RText(settingName(Settings.AccentColor.key), style = Racha.type.bodyStrong, modifier = Modifier.weight(1f).widthIn(min = 160.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(Racha.space.s)) {
-            ACCENTS.forEach { hex ->
-                val isSelected = hex.equals(selected, ignoreCase = true)
-                // The chosen colour gets a ring in the text colour, so it is clear without relying on size alone.
-                androidx.compose.foundation.layout.Box(
-                    Modifier.size(32.dp).clip(CircleShape)
-                        .then(if (isSelected) Modifier.border(2.dp, Racha.colors.ink, CircleShape) else Modifier)
-                        .padding(if (isSelected) 4.dp else 2.dp).clip(CircleShape)
-                        .background(parseColor(hex))
-                        .interactive({ onSelect(hex) }, CircleShape)
-                        .semantics { contentDescription = hex; this.selected = isSelected },
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun PlayerSection(vm: SettingsViewModel) = SettingsSection(stringResource(Res.string.section_player), RachaIcons.Play) {
