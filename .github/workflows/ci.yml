@@ -34,6 +34,8 @@ jobs:
   client:
     name: Client (tests + Android APK + desktop)
     runs-on: ubuntu-24.04
+    # Normally ~5 min; a test that hangs must not hold the runner for hours.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: client
@@ -49,7 +51,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libmpv2 xvfb xauth libgl1-mesa-dri libegl1 locales libgtk-3-0t64 libxtst6
           sudo locale-gen es_ES.UTF-8
-      - run: ./gradlew check :android:assembleDebug :desktop:jar --console=plain
+      - name: Tests, APK and desktop jar (thread dumps if a test hangs)
+        run: |
+          # Watchdog: after 18 min, dump the test JVMs' threads and publish the app's frames (logs need a login).
+          (
+            sleep 1080
+            for pid in $(pgrep -f 'Gradle Test Executor|GradleWorkerMain'); do
+              jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1 || true
+            done
+            frames=$(grep -h -B2 -A25 'io\.github\.roberbarras' "$RUNNER_TEMP"/threads-*.txt 2>/dev/null | grep -E '^"|io\.github\.roberbarras|java\.(net|util\.concurrent)' | head -60 | tr '\n' ' ')
+            echo "::error title=Tests still running after 18 min::${frames:-no test JVM found}"
+          ) &
+          watchdog=$!
+          status=0
+          ./gradlew check :android:assembleDebug :desktop:jar --console=plain || status=$?
+          pkill -P "$watchdog" 2>/dev/null || true # its sleep, or the step would wait for it
+          kill "$watchdog" 2>/dev/null || true
+          exit $status
       - name: Failing tests (public annotations; logs need a login)
         if: failure()
         run: |
