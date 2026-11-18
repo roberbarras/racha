@@ -46,6 +46,7 @@ class LanMediaServer(
     private val random = SecureRandom()
     private var server: ServerSocket? = null
     private var pool: ExecutorService? = null
+    private var acceptor: Thread? = null
 
     override suspend fun publishFile(uri: String, contentType: String, forHost: String): String = withContext(Dispatchers.IO) {
         val path = Path.of(URI(uri))
@@ -73,15 +74,29 @@ class LanMediaServer(
         val socket = ServerSocket()
         socket.reuseAddress = true
         socket.bind(InetSocketAddress(address, 0), 16)
+        // Wakes up every second: Java defers closing a listening socket while a thread is blocked in accept(), and until
+        // then the system keeps accepting connections nobody serves. stop() waits for this thread, so once it returns
+        // the port is really closed.
+        socket.soTimeout = 1_000
         val workers = Executors.newCachedThreadPool { r -> Thread(r, "racha-cast-http").apply { isDaemon = true } }
         server = socket
         pool = workers
-        workers.execute {
+        acceptor = Thread({
             while (!socket.isClosed) {
-                val client = try { socket.accept() } catch (_: IOException) { break }
-                workers.execute { serve(client) }
+                val client = try {
+                    socket.accept()
+                } catch (_: java.net.SocketTimeoutException) {
+                    continue
+                } catch (_: IOException) {
+                    break
+                }
+                try {
+                    workers.execute { serve(client) }
+                } catch (_: java.util.concurrent.RejectedExecutionException) {
+                    runCatching { client.close() } // stopping
+                }
             }
-        }
+        }, "racha-cast-accept").apply { isDaemon = true; start() }
         AppLog.info("cast", "serving on ${socket.inetAddress.hostAddress}:${socket.localPort}")
         return socket
     }
@@ -90,9 +105,11 @@ class LanMediaServer(
     override fun stop() {
         entries.clear()
         runCatching { server?.close() }
+        acceptor?.join(3_000)
         pool?.shutdownNow()
         server = null
         pool = null
+        acceptor = null
     }
 
     /** One request per connection (`Connection: close`): TVs reconnect for every range anyway. */

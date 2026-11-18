@@ -79,7 +79,8 @@ jobs:
               if m:
                   (started.append if m.group(2) == "STARTED" else ended.add)(m.group(1))
           running = [t for t in started if t not in ended]
-          print("::error title=Tests that never ended::" + (" | ".join(running[-10:]) or "none: the build itself hung"))
+          if running:
+              print("::error title=Tests that never ended::" + " | ".join(running[-10:]))
           PY
           echo "::error title=Last lines of the build::$(grep -v '^\s*$' "$log" | tail -25 | tr '\n' ' ' | cut -c1-3500)"
           for f in "$RUNNER_TEMP"/threads-*.txt; do
