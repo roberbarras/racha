@@ -1,6 +1,5 @@
 package io.github.roberbarras.racha.desktop
 
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import io.github.roberbarras.racha.data.LocalDatabase
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,6 +19,6 @@ object DesktopDatabase {
             put("foreign_keys", "true")
             put("journal_mode", "WAL")
         }
-        return LocalDatabase(JdbcSqliteDriver("jdbc:sqlite:$file", properties, LocalDatabase.schema))
+        return LocalDatabase(PersistentSqliteDriver.open("jdbc:sqlite:$file", properties, LocalDatabase.schema))
     }
 }

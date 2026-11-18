@@ -8,8 +8,11 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.time.Instant
 
-/** The app log on Linux (spec §9 "nivel de log"): `~/.cache/racha/racha.log`, one previous file kept, 1 MB each. */
-class FileLogSink(private val file: Path) : AppLog.Sink {
+/**
+ * The app log on Linux (spec §9 "nivel de log"): `~/.cache/racha/racha.log`, one previous file kept, 1 MB each.
+ * Lines up to [terminal] also go to the terminal (warnings and errors by default; everything in verbose mode).
+ */
+class FileLogSink(private val file: Path, private val terminal: LogLevel = LogLevel.WARN) : AppLog.Sink {
     @Synchronized
     override fun write(level: LogLevel, tag: String, message: String, error: Throwable?) {
         runCatching {
@@ -23,7 +26,10 @@ class FileLogSink(private val file: Path) : AppLog.Sink {
             }
             Files.writeString(file, line, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         }
-        if (level <= LogLevel.WARN) System.err.print("racha $level $tag: $message\n")
+        if (level <= terminal) {
+            System.err.print("${java.time.LocalTime.now()} racha ${level.name.padEnd(5)} $tag: $message\n")
+            if (terminal == LogLevel.DEBUG) error?.printStackTrace()
+        }
     }
 
     private companion object {

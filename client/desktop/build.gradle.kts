@@ -30,6 +30,7 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.pdfbox)
+    implementation(libs.slf4j.api) // libraries' logs (Ktor…) go to the app log through Slf4jToAppLog
     // openjfx POMs pick the platform jar through Maven profiles, which Gradle ignores: one artifact per module.
     listOf(libs.javafx.base, libs.javafx.graphics, libs.javafx.controls, libs.javafx.media, libs.javafx.web, libs.javafx.swing).forEach {
         implementation(variantOf(it) { classifier("linux") })

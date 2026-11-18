@@ -53,10 +53,15 @@ class KeepLibraryUpToDate(
 
     private suspend fun <T : ScanReport> tracked(block: suspend () -> T): T {
         mutableStatus.update { it.copy(running = true) }
+        val started = kotlin.time.TimeSource.Monotonic.markNow()
         try {
             return block().also { report ->
                 mutableStatus.update { ScanStatus(running = false, last = report) }
-                AppLog.info("scan", "added=${report.added} updated=${report.updated} archived=${report.archived} probed=${report.probed}")
+                AppLog.info(
+                    "scan",
+                    "added=${report.added} updated=${report.updated} archived=${report.archived} probed=${report.probed} " +
+                        "in ${started.elapsedNow().inWholeMilliseconds} ms",
+                )
             }
         } catch (e: CancellationException) {
             throw e

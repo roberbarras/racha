@@ -54,6 +54,7 @@ class AppViewModel(private val deps: RachaDependencies) : ViewModel() {
             val empty = !done && deps.observeHome().first().libraryIsEmpty
             if (!done && !empty) deps.preferences.set(Settings.OnboardingDone, true)
             mutableOnboarding.value = !done && empty
+            io.github.roberbarras.racha.application.shared.AppLog.info("startup", "first screen: " + if (!done && empty) "welcome" else "home")
         }
     }
 

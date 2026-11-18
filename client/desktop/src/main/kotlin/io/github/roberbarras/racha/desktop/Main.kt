@@ -34,6 +34,16 @@ import java.awt.Dimension
 import java.awt.GraphicsEnvironment
 
 fun main(args: Array<String>) {
+    // The log first, so start-up itself is in it (RACHA_LOG=debug or --verbose: everything, also in the terminal).
+    val requestedLog = Startup.requestedLogLevel(args)
+    AppLog.level = requestedLog ?: io.github.roberbarras.racha.domain.preferences.LogLevel.INFO
+    AppLog.sink = FileLogSink(DesktopPaths.cache.resolve("racha.log"), terminal = requestedLog ?: io.github.roberbarras.racha.domain.preferences.LogLevel.WARN)
+    Startup.mark("JVM ready (Java ${System.getProperty("java.version")})")
+    AppLog.info(
+        "startup",
+        "session=${System.getenv("XDG_SESSION_TYPE")} wayland=${System.getenv("WAYLAND_DISPLAY") != null} display=${System.getenv("DISPLAY")} " +
+            "renderApi=${System.getenv("SKIKO_RENDER_API") ?: System.getProperty("skiko.renderApi") ?: "auto"}",
+    )
     if ("--self-test" in args) kotlin.system.exitProcess(SelfTest.run())
     if ("--install" in args || "--uninstall" in args) kotlin.system.exitProcess(integrate(install = "--install" in args))
     // One instance per session: a second launch hands its link (or just "come to the front") to the running one.
@@ -42,6 +52,7 @@ fun main(args: Array<String>) {
     if (claim.isSuccess && claim.getOrNull() == null) return // the running instance has it
     claim.exceptionOrNull()?.let { AppLog.warn("app", "single-instance socket unavailable; continuing without it", it) }
     val instance = claim.getOrNull()
+    Startup.mark("single instance claimed")
     val links = Channel<String>(Channel.BUFFERED).apply { if (link.isNotEmpty()) trySend(link) }
     val toFront = Channel<Unit>(Channel.CONFLATED)
     instance?.let { single ->
@@ -54,14 +65,17 @@ fun main(args: Array<String>) {
     }
     val pdfFonts = DesktopPaths.cache.resolve("pdfbox")
     PdfBoxDocument.configure(pdfFonts)
+    Startup.mark("PDF fonts configured")
     // Composition root: adapters are wired by hand, no reflection-based DI.
-    val graph = DesktopGraph(deepLinks = links.receiveAsFlow())
+    val graph = DesktopGraph(deepLinks = links.receiveAsFlow(), forcedLogLevel = requestedLog)
+    Startup.mark("database open, app wired")
     reportCrashes(graph)
     graph.startSync()
     graph.startReminder()
     val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     background.launch {
         graph.ensureBuiltInCategories()
+        Startup.mark("built-in categories checked")
         graph.keepLibraryUpToDate.run()
     }
     if (!PdfBoxDocument.fontIndexExists(pdfFonts)) {
@@ -72,6 +86,7 @@ fun main(args: Array<String>) {
         }
     }
     DesktopUiScale.apply(runBlocking { graph.preferences.get(Settings.UiScale) })
+    Startup.mark("interface scale ${DesktopUiScale.current}")
     // Initial window: a comfortable share of the screen it opens on, whatever its size or density.
     val screen = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
     val initialSize = DpSize((screen.width * INITIAL_SHARE).dp, (screen.height * INITIAL_SHARE).dp)
@@ -94,6 +109,11 @@ fun main(args: Array<String>) {
             val scale = remember(chosen) { chosen?.let(DesktopUiScale::apply); DesktopUiScale.current }
             window.minimumSize = Dimension((MIN_WIDTH_DP * scale).toInt(), (MIN_HEIGHT_DP * scale).toInt())
             graph.playerHooks.attach(window)
+            LaunchedEffect(Unit) {
+                Startup.mark("window composed (render API ${window.renderApi})")
+                androidx.compose.runtime.withFrameNanos { }
+                Startup.mark("first frame drawn")
+            }
             LaunchedEffect(Unit) {
                 for (request in toFront) {
                     window.isMinimized = false

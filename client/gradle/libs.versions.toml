@@ -1,4 +1,5 @@
 [versions]
+slf4j = "2.0.19"
 ktor = "3.6.1"
 # 27.0.1 regressed JFXPanel (blank page, BufferOverflowException in EmbeddedScene.getPixels): stay on 26.0.2
 # until a 27.x fixes it — check with the desktop-resources harness (it captures the page).
@@ -19,6 +20,7 @@ android-targetSdk = "37"
 android-minSdk = "26"
 
 [libraries]
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }

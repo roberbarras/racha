@@ -84,6 +84,8 @@ class DesktopGraph(
     platformOverride: PlatformHooks? = null,
     /** `racha://` links from the command line and later launches (see [SingleInstance]). */
     deepLinks: kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.emptyFlow(),
+    /** The log level asked for when launching (`RACHA_LOG`, `--verbose`); null: the one in Settings. */
+    private val forcedLogLevel: io.github.roberbarras.racha.domain.preferences.LogLevel? = null,
 ) : AutoCloseable {
     val clock = Clock.SYSTEM
     private val localDates = SystemLocalDates()
@@ -100,8 +102,9 @@ class DesktopGraph(
 
     init {
         graphScope.launch { preferences.observe(Settings.HardwareDecoding).collect { hardwareDecoding = it } }
-        AppLog.sink = FileLogSink(DesktopPaths.cache.resolve("racha.log"))
-        graphScope.launch { preferences.observe(Settings.LogLevelSetting).collect { AppLog.level = it } }
+        if (AppLog.sink == null) AppLog.sink = FileLogSink(DesktopPaths.cache.resolve("racha.log"))
+        // A level asked for when launching (RACHA_LOG, --verbose) wins over the one in Settings.
+        if (forcedLogLevel == null) graphScope.launch { preferences.observe(Settings.LogLevelSetting).collect { AppLog.level = it } }
     }
     private val probe = MpvMediaProbe()
     private val hasher = Sha256FileHasher()
