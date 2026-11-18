@@ -55,6 +55,8 @@ Subcarpetas más profundas se aplanan dentro de su sección.
 5. El hash solo se calcula en segundo plano para elementos con datos del usuario (progreso, marcadores, favoritos). Leer entera una biblioteca de cientos de GB no aporta nada y gasta disco y batería.
 6. Después de cada escaneo: hashes pendientes y portadas que falten (portada de carpeta → fotograma al 10 % → placeholder de la UI).
 
+**Portada de carpeta**: cualquier `.jpg`, `.jpeg`, `.png` o `.webp` en la carpeta del curso o serie (al nivel de las secciones, no dentro de ellas). Si hay varias, manda `poster`/`folder`/`cover` y si no, la primera por nombre. Se ignoran las ocultas (`._portada.jpg`). Los ficheros sueltos de una raíz solo toman una imagen llamada `poster`/`folder`/`cover`. Sin imagen se queda el fotograma o el placeholder rayado.
+
 **Cuándo se escanea**: al abrir la app (si "Escaneo automático"), al detectar cambios (si "File-watcher": inotify en Linux, FileObserver en Android) agrupando ráfagas en 3 s y reescaneando solo las categorías afectadas, y con "Escanear ahora". En Android todo esto corre solo mientras la app está visible.
 
 ## 5. Metadatos

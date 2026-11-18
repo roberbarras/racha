@@ -155,7 +155,8 @@ object LibraryLayout {
             val folderSections = sectionDirs.map { folderSection(id, it) }
             val sections = directSections(id, kind, direct) + folderSections.sortedWith(SECTION_ORDER).map { it.section }
             val numbered = sections.mapIndexed { index, s -> s.copy(order = index) }
-            val poster = tree.filesIn(path).firstOrNull { MediaFiles.isPoster(it.path) }?.path
+            // An image next to the sections is the course's artwork; a root's loose files only take one named as such.
+            val poster = MediaFiles.posterAmong(tree.filesIn(path).map { it.path }, anyImage = !looseRoot)
             return DetectedItem(id, path, kind, title, 0, poster, numbered)
         }
 

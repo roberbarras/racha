@@ -236,9 +236,10 @@ class ScanLibraryTest {
         assertEquals(listOf("01 - Introduction/001 Course Introduction.mp4@0.1"), renders)
         assertEquals("file:///cache/thumb.webp", course().posterPath)
 
-        files.put("cover.jpg", "artwork")
+        // Any image next to the sections, whatever its name, replaces the frame.
+        files.put("Portada del curso.PNG", "artwork")
         scan.all()
-        assertEquals("$location/cover.jpg", course().posterPath)
+        assertEquals("$location/Portada del curso.PNG", course().posterPath)
 
         db.library.upsertItem(course().copy(posterPath = null))
         preferences.set(Settings.Thumbnails, false)

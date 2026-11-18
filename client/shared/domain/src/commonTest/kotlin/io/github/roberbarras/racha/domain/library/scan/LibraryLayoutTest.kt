@@ -147,6 +147,24 @@ class LibraryLayoutTest {
     }
 
     @Test
+    fun anyImageNextToTheSectionsIsThePosterNamedOnesFirst() {
+        val library = detect(
+            files(
+                "Docker/01 - Intro/001 Welcome.mp4", "Docker/docker-banner.jpeg", "Docker/01 - Intro/slide.png",
+                "Go/01 - Intro/001 Hello.mp4", "Go/zz.png", "Go/Folder.JPG", "Go/aa.jpg",
+                "Rust/01 - Intro/001 Hello.mp4", "Rust/01 - Intro/diagram.png", "Rust/._hidden.jpg", "Rust/notes.gif",
+                "loose clip.mp4", "screenshot.png",
+            ),
+        )
+        val posters = library.items.associate { it.title to it.poster?.value }
+
+        assertEquals("Docker/docker-banner.jpeg", posters["Docker"], "any name; images inside a section are not the course's")
+        assertEquals("Go/Folder.JPG", posters["Go"], "poster/folder/cover win over other images")
+        assertEquals(null, posters["Rust"], "no image beside the sections: the placeholder stays")
+        assertEquals(null, posters[""], "the loose files at a root only take an image named as a poster")
+    }
+
+    @Test
     fun seriesFromSeasonFoldersAndFromSxxEyyNames() {
         val library = detect(
             files(

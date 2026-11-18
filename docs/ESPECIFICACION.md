@@ -101,7 +101,7 @@ Todo lo listado a continuación es **requisito del producto final**, sin fases n
 - **Incremental** (no reindexa lo ya conocido si no cambió mtime/hash).
 - **Metadatos extraídos**: duración, resolución, codec, bitrate, fps, pistas de audio, pistas de subtítulos (vía `ffprobe`/`MediaMetadataRetriever`).
 - **Miniaturas**:
-  - Si existe `poster.jpg`/`folder.jpg`/`cover.jpg` en la carpeta → usarla.
+  - Si existe `poster.jpg`/`folder.jpg`/`cover.jpg` en la carpeta → usarla; si no, cualquier otra imagen (`.jpg`/`.jpeg`/`.png`) de la carpeta del curso (ampliado en la v1.2.1, [ESCANEO.md](ESCANEO.md)).
   - Si no, generar thumbnail con `ffmpeg` (un frame a ~10% del vídeo).
   - Fallback: placeholder generado localmente.
   - **Opcional**: botón para generar portada con una API de IA de imágenes (ej. Pollinations, Hugging Face Inference gratis) configurable con endpoint + API key.
