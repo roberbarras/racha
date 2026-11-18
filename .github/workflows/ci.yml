@@ -250,7 +250,9 @@ jobs:
           # started to drop off adb right after boot (exit 224, no test run) on 2026-11-18.
           target: default
           arch: x86_64
-          ram-size: 2048M
+          # Software video decoding with 2 GB brought the emulator's system down mid-test ("System has crashed").
+          ram-size: 4096M
+          heap-size: 576M
           # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
