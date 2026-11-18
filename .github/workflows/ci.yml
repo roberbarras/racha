@@ -246,7 +246,9 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: "37.0"
-          target: google_apis
+          # The plain AOSP image, as the release smoke: the tests need nothing from Google, and the google_apis image
+          # started to drop off adb right after boot (exit 224, no test run) on 2026-11-18.
+          target: default
           arch: x86_64
           ram-size: 2048M
           # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
