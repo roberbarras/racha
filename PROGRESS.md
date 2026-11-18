@@ -26,7 +26,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | ✅ Cerrado |
 | H17 | Resúmenes con IA a partir de subtítulos, con varios proveedores en el orden que elijas | ✅ Cerrado · publicado en **v1.1.0** |
 | H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ✅ Cerrado |
-| H19 | Carpetas remotas (Nextcloud, Google Drive): descargar al dispositivo todo o solo cursos concretos | 🔄 En curso |
+| H19 | Carpetas remotas (Nextcloud, Google Drive): descargar al dispositivo todo o solo cursos concretos | ✅ Cerrado · publicado en **v1.2.0** |
 
 ## Criterios de aceptación (§12)
 
@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## H19 · Carpetas remotas — 🔄 en CI
+## H19 · Carpetas remotas — ✅ cerrado
 
 Decisión: [ADR-0018](docs/adr/0018-carpetas-remotas.md). Documento técnico y configuración: [CARPETAS-REMOTAS.md](docs/CARPETAS-REMOTAS.md). Evidencias: [docs/evidence/h19](docs/evidence/h19). La guía de uso se escribirá con la aplicación completa.
 
@@ -66,6 +66,8 @@ Decisión: [ADR-0018](docs/adr/0018-carpetas-remotas.md). Documento técnico y c
 - **Carpetas remotas** en Carpetas (Android y Linux): **Nextcloud** (o cualquier WebDAV) y **Google Drive**. Se elige la carpeta del servidor, la categoría, qué contiene (biblioteca, un curso o automático) y **qué descargar: todo, o solo los cursos elegidos** (con su tamaño y lo que ya está aquí).
 - Se descarga a una carpeta normal de la biblioteca (por defecto `~/Vídeos/Racha/<nombre>` en Linux y `Racha/<nombre>` en Android): los cursos aparecen al llegar y se usan como cualquier otro. Descargas continuables, pequeños primero, comprobación de espacio, nada se borra sin pedirlo («Liberar espacio», «Quitar»).
 - Nextcloud con su **login flow** (contraseña de aplicación revocable, nunca la de la cuenta) o manual; Google Drive con OAuth y PKCE, **solo lectura**, con un cliente OAuth propio (pasos en el documento). Credenciales en el llavero o el Keystore.
+- **Corrección (H18)**: al dejar de enviar a la tele, el servidor de ficheros dejaba su puerto aceptando conexiones sin atenderlas; ahora se cierra de verdad. Era lo que colgaba el CI: un test esperaba para siempre en una de esas conexiones. El CI tiene ahora límites de tiempo y, si algo se cuelga, publica qué test y qué hacía cada JVM.
+- **Release v1.2.0** (con tu OK): incluye H18 y H19; el servidor usa 1.2.0 por defecto en `docker-compose.yml`.
 - Segundo plano: Android con un *worker* en primer plano (notificación de progreso, «solo con Wi-Fi» opcional, cada 6 h mientras haya carpetas remotas); Linux mientras la app está abierta. Esquema local v10.
 
 **Verificación**
@@ -76,7 +78,7 @@ Decisión: [ADR-0018](docs/adr/0018-carpetas-remotas.md). Documento técnico y c
 | Nextcloud simulado: login flow, carpetas, lista, descarga continuada | ✅ |
 | Google simulado: OAuth PKCE en loopback, Drive con páginas, descarga, acceso revocado | ✅ |
 | UI escritorio: añadir por el navegador, elegir un curso, llega a la biblioteca (capturas) | ✅ |
-| CI | ⏳ |
+| CI | ✅ [run 44324154039](https://github.com/roberbarras/racha/actions/runs/44324154039) |
 | Con tu Nextcloud y tu Google Drive reales | ⏳ Pendiente de que lo pruebes |
 
 ---
