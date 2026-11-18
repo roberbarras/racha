@@ -245,19 +245,18 @@ jobs:
       - name: Scanning, database, UI and player on a device
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: "37.0"
-          # The plain AOSP image, as the release smoke: the tests need nothing from Google, and the google_apis image
-          # started to drop off adb right after boot (exit 224, no test run) on 2026-11-18.
+          # Android 16: on the API 37 images (AOSP and google_apis, any runner, the v1.2.0 code too) system_server
+          # crashes since 2026-11-18 copying a task snapshot (TaskSnapshotConvertUtil.copyToSwBitmapDirect →
+          # ImageReader.getPlanes → lockImageFromBuffer), aborting the run. The release smoke still runs on API 37.
+          api-level: "36"
+          # The plain AOSP image, as the release smoke: the tests need nothing from Google.
           target: default
           arch: x86_64
-          # Software video decoding with 2 GB brought the emulator's system down mid-test ("System has crashed").
           ram-size: 4096M
           heap-size: 576M
           # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
-          # Rendering in the guest: with swiftshader_indirect, system_server crashed taking a task snapshot
-          # (TaskSnapshotConvertUtil → ImageReader.getPlanes → lockImageFromBuffer) on runner image 20261116.
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu guest -feature -HardwareDecoder
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
           disable-animations: true
           working-directory: client
           # Retries once after restarting adb; on failure, reports why as public annotations.
