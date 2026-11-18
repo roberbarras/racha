@@ -18,6 +18,9 @@ import io.github.roberbarras.racha.ui.resources.detected_hours_ago
 import io.github.roberbarras.racha.ui.resources.detected_minutes_ago
 import io.github.roberbarras.racha.ui.resources.months
 import io.github.roberbarras.racha.ui.resources.weekdays
+import io.github.roberbarras.racha.ui.resources.loose_files
+import io.github.roberbarras.racha.ui.resources.season_n
+import io.github.roberbarras.racha.ui.resources.time_watched_left
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration
@@ -98,3 +101,18 @@ fun platformName(platform: String): String = when (platform) {
     "web" -> "Web"
     else -> platform
 }
+
+/** A section as the user sees it: its own (or edited) title, else "Season N" or "Loose files". */
+@Composable
+fun sectionTitle(section: io.github.roberbarras.racha.domain.library.Section): String = when {
+    section.titleOverride != null -> section.displayTitle
+    section.kind == io.github.roberbarras.racha.domain.library.SectionKind.SEASON && section.title.isEmpty() ->
+        stringResource(Res.string.season_n, section.order)
+    section.title.isEmpty() -> stringResource(Res.string.loose_files)
+    else -> section.title
+}
+
+/** "35 min watched · 2 h 17 min left", or null before anything has been watched. */
+@Composable
+fun watchedAndLeft(time: io.github.roberbarras.racha.domain.learning.WatchTime): String? =
+    if (time.watchedSec <= 0) null else stringResource(Res.string.time_watched_left, compactDuration(time.watchedSec), compactDuration(time.leftSec))

@@ -58,6 +58,25 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
+## Mejoras tras la 1.2.0 — 🔄 en CI
+
+**Hecho** (a petición del usuario)
+- **Arranque en Linux medible**: `RACHA_LOG=debug` (o `--verbose`) saca todo el log a la terminal, con el tiempo de cada fase del arranque; los mensajes de las librerías (SLF4J) llegan al log en vez de perderse ([AJUSTES.md](docs/AJUSTES.md)).
+- **Base de datos en Linux con una sola conexión**: el driver JDBC de SQLDelight reabría SQLite en cada consulta fuera de una transacción (268 aperturas en los primeros segundos, ahora 1; un escaneo vacío pasa de 1,3 s a 0,5 s). Android ya funcionaba así.
+- **Lista de clases del reproductor (y del visor de recursos) por secciones**, con la duración de cada sección y, arriba, la del curso con lo visto y lo que queda.
+- **Detalle del curso**: duración de cada sección junto a su título; junto al total, lo visto y lo que queda; las clases vistas con fondo verdoso en lugar del tick.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Tiempos visto/restante (vistas enteras, a medias hasta lo más lejos, recursos fuera) | ✅ |
+| Base de datos de escritorio: nueva, reinicio, migración desde la v1 con la conexión persistente | ✅ |
+| Arranque en Xvfb con `--verbose`: fases medidas, primer fotograma ~3 s; en el escritorio real del usuario, pendiente de su log | ✅ / ⏳ |
+| UI escritorio: detalle (claro y oscuro, móvil) y panel de clases por secciones (capturas) | ✅ |
+| CI | ⏳ |
+
+---
+
 ## H19 · Carpetas remotas — ✅ cerrado
 
 Decisión: [ADR-0018](docs/adr/0018-carpetas-remotas.md). Documento técnico y configuración: [CARPETAS-REMOTAS.md](docs/CARPETAS-REMOTAS.md). Evidencias: [docs/evidence/h19](docs/evidence/h19). La guía de uso se escribirá con la aplicación completa.

@@ -187,7 +187,7 @@ private fun SummaryPanel(vm: PlayerViewModel, state: PlaybackState) {
 
 @Composable
 private fun QueuePanel(vm: PlayerViewModel, state: PlaybackState) {
-    CourseQueueList(state.queue, state.element?.id, onSelect = { vm.jumpTo(it.element.id) })
+    CourseQueueList(state.queue, state.element?.id, onSelect = { vm.jumpTo(it.element.id) }, sections = state.sections)
 }
 
 @Composable

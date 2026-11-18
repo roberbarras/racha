@@ -85,7 +85,7 @@ fun ResourceScreen(deps: RachaDependencies, element: ContentId, onBack: () -> Un
                 Box(Modifier.weight(1f).fillMaxHeight()) { Content(state, hooks) }
                 if (sidebar && !compact) {
                     Column(Modifier.width(Racha.layout.detailPaneWidth).fillMaxHeight().background(Racha.colors.rail).padding(Racha.space.m)) {
-                        CourseQueueList(state.queue, state.element?.id, onSelect = { onOpenElement(it.element) })
+                        CourseQueueList(state.queue, state.element?.id, onSelect = { onOpenElement(it.element) }, sections = state.sections)
                     }
                 }
             }
@@ -93,7 +93,7 @@ fun ResourceScreen(deps: RachaDependencies, element: ContentId, onBack: () -> Un
         if (sidebar && compact) {
             Column(Modifier.fillMaxSize().background(Racha.colors.rail).padding(Racha.space.m)) {
                 RIconButton(RachaIcons.ArrowLeft, stringResource(Res.string.back), { vm.sidebar.value = false }, tint = Racha.colors.onRail)
-                CourseQueueList(state.queue, state.element?.id, onSelect = { onOpenElement(it.element) })
+                CourseQueueList(state.queue, state.element?.id, onSelect = { onOpenElement(it.element) }, sections = state.sections)
             }
         }
     }

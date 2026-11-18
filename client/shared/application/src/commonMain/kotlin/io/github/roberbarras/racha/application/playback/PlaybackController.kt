@@ -19,6 +19,7 @@ import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.LibraryItem
 import io.github.roberbarras.racha.domain.library.PlayableElement
+import io.github.roberbarras.racha.domain.library.Section
 import io.github.roberbarras.racha.domain.library.Subtitle
 import io.github.roberbarras.racha.domain.playback.PlaybackChoice
 import io.github.roberbarras.racha.domain.playback.PlaybackRules
@@ -51,6 +52,8 @@ data class PlaybackState(
     val item: LibraryItem? = null,
     val element: PlayableElement? = null,
     val queue: List<QueueEntry> = emptyList(),
+    /** The course's sections, in order: the side panel groups [queue] by them. */
+    val sections: List<Section> = emptyList(),
     val engine: EngineSnapshot = EngineSnapshot(),
     /** Seconds to offer in "Resume from mm:ss / Start over"; null when no prompt is shown. */
     val resumeOffer: Long? = null,
@@ -155,6 +158,7 @@ class PlaybackController(
                 item = item,
                 element = element,
                 queue = queue.map { e -> QueueEntry(e, progressById[e.id]) },
+                sections = library.sections(item.id),
                 resumeOffer = if (ask) resume else null,
                 loopA = null,
                 loopB = null,

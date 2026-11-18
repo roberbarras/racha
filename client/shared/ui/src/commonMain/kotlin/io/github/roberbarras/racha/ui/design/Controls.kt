@@ -246,9 +246,13 @@ fun RTextField(
 
 /** Uppercase row header ("CONTINUE WATCHING") with optional trailing content. */
 @Composable
-fun SectionHeader(title: String, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier, detail: String? = null, trailing: @Composable () -> Unit = {}) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        RText(title.uppercase(), style = Racha.type.overline, color = Racha.colors.inkMuted, modifier = Modifier.weight(1f))
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Racha.space.s)) {
+            RText(title.uppercase(), style = Racha.type.overline, color = Racha.colors.inkMuted, modifier = Modifier.weight(1f, fill = false))
+            // The section's length and the like: next to the title, in normal case.
+            detail?.let { RText(it, style = with(Racha.type) { caption.numeric() }, color = Racha.colors.inkSubtle, maxLines = 1) }
+        }
         trailing()
     }
 }

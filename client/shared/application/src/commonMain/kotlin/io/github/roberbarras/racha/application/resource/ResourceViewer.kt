@@ -63,6 +63,8 @@ data class ResourceState(
     val item: LibraryItem? = null,
     val element: PlayableElement? = null,
     val queue: List<QueueEntry> = emptyList(),
+    /** The course's sections, in order: the side panel groups [queue] by them. */
+    val sections: List<io.github.roberbarras.racha.domain.library.Section> = emptyList(),
     val content: ResourceContent? = null,
     val watched: Boolean = false,
 ) {
@@ -98,6 +100,7 @@ class ResourceViewer(
             item = item,
             element = element,
             queue = library.elements(item.id).map { QueueEntry(it, progressById[it.id]) },
+            sections = library.sections(item.id),
             content = location?.let { content(it, item, element) } ?: ResourceContent.Missing,
             watched = progressById[id]?.completed == true,
         )

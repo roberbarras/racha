@@ -50,7 +50,6 @@ import io.github.roberbarras.racha.domain.library.ContentId
 import io.github.roberbarras.racha.domain.playback.StartMode
 import io.github.roberbarras.racha.domain.library.ElementKind
 import io.github.roberbarras.racha.domain.library.ResourceType
-import io.github.roberbarras.racha.domain.library.SectionKind
 import io.github.roberbarras.racha.ui.app.RachaDependencies
 import io.github.roberbarras.racha.ui.common.categoryName
 import io.github.roberbarras.racha.ui.common.compactDuration
@@ -59,6 +58,10 @@ import io.github.roberbarras.racha.ui.common.elementsProgressLabel
 import io.github.roberbarras.racha.ui.common.itemTitle
 import io.github.roberbarras.racha.ui.common.parseColor
 import io.github.roberbarras.racha.ui.common.timecode
+import io.github.roberbarras.racha.ui.common.sectionTitle
+import io.github.roberbarras.racha.ui.common.watchedAndLeft
+import io.github.roberbarras.racha.domain.learning.WatchTime
+import androidx.compose.ui.graphics.Color
 import io.github.roberbarras.racha.ui.design.ButtonKind
 import io.github.roberbarras.racha.ui.design.MessageState
 import io.github.roberbarras.racha.ui.design.Poster
@@ -92,11 +95,9 @@ import io.github.roberbarras.racha.ui.resources.mark_up_to_here
 import io.github.roberbarras.racha.ui.resources.mark_watched
 import io.github.roberbarras.racha.ui.resources.more_actions
 import io.github.roberbarras.racha.ui.resources.resume_from
-import io.github.roberbarras.racha.ui.resources.season_n
 import io.github.roberbarras.racha.ui.resources.start
 import io.github.roberbarras.racha.ui.resources.total_duration
 import io.github.roberbarras.racha.ui.resources.unavailable
-import io.github.roberbarras.racha.ui.resources.loose_files
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -174,11 +175,14 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
                 view.category?.let { Tag(categoryName(it), tone = TagTone.Accent) }
                 RText(itemTitle(view.item), style = Racha.type.display)
                 view.item.description?.let { RText(it, style = Racha.type.body, color = Racha.colors.inkMuted) }
-                Row(horizontalArrangement = Arrangement.spacedBy(Racha.space.l)) {
+                val time = remember(view) { WatchTime.of(view.sections.flatMap { s -> s.elements.map { it.element to it.progress } }) }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Racha.space.l), verticalArrangement = Arrangement.spacedBy(Racha.space.xs)) {
                     RText(elementsProgressLabel(view.watchedCount, view.totalCount), style = Racha.type.label, color = Racha.colors.inkMuted)
-                    if (view.item.totalDurationSec > 0) {
-                        RText(stringResource(Res.string.total_duration, compactDuration(view.item.totalDurationSec)), style = Racha.type.label, color = Racha.colors.inkMuted)
+                    if (time.totalSec > 0) {
+                        RText(stringResource(Res.string.total_duration, compactDuration(time.totalSec)), style = Racha.type.label, color = Racha.colors.inkMuted)
                     }
+                    // What has been watched and what is left.
+                    watchedAndLeft(time)?.let { RText(it, style = Racha.type.label, color = Racha.colors.inkMuted) }
                 }
                 ProgressBar((view.item.progressPct / 100).toFloat(), Modifier.widthIn(max = 420.dp), height = 6.dp, completed = view.item.progressPct >= 100)
                 val coverResult by vm.cover.collectAsStateWithLifecycle()
@@ -229,12 +233,8 @@ private fun Hero(view: ItemDetailView, vm: DetailViewModel, onPlay: (ContentId, 
 
 @Composable
 private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boolean, onPlay: (ContentId, StartMode) -> Unit, onSummary: (SummarySubject) -> Unit) {
-    val title = when {
-        section.section.titleOverride != null -> section.section.displayTitle
-        section.section.kind == SectionKind.SEASON && section.section.title.isEmpty() -> stringResource(Res.string.season_n, section.section.order)
-        section.section.title.isEmpty() -> stringResource(Res.string.loose_files)
-        else -> section.section.title
-    }
+    val title = sectionTitle(section.section)
+    val time = remember(section) { WatchTime.of(section.elements.map { it.element to it.progress }) }
     Column(verticalArrangement = Arrangement.spacedBy(Racha.space.m)) {
         // A toggle: a section all watched can be marked unwatched again (H15).
         val allWatched = section.elements.isNotEmpty() && section.elements.all { it.watched }
@@ -243,7 +243,7 @@ private fun SectionBlock(section: SectionView, vm: DetailViewModel, compact: Boo
         val withSubtitles by vm.withSubtitles.collectAsStateWithLifecycle()
         val summarisable = section.elements.any { it.element.id in withSubtitles }
         val subject = SummarySubject(section.section.id, section.section.libraryItemId, section = true, title = title)
-        SectionHeader(title) {
+        SectionHeader(title, detail = time.totalSec.takeIf { it > 0 }?.let { compactDuration(it) }) {
             if (vm.summariesOffered && summarisable) {
                 val summaryLabel = stringResource(Res.string.summary_section_action)
                 if (compact) RIconButton(RachaIcons.Sparkles, summaryLabel, { onSummary(subject) }, tint = Racha.colors.inkMuted)
@@ -272,16 +272,14 @@ private fun ElementRow(view: ElementView, onPlay: () -> Unit, vm: DetailViewMode
     var menu by remember { mutableStateOf(false) }
     Row(
         Modifier.fillMaxWidth().alpha(if (element.archived) 0.55f else 1f)
+            // Watched: the whole row on a green tint (user request: instead of a check mark).
+            .background(if (view.watched) colors.success.copy(alpha = WATCHED_TINT) else Color.Transparent)
             .interactive(onPlay, enabled = !element.archived).padding(horizontal = Racha.space.l, vertical = Racha.space.m),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Racha.space.m),
     ) {
-        Box(
-            Modifier.size(32.dp).clip(CircleShape).background(if (view.watched) colors.success.copy(alpha = 0.15f) else colors.surfaceSunken),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (view.watched) RIcon(RachaIcons.Check, null, tint = colors.success, size = 16.dp)
-            else RText(element.effectiveOrder.toString(), style = with(Racha.type) { label.numeric() }, color = colors.inkMuted)
+        Box(Modifier.size(32.dp).clip(CircleShape).background(colors.surfaceSunken), contentAlignment = Alignment.Center) {
+            RText(element.effectiveOrder.toString(), style = with(Racha.type) { label.numeric() }, color = if (view.watched) colors.success else colors.inkMuted)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Racha.space.xxs)) {
             RText(element.displayTitle, style = Racha.type.bodyStrong, maxLines = 2)
@@ -342,3 +340,6 @@ private fun kindLabel(view: ElementView): String = when {
     view.element.resourceType == ResourceType.PDF -> stringResource(Res.string.kind_pdf)
     else -> stringResource(Res.string.kind_text)
 }
+
+/** How green a watched row is: a little more than the hover overlay, so it reads as "done" without shouting. */
+private const val WATCHED_TINT = 0.12f

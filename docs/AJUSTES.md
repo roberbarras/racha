@@ -22,6 +22,8 @@ Pantalla **Ajustes** (en el móvil, desde Progreso). Todo se aplica al momento, 
 
 **Log**: en Linux `~/.cache/racha/racha.log` (1 MB y uno anterior); en Android, logcat. Registra escaneos, rondas de sync, errores de telemetría y fallos no capturados según el nivel elegido.
 
+**Log detallado en Linux** (para ver qué tarda o qué falla): arrancar con `RACHA_LOG=debug ./Racha-<versión>-x86_64.AppImage` (o `--verbose`). Todo se escribe también en la terminal, desde el primer milisegundo, con cada fase del arranque medida (`startup: +1234 ms …`: JVM, base de datos, ventana, API gráfica elegida, primer fotograma, primera pantalla y primer escaneo con su duración). Los mensajes de las librerías (SQLite, HTTP…) van al mismo log; su nivel de detalle se activa aparte con `RACHA_LOG_LIBS=debug`. `RACHA_LOG` admite `error`, `warn`, `info` o `debug` y gana sobre el nivel de Ajustes.
+
 ### Exportar / importar (ADR-0010)
 
 JSON `racha-config` v1: los ajustes que el usuario cambió, las categorías (nombre, icono, color, principal, orden, exclusiones) y `modes` (modo actual y qué categorías se ven en cada modo). **Nunca** van secretos (sesión, claves de API), carpetas (las rutas son de cada dispositivo) ni si la sincronización está activa (necesita iniciar sesión). Al importar se ignora lo desconocido o inválido y se cuenta; un fichero de una versión más nueva se rechaza sin tocar nada.

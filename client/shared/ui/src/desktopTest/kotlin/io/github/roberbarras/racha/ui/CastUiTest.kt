@@ -161,5 +161,17 @@ class CastUiTest {
         hooks.externalDisplays.value = emptyList()
         waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("Playing on HDMI Screen").fetchSemanticsNodes().isEmpty() }
         assertEquals(listOf(2, null), hooks.shownOn.toList())
+
+        // The lessons panel: grouped by section, each with its length, the course's on top.
+        // The button toggles the panel: press until the list shows (it may have been open already).
+        repeat(2) {
+            if (onAllNodesWithText("in total", substring = true).fetchSemanticsNodes().isEmpty()) {
+                onAllNodesWithContentDescription("Lessons")[0].performClick()
+                waitForIdle()
+            }
+        }
+        waitUntil(timeoutMillis = 10_000) { onAllNodesWithText("IAM - IDENTITY AND ACCESS MANAGEMENT").fetchSemanticsNodes().isNotEmpty() }
+        onNodeWithText("in total", substring = true).assertExists()
+        javax.imageio.ImageIO.write(onRoot().captureToImage().toAwtImage(), "png", java.io.File(out, "desktop-player-lessons-by-section-en.png"))
     }
 }
