@@ -25,8 +25,8 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | H15 | Reproducción cómoda: marcar visto, recordar velocidad/audio/subtítulos, atajos en Linux, PiP y solo audio | ✅ Cerrado |
 | H16 | Estadísticas completas, copia de seguridad local y datos portables entre servidores | ✅ Cerrado |
 | H17 | Resúmenes con IA a partir de subtítulos, con varios proveedores en el orden que elijas | ✅ Cerrado · publicado en **v1.1.0** |
-| H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ⏳ Planificado |
-| H19 | Carpetas remotas (Nextcloud, Google Drive) | ⏳ Planificado |
+| H18 | Chromecast, DLNA y pantalla externa con el móvil como mando | ✅ Cerrado |
+| H19 | Carpetas remotas (Nextcloud, Google Drive): descargar al dispositivo todo o solo cursos concretos | 🔄 En curso |
 
 ## Criterios de aceptación (§12)
 
@@ -55,6 +55,31 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - OAuth aplazado; OTP por email posible más adelante (ADR-0006).
 - Versiones más recientes en lugar de las citadas en la spec (ADR-0001).
 - §3.2.2 "partes de un mismo vídeo" por duración: fuera de alcance (2026-11-13); cada vídeo va por separado, ordenado y con autoplay.
+
+---
+
+## H18 · Enviar a la tele y a otras pantallas — ✅ cerrado
+
+Decisión: [ADR-0017](docs/adr/0017-enviar-a-televisores-y-pantallas.md). Documento técnico: [REPRODUCTOR.md](docs/REPRODUCTOR.md#enviar-a-la-tele-y-a-otras-pantallas-h18). Evidencias: [docs/evidence/h18](docs/evidence/h18). La guía de uso se escribirá con la aplicación completa.
+
+**Hecho**
+- **«Enviar a»** en el reproductor (Android y Linux): Chromecast y televisores DLNA de la red local, sin Google Play services. La clase sigue en la tele donde estaba y **este dispositivo es el mando**: pausa, avanza, cambia de clase o de subtítulos; el progreso, la siguiente clase, los marcadores y las estadísticas siguen funcionando. «Volver a este dispositivo» la trae de vuelta; si se pierde la conexión, vuelve sola.
+- **Pantalla conectada al móvil o la tableta** (HDMI, USB-C, Miracast): el vídeo, con sus subtítulos, se ve en ella y el móvil queda como mando; al desconectarla vuelve al móvil.
+- Los ficheros se sirven a la tele solo mientras se envía, solo lo publicado y bajo una ruta imposible de adivinar; la red solo se busca con el panel abierto.
+- Android 17: permiso de acceso a la red local, pedido al abrir «Enviar a».
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Motor: pasar a la tele y volver con la misma posición, órdenes del controlador en la tele, siguiente clase en la tele, tele perdida o inalcanzable | ✅ |
+| Chromecast simulado (Cast v2): lanzar el receptor, cargar con subtítulo, órdenes, fin del vídeo, cerrar | ✅ |
+| Televisor DLNA simulado: descripción, carga en la posición, órdenes, terminado frente a parado | ✅ |
+| Servidor de ficheros: rangos, `HEAD`, WebVTT con CORS, nada sin publicar, cierre | ✅ |
+| Respuestas mDNS y SSDP | ✅ |
+| UI escritorio: panel, mando, volver, pantalla conectada y desconectada (capturas) | ✅ |
+| Emulador: pantalla externa (overlay display) reproduce, vuelve, y vuelve sola al desconectarla | ✅ |
+| CI | ✅ [run 44202727774](https://github.com/roberbarras/racha/actions/runs/44202727774) |
+| Con un Chromecast o televisor reales | ⏳ Pendiente de que lo pruebes |
 
 ---
 

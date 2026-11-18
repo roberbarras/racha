@@ -51,6 +51,21 @@ adaptadores en [`android/player`](../client/android/src/main/kotlin/io/github/ro
 - **Solo audio** (botón de auriculares): el motor deja de decodificar vídeo (ExoPlayer desactiva la pista; mpv `vid=no`, por el mismo camino seguro con que suelta su ventana), se ve la portada y lo que suena, y se mantiene al pasar al siguiente. En Android la pantalla puede apagarse y salir de la app no pausa: un servicio en primer plano de tipo *mediaPlayback* (Media3 `MediaSessionService`) mantiene la sesión, con controles en la notificación y en la pantalla de bloqueo; en solo audio no se entra en PiP automático.
 - **PiP** ya estaba en las dos plataformas (Android del sistema; Linux, ventana pequeña siempre encima).
 
+## Enviar a la tele y a otras pantallas (H18)
+
+Decisión y detalles: [ADR-0017](adr/0017-enviar-a-televisores-y-pantallas.md).
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| `CastingEngine` | `application/cast` | Motor del reproductor que pasa de este dispositivo a la tele y vuelve, con la misma posición |
+| `NetworkCastDiscovery` | `remote/cast` | mDNS y SSDP mientras el panel está abierto |
+| `ChromecastConnector` / `CastChannel` | `remote/cast` | Cast v2 (Default Media Receiver, WebVTT) |
+| `DlnaConnector` / `LanHttp` | `remote/cast` | UPnP AVTransport (SOAP, DIDL-Lite con `.srt`) |
+| `LanMediaServer` | `remote/cast` | Sirve a la tele solo lo publicado, con rangos |
+| `VideoPresentation` | `android/player` | El vídeo en una pantalla HDMI, USB-C o Miracast |
+
+En Linux, si un cortafuegos bloquea las conexiones entrantes, la tele no puede pedir el vídeo: hay que permitir conexiones de la red local a Racha mientras se envía (el puerto cambia en cada envío).
+
 ## Linux (ADR-0011)
 
 - **Vídeo**: mpv presenta por su cuenta (`vo=gpu-next`) dentro de un `Canvas` AWT (ventana X11 hija, `wid`); los fotogramas nunca pasan por Compose. Decodificación por software por defecto (`hwdec=no`); "Decodificación por hardware" en Ajustes la activa (`auto-safe`).
@@ -82,6 +97,7 @@ MP4 (H.264/AAC), MKV, WebM (VP9/Opus), MOV, AVI (H.264/MP3) y HLS (`.m3u8` + seg
 
 - `MpvEngineTest` (JVM, libmpv sin salida de vídeo ni audio): los seis formatos, rutas con espacios y símbolos, subtítulos por idioma, inicio en una posición, velocidad, seek, órdenes antes de que exista la ventana y números con un locale de coma decimal.
 - `PlayerHarness` (Linux, app real en una ventana X11 de Xvfb, sin audio): reanudar, capa de controles alineada (también en pantalla completa y PiP), PiP siempre encima, captura, guardado al salir y al cerrar la ventana. Local: `spikes/safe-run.sh virtual 120 desktop-player`; también en CI.
+- H18: `CastingEngineTest` (cambio de destino, posición, órdenes, aparato perdido), `LanMediaServerTest`, `ChromecastTest` y `DlnaTest` contra aparatos simulados, `CastMediaTest`; `CastUiTest` (panel, mando, pantalla conectada y desconectada) en escritorio; `PlayerUiTest#aConnectedScreenShowsTheVideoAndThePhoneIsTheRemote` en el emulador con una *overlay display*.
 
 Ningún test reproduce audio: los clips llevan un tono de 440 Hz (`ao=null` en libmpv, `-no-audio` en el emulador).
 
