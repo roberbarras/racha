@@ -53,14 +53,17 @@ jobs:
           sudo locale-gen es_ES.UTF-8
       - name: Tests, APK and desktop jar (thread dumps if a test hangs)
         run: |
-          # Watchdog: after 18 min, dump the test JVMs' threads and publish the app's frames (logs need a login).
+          # Watchdog: after 12 min (normally ~5), publish what each test JVM's "Test worker" thread is doing — the test
+          # running — as annotations (logs need a login). No -e/pipefail in it: finding nothing must not stop it.
           (
-            sleep 1080
-            for pid in $(pgrep -f 'Gradle Test Executor|GradleWorkerMain'); do
-              jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1 || true
+            set +e +o pipefail
+            sleep 720
+            for pid in $(pgrep -f GradleWorkerMain); do
+              jcmd "$pid" Thread.print > "$RUNNER_TEMP/threads-$pid.txt" 2>&1
+              worker=$(awk '/^"Test worker"/{on=1} on&&/^$/{exit} on' "$RUNNER_TEMP/threads-$pid.txt" | grep -E 'at (io\.github|org\.junit|kotlin|java\.net|java\.util\.concurrent|kotlinx)' | head -25 | tr '\n' ' ')
+              echo "::error title=Test JVM $pid still busy after 12 min::${worker:-no Test worker thread}"
             done
-            frames=$(grep -h -B2 -A25 'io\.github\.roberbarras' "$RUNNER_TEMP"/threads-*.txt 2>/dev/null | grep -E '^"|io\.github\.roberbarras|java\.(net|util\.concurrent)' | head -60 | tr '\n' ' ')
-            echo "::error title=Tests still running after 18 min::${frames:-no test JVM found}"
+            echo "::error title=Tests still running after 12 min::$(pgrep -fa GradleWorkerMain | grep -o 'Gradle Test Executor [0-9]*' | sort -u | tr '\n' ' ')"
           ) &
           watchdog=$!
           status=0

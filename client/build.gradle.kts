@@ -7,3 +7,13 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kmp.library) apply false
 }
+
+// Every test is named in the build output as it starts and when it fails, so a CI log shows which one hangs.
+subprojects {
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events("started", "failed", "skipped")
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.SHORT
+        }
+    }
+}
