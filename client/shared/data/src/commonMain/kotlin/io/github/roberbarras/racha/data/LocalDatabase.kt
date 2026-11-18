@@ -37,6 +37,7 @@ class LocalDatabase(driver: SqlDriver, dispatcher: CoroutineDispatcher = Dispatc
     val resourceText = SqlResourceTextIndex(database, io)
     val playbackMemory = SqlPlaybackMemory(database, io)
     val summaries = SqlSummaryRepository(database, io)
+    val remoteSources = SqlRemoteSources(database, io)
 
     init {
         SyncTriggers.install(driver)

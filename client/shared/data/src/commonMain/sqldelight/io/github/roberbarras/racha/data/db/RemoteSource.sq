@@ -1,0 +1,31 @@
+-- Remote folders downloaded to this device (H19). This device only: what each device downloads is its own choice, and
+-- credentials stay in its keyring. [selected]: course keys separated by newlines.
+CREATE TABLE remote_source (
+    id TEXT NOT NULL PRIMARY KEY,
+    provider TEXT NOT NULL,
+    name TEXT NOT NULL,
+    account TEXT NOT NULL,
+    address TEXT NOT NULL,
+    location TEXT NOT NULL,
+    category_key TEXT NOT NULL,
+    root_key TEXT NOT NULL,
+    layout TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    selected TEXT NOT NULL,
+    wifi_only INTEGER AS kotlin.Boolean NOT NULL,
+    last_sync_at INTEGER,
+    last_error TEXT
+);
+
+selectAllSources:
+SELECT * FROM remote_source ORDER BY name COLLATE NOCASE;
+
+selectSource:
+SELECT * FROM remote_source WHERE id = ?;
+
+upsertSource:
+INSERT OR REPLACE INTO remote_source VALUES ?;
+
+deleteSource:
+DELETE FROM remote_source WHERE id = ?;
