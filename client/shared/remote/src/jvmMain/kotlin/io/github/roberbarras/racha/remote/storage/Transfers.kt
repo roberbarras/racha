@@ -18,7 +18,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
-import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.jvm.javaio.toInputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -94,14 +94,16 @@ internal suspend fun HttpClient.downloadTo(
             FileChannel.open(part, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { out ->
                 if (offset == 0L) out.truncate(0)
                 out.position(offset)
-                val channel = response.bodyAsChannel()
+                // A blocking stream (this runs on the IO dispatcher): each read waits for data and -1 means the end, so
+                // nothing spins while the network is slow.
+                val input = response.bodyAsChannel().toInputStream()
                 val buffer = ByteArray(256 * 1024)
                 var written = offset
                 var reported = 0L
                 while (true) {
-                    val read = channel.readAvailable(buffer, 0, buffer.size)
+                    val read = input.read(buffer)
                     if (read < 0) break
-                    if (read == 0) { if (channel.isClosedForRead) break else continue }
+                    if (read == 0) continue
                     out.write(ByteBuffer.wrap(buffer, 0, read))
                     written += read
                     if (written - reported >= 1 shl 20) { progress(written); reported = written }
