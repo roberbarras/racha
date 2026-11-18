@@ -58,6 +58,29 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
+## H19 · Carpetas remotas — 🔄 en CI
+
+Decisión: [ADR-0018](docs/adr/0018-carpetas-remotas.md). Documento técnico y configuración: [CARPETAS-REMOTAS.md](docs/CARPETAS-REMOTAS.md). Evidencias: [docs/evidence/h19](docs/evidence/h19). La guía de uso se escribirá con la aplicación completa.
+
+**Hecho**
+- **Carpetas remotas** en Carpetas (Android y Linux): **Nextcloud** (o cualquier WebDAV) y **Google Drive**. Se elige la carpeta del servidor, la categoría, qué contiene (biblioteca, un curso o automático) y **qué descargar: todo, o solo los cursos elegidos** (con su tamaño y lo que ya está aquí).
+- Se descarga a una carpeta normal de la biblioteca (por defecto `~/Vídeos/Racha/<nombre>` en Linux y `Racha/<nombre>` en Android): los cursos aparecen al llegar y se usan como cualquier otro. Descargas continuables, pequeños primero, comprobación de espacio, nada se borra sin pedirlo («Liberar espacio», «Quitar»).
+- Nextcloud con su **login flow** (contraseña de aplicación revocable, nunca la de la cuenta) o manual; Google Drive con OAuth y PKCE, **solo lectura**, con un cliente OAuth propio (pasos en el documento). Credenciales en el llavero o el Keystore.
+- Segundo plano: Android con un *worker* en primer plano (notificación de progreso, «solo con Wi-Fi» opcional, cada 6 h mientras haya carpetas remotas); Linux mientras la app está abierta. Esquema local v10.
+
+**Verificación**
+| Comprobación | Resultado |
+|---|---|
+| Dominio: cursos de la lista remota, qué falta o cambió, qué liberar | ✅ |
+| Caso de uso con SQLite y ficheros reales: cursos elegidos → biblioteca, repetir, elegir más, liberar, «todo», quitar, credenciales y espacio | ✅ |
+| Nextcloud simulado: login flow, carpetas, lista, descarga continuada | ✅ |
+| Google simulado: OAuth PKCE en loopback, Drive con páginas, descarga, acceso revocado | ✅ |
+| UI escritorio: añadir por el navegador, elegir un curso, llega a la biblioteca (capturas) | ✅ |
+| CI | ⏳ |
+| Con tu Nextcloud y tu Google Drive reales | ⏳ Pendiente de que lo pruebes |
+
+---
+
 ## H18 · Enviar a la tele y a otras pantallas — ✅ cerrado
 
 Decisión: [ADR-0017](docs/adr/0017-enviar-a-televisores-y-pantallas.md). Documento técnico: [REPRODUCTOR.md](docs/REPRODUCTOR.md#enviar-a-la-tele-y-a-otras-pantallas-h18). Evidencias: [docs/evidence/h18](docs/evidence/h18). La guía de uso se escribirá con la aplicación completa.

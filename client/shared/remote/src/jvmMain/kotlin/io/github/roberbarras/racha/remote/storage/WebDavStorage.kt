@@ -3,6 +3,9 @@ package io.github.roberbarras.racha.remote.storage
 import io.github.roberbarras.racha.application.remote.RemoteCredentials
 import io.github.roberbarras.racha.application.remote.RemoteDirectory
 import io.github.roberbarras.racha.application.remote.RemoteStorage
+import io.github.roberbarras.racha.application.remote.NextcloudPending
+import io.github.roberbarras.racha.application.remote.NextcloudSignIn
+import io.github.roberbarras.racha.application.remote.WebDavAccount
 import io.github.roberbarras.racha.application.sync.RemoteError
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.domain.remote.RemoteFile
@@ -155,7 +158,7 @@ class WebDavStorage(
 class NextcloudLogin(
     engineFactory: (HttpOptions) -> HttpClientEngine = ::okHttp,
     options: suspend () -> HttpOptions = { HttpOptions() },
-) {
+) : NextcloudSignIn {
     private val http = RemoteHttp(engineFactory, options)
 
     data class Flow(val loginUrl: String, val endpoint: String, val token: String)
@@ -163,7 +166,7 @@ class NextcloudLogin(
         val davBase: String get() = WebDavStorage.nextcloudBase(server, user)
     }
 
-    suspend fun start(server: String): Flow = http.use { client ->
+    suspend fun begin(server: String): Flow = http.use { client ->
         val base = server.trim().trimEnd('/').let { if ("://" in it) it else "https://$it" }
         val response = client.post("$base/index.php/login/v2")
         RemoteHttp.check(response, "login")
@@ -173,7 +176,7 @@ class NextcloudLogin(
     }
 
     /** Null while the user has not finished signing in. */
-    suspend fun poll(flow: Flow): Account? = http.use { client ->
+    suspend fun check(flow: Flow): Account? = http.use { client ->
         val response = client.submitForm(flow.endpoint, parameters { append("token", flow.token) })
         if (response.status == HttpStatusCode.NotFound) return@use null
         RemoteHttp.check(response, "login")
@@ -182,4 +185,11 @@ class NextcloudLogin(
     }
 
     private fun JsonObject.str(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
+
+    override suspend fun start(server: String): NextcloudPending = begin(server).let { NextcloudPending(it.loginUrl, it.endpoint, it.token) }
+
+    override suspend fun poll(pending: NextcloudPending): WebDavAccount? =
+        check(Flow(pending.loginUrl, pending.endpoint, pending.token))?.let { WebDavAccount(it.server, it.user, it.appPassword, it.davBase) }
+
+    override fun davBase(server: String, user: String): String = WebDavStorage.nextcloudBase(server, user)
 }

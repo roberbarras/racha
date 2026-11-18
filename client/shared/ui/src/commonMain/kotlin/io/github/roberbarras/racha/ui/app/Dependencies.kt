@@ -76,6 +76,20 @@ class RachaDependencies(
     val summaryProviders: io.github.roberbarras.racha.application.ai.SummaryProviders? = null,
     /** Send to a Chromecast or DLNA TV (H18); null where not offered. */
     val cast: io.github.roberbarras.racha.application.cast.CastServices? = null,
+    /** Remote folders (H19); null where not offered. */
+    val remote: RemoteFolders? = null,
+)
+
+/** Remote folders (H19) as a platform offers them. */
+class RemoteFolders(
+    val sources: io.github.roberbarras.racha.application.remote.RemoteSources,
+    val accounts: io.github.roberbarras.racha.application.remote.RemoteAccounts,
+    /** Starts downloading one folder (or all with null) where it survives leaving the screen (Android: a worker). */
+    val download: (String?) -> Unit,
+    /** Where a folder named like this goes by default (a `file://` location). */
+    val defaultDestination: (String) -> String,
+    /** Whether "only on Wi-Fi" means something here (phones and tablets). */
+    val offersWifiOnly: Boolean = false,
 )
 
 /** Platform capabilities the shared UI needs. */

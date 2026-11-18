@@ -193,6 +193,7 @@ fun FoldersScreen(deps: RachaDependencies, app: AppViewModel) {
             item { RText(stringResource(Res.string.scan_report, report.added, report.updated, report.archived), style = Racha.type.caption, color = Racha.colors.inkMuted) }
         }
         if (!storageAccess) item { StorageAccessBanner(onAllow = app::requestStorageAccess) }
+        if (deps.remote != null) item(key = "remote") { RemoteFoldersSection(deps) }
         folders.forEach { entry ->
             item(key = entry.category.key.value) {
                 CategoryFoldersCard(

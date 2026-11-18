@@ -80,6 +80,8 @@ import io.github.roberbarras.racha.application.telemetry.TelemetryUploader
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /** Android composition root: one per process (held by [RachaApplication]), wired by hand. */
 class AndroidGraph(context: Context) {
@@ -125,6 +127,40 @@ class AndroidGraph(context: Context) {
     private val aiApiKey = KeystoreSecretStore(context, "ai-key.bin")
     /** One key per summary provider (H17), each in its own Keystore-encrypted file. */
     private val summaryKeys = ProviderKeys { id -> KeystoreSecretStore(context, "ai-summary-$id.bin") }
+
+    private val manageRoots: ManageRoots by lazy {
+        ManageRoots(database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker)
+    }
+
+    // ---- Remote folders (H19) -----------------------------------------------------------------------------------
+    private val appContext = context.applicationContext
+    private val googleClient = KeystoreSecretStore(context, "google-client.bin")
+    val remoteSources by lazy {
+        io.github.roberbarras.racha.application.remote.RemoteSources(
+            database.remoteSources,
+            listOf(
+                io.github.roberbarras.racha.remote.storage.WebDavStorage(options = httpOptions),
+                io.github.roberbarras.racha.remote.storage.GoogleDriveStorage({ io.github.roberbarras.racha.remote.storage.GoogleClient.decode(googleClient.read()) }, options = httpOptions),
+            ),
+            { id -> KeystoreSecretStore(appContext, "remote-$id.bin") },
+            io.github.roberbarras.racha.files.NioLocalCopies(), database.categories, manageRoots, scanLibrary, clock,
+        )
+    }
+    private val remoteAccounts by lazy {
+        io.github.roberbarras.racha.application.remote.RemoteAccounts(
+            io.github.roberbarras.racha.remote.storage.NextcloudLogin(options = httpOptions),
+            io.github.roberbarras.racha.remote.storage.GoogleDriveAuth({ io.github.roberbarras.racha.remote.storage.GoogleClient.decode(googleClient.read()) }, options = httpOptions),
+            googleClient,
+        )
+    }
+
+    /** In a worker, so leaving the app does not stop it; "Wi-Fi only" folders wait for an unmetered network. */
+    private fun downloadRemote(id: String?) {
+        appScope.launch {
+            val wifiOnly = id != null && remoteSources.all().firstOrNull { it.id == id }?.wifiOnly == true
+            io.github.roberbarras.racha.android.remote.RemoteDownloadWorker.now(appContext, id, wifiOnly)
+        }
+    }
     private val wifi: android.net.wifi.WifiManager? = context.applicationContext.getSystemService(android.net.wifi.WifiManager::class.java)
     private val covers = DirectoryCoverFiles(File(context.filesDir, "covers").toPath())
     val account = AccountService(
@@ -148,6 +184,13 @@ class AndroidGraph(context: Context) {
             telemetry.appOpened()
             combine(preferences.observe(Settings.SyncEnabled), preferences.observe(Settings.SyncIntervalMinutes)) { on, minutes -> on to minutes }
                 .collect { (on, minutes) -> SyncWorker.schedule(app, on, minutes) }
+        }
+        // Remote folders (H19): new lessons every 6 h, only while there is some folder to download.
+        appScope.launch {
+            database.remoteSources.observe().map { it.isNotEmpty() }.distinctUntilChanged().collect { any ->
+                if (any) io.github.roberbarras.racha.android.remote.RemoteDownloadWorker.schedule(app)
+                else io.github.roberbarras.racha.android.remote.RemoteDownloadWorker.cancel(app)
+            }
         }
         // The widget follows the streak and today's turn while the app process lives (quiet: emits on change only).
         appScope.launch {
@@ -195,9 +238,7 @@ class AndroidGraph(context: Context) {
         markProgress = MarkProgress(database.library, database.progress, updateItemProgress, clock),
         getElement = GetElement(database.library, database.progress),
         toggleFavorite = ToggleFavorite(database.favorites, clock),
-        manageRoots = ManageRoots(
-            database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker,
-        ),
+        manageRoots = manageRoots,
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
@@ -225,6 +266,14 @@ class AndroidGraph(context: Context) {
             summaryKeys, clock,
         ) { platform.player?.language() ?: "en" },
         summaryProviders = SummaryProviders(preferences, summaryKeys),
+        remote = io.github.roberbarras.racha.ui.app.RemoteFolders(
+            remoteSources, remoteAccounts, ::downloadRemote,
+            { name ->
+                java.io.File(android.os.Environment.getExternalStorageDirectory(), "Racha/" + name.replace('/', '_')).toURI().toString()
+                    .let { if (it.startsWith("file:/") && !it.startsWith("file:///")) "file://" + it.removePrefix("file:") else it }
+            },
+            offersWifiOnly = true,
+        ),
         cast = io.github.roberbarras.racha.application.cast.CastServices(
             io.github.roberbarras.racha.remote.cast.NetworkCastDiscovery(::multicastLock),
             io.github.roberbarras.racha.remote.cast.CastConnectors(),

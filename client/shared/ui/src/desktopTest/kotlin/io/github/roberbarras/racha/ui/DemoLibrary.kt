@@ -77,6 +77,9 @@ object DemoLibrary {
         /** The player's platform part (player screen tests) and "send to" (H18). */
         player: io.github.roberbarras.racha.ui.player.PlayerHooks? = null,
         cast: io.github.roberbarras.racha.application.cast.CastServices? = null,
+        remote: io.github.roberbarras.racha.ui.app.RemoteFolders? = null,
+        /** URLs the app asked to open (sign-in pages). */
+        openedUrls: MutableList<String> = mutableListOf(),
         sync: ((io.github.roberbarras.racha.data.LocalDatabase, Preferences, Clock) -> io.github.roberbarras.racha.application.sync.SyncControls)? = null,
     ): RachaDependencies {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
@@ -143,6 +146,7 @@ object DemoLibrary {
             platform = object : PlatformHooks {
                 override suspend fun pickFolder(): String? = picked
                 override val player = player
+                override fun openUrl(url: String) { openedUrls += url }
                 override val deepLinks = links
                 override suspend fun saveTextFile(suggestedName: String, text: String): Boolean = saved.add(suggestedName to text)
             },
@@ -182,6 +186,7 @@ object DemoLibrary {
             },
             summaryProviders = chat?.let { io.github.roberbarras.racha.application.ai.SummaryProviders(preferences, summaryKeys) },
             cast = cast,
+            remote = remote,
         )
     }
 

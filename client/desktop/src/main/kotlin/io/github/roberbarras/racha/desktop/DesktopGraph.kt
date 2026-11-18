@@ -110,6 +110,9 @@ class DesktopGraph(
     val scanLibrary = ScanLibrary(
         database.categories, database.library, database.progress, NioLibrarySource(), probe, hasher, preferences, clock, localDates,
     )
+    private val manageRoots: ManageRoots by lazy {
+        ManageRoots(database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker)
+    }
     private val notifier = DesktopNotifier()
     private val notifyNewContent = NotifyNewContent(database.library, preferences, clock, notifier)
     private val studyReminder = StudyReminder(preferences, database.history, database.progress, localDates, clock, notifier)
@@ -136,6 +139,38 @@ class DesktopGraph(
     private val aiApiKey = LibSecretStore(DesktopPaths.data.resolve("ai-key"), "racha-image-ai-key", "Racha image AI key")
     /** One key per summary provider (H17), each its own keyring entry. */
     private val summaryKeys = ProviderKeys { id -> LibSecretStore(DesktopPaths.data.resolve("ai-summary-$id"), "racha-summary-$id", "Racha AI key ($id)") }
+
+    // ---- Remote folders (H19) -----------------------------------------------------------------------------------
+    private val googleClient = LibSecretStore(DesktopPaths.data.resolve("google-client"), "racha-google-client", "Racha Google OAuth client")
+    val remoteSources = io.github.roberbarras.racha.application.remote.RemoteSources(
+        database.remoteSources,
+        listOf(
+            io.github.roberbarras.racha.remote.storage.WebDavStorage(options = httpOptions),
+            io.github.roberbarras.racha.remote.storage.GoogleDriveStorage({ io.github.roberbarras.racha.remote.storage.GoogleClient.decode(googleClient.read()) }, options = httpOptions),
+        ),
+        { id -> LibSecretStore(DesktopPaths.data.resolve("remote-$id"), "racha-remote-$id", "Racha remote folder ($id)") },
+        io.github.roberbarras.racha.files.NioLocalCopies(), database.categories, manageRoots, scanLibrary, clock,
+    )
+    private val remoteAccounts = io.github.roberbarras.racha.application.remote.RemoteAccounts(
+        io.github.roberbarras.racha.remote.storage.NextcloudLogin(options = httpOptions),
+        io.github.roberbarras.racha.remote.storage.GoogleDriveAuth({ io.github.roberbarras.racha.remote.storage.GoogleClient.decode(googleClient.read()) }, options = httpOptions),
+        googleClient,
+    )
+
+    /** Downloads in the background while the app is open: soon after starting, then every 6 hours. */
+    private fun downloadRemote(id: String?) {
+        graphScope.launch { if (id == null) remoteSources.downloadAll() else remoteSources.download(id) }
+    }
+
+    init {
+        graphScope.launch {
+            kotlinx.coroutines.delay(30_000)
+            while (true) {
+                runCatching { remoteSources.downloadAll() }
+                kotlinx.coroutines.delay(6 * 60 * 60_000L)
+            }
+        }
+    }
     val account = AccountService(
         syncServer, LibSecretCredentialStore(DesktopPaths.data.resolve("session")), database.sync, database.accounts, preferences,
         { DeviceDescriptor(null, deviceName(), "linux", appVersion) }, clock,
@@ -185,9 +220,7 @@ class DesktopGraph(
         markProgress = MarkProgress(database.library, database.progress, updateItemProgress, clock),
         getElement = GetElement(database.library, database.progress),
         toggleFavorite = ToggleFavorite(database.favorites, clock),
-        manageRoots = ManageRoots(
-            database.categories, database.library, scanLibrary, clock, { database.sync.remoteRoots(it.value) }, database.rootRelinker,
-        ),
+        manageRoots = manageRoots,
         setMode = SetMode(preferences),
         keepLibraryUpToDate = keepLibraryUpToDate,
         platform = platform,
@@ -215,6 +248,10 @@ class DesktopGraph(
             summaryKeys, clock,
         ) { platform.player?.language() ?: "en" },
         summaryProviders = SummaryProviders(preferences, summaryKeys),
+        remote = io.github.roberbarras.racha.ui.app.RemoteFolders(
+            remoteSources, remoteAccounts, ::downloadRemote,
+            { name -> DesktopPaths.videos.resolve("Racha").resolve(name.replace('/', '_')).toUri().toString() },
+        ),
         cast = io.github.roberbarras.racha.application.cast.CastServices(
             io.github.roberbarras.racha.remote.cast.NetworkCastDiscovery(),
             io.github.roberbarras.racha.remote.cast.CastConnectors(),

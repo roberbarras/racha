@@ -99,10 +99,10 @@ class RemoteStorageTest {
     fun nextcloudSignsInBrowsesListsAndResumesADownload() = runBlocking<Unit> {
         nextcloud()
         val login = NextcloudLogin()
-        val flow = login.start(base)
+        val flow = login.begin(base)
         assertEquals("$base/login/v2/flow/abc", flow.loginUrl)
-        assertEquals(null, login.poll(flow), "not signed in yet")
-        val account = login.poll(flow)!!
+        assertEquals(null, login.check(flow), "not signed in yet")
+        val account = login.check(flow)!!
         assertEquals("$base/remote.php/dav/files/ana%20p/", account.davBase)
         val credentials = RemoteCredentials.WebDav(account.user, account.appPassword)
 

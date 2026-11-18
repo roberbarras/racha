@@ -111,6 +111,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(compose.desktop.currentOs)
                 implementation(project(":shared:data"))
+                implementation(project(":shared:files")) // real files for remote folder downloads (H19)
                 implementation(libs.sqldelight.sqlite.driver)
                 implementation(libs.sqlite.jdbc)
             }

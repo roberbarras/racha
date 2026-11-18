@@ -52,10 +52,10 @@ class AndroidNotifier(private val context: Context) : Notifier {
         manager.notify(text.channel.ordinal, notification) // one per kind: a newer notice replaces the previous one
     }
 
-    private suspend fun ensureChannel(channel: NoticeChannel) {
+    suspend fun ensureChannel(channel: NoticeChannel) {
         val system = context.getSystemService(NotificationManager::class.java)
         if (system.getNotificationChannel(channel.id) != null) return
-        val importance = if (channel == NoticeChannel.SYNC) NotificationManager.IMPORTANCE_LOW else NotificationManager.IMPORTANCE_DEFAULT
+        val importance = if (channel == NoticeChannel.SYNC || channel == NoticeChannel.DOWNLOADS) NotificationManager.IMPORTANCE_LOW else NotificationManager.IMPORTANCE_DEFAULT
         system.createNotificationChannel(NotificationChannel(channel.id, NoticeTexts.channelName(channel), importance))
     }
 

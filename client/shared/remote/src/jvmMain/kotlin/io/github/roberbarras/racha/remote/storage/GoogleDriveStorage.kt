@@ -3,6 +3,7 @@ package io.github.roberbarras.racha.remote.storage
 import io.github.roberbarras.racha.application.remote.RemoteCredentials
 import io.github.roberbarras.racha.application.remote.RemoteDirectory
 import io.github.roberbarras.racha.application.remote.RemoteStorage
+import io.github.roberbarras.racha.application.remote.GoogleSignIn
 import io.github.roberbarras.racha.application.sync.RemoteError
 import io.github.roberbarras.racha.domain.library.RelativePath
 import io.github.roberbarras.racha.domain.remote.RemoteFile
@@ -56,12 +57,16 @@ data class GoogleClient(val id: String, val secret: String) {
  * loopback address of this device. Only read access to Drive is asked for; the refresh token goes to the keyring.
  */
 class GoogleDriveAuth(
+    private val client: suspend () -> GoogleClient? = { null },
     engineFactory: (HttpOptions) -> HttpClientEngine = ::okHttp,
     options: suspend () -> HttpOptions = { HttpOptions() },
     private val authorizeUrl: String = "https://accounts.google.com/o/oauth2/v2/auth",
     private val tokenUrl: String = TOKEN_URL,
-) {
+) : GoogleSignIn {
     private val http = RemoteHttp(engineFactory, options)
+
+    override suspend fun signIn(openBrowser: (String) -> Unit): String =
+        signIn(client() ?: throw RemoteError.Rejected(400, "no_google_client", null), openBrowser)
 
     /** Opens the consent page with [openBrowser] and waits (up to 5 min) for the answer; returns the refresh token. */
     suspend fun signIn(client: GoogleClient, openBrowser: (String) -> Unit): String {

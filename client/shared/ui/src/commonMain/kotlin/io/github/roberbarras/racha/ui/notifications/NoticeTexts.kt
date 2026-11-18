@@ -5,6 +5,10 @@ import io.github.roberbarras.racha.ui.resources.Res
 import io.github.roberbarras.racha.ui.resources.channel_new_content
 import io.github.roberbarras.racha.ui.resources.channel_reminder
 import io.github.roberbarras.racha.ui.resources.channel_sync
+import io.github.roberbarras.racha.ui.resources.channel_downloads
+import io.github.roberbarras.racha.ui.resources.notice_downloading_body
+import io.github.roberbarras.racha.ui.resources.notice_downloading_checking
+import io.github.roberbarras.racha.ui.resources.notice_downloading_title
 import io.github.roberbarras.racha.ui.resources.notice_new_in
 import io.github.roberbarras.racha.ui.resources.notice_new_many
 import io.github.roberbarras.racha.ui.resources.notice_new_one
@@ -21,7 +25,7 @@ import org.jetbrains.compose.resources.getString
 /** A notice in words, plus the channel (Android) it belongs to. */
 data class NoticeText(val channel: NoticeChannel, val title: String, val body: String)
 
-enum class NoticeChannel { NEW_CONTENT, SYNC, REMINDER }
+enum class NoticeChannel { NEW_CONTENT, SYNC, REMINDER, DOWNLOADS }
 
 /** The app's words for each notice, in the current language; platforms only show them. */
 object NoticeTexts {
@@ -53,5 +57,13 @@ object NoticeTexts {
         NoticeChannel.NEW_CONTENT -> getString(Res.string.channel_new_content)
         NoticeChannel.SYNC -> getString(Res.string.channel_sync)
         NoticeChannel.REMINDER -> getString(Res.string.channel_reminder)
+        NoticeChannel.DOWNLOADS -> getString(Res.string.channel_downloads)
     }
+
+    /** The ongoing notification of remote folder downloads (H19). */
+    suspend fun downloading(folder: String?, done: Int, total: Int): NoticeText = NoticeText(
+        NoticeChannel.DOWNLOADS,
+        getString(Res.string.notice_downloading_title),
+        if (folder == null) getString(Res.string.notice_downloading_checking) else getString(Res.string.notice_downloading_body, folder, done, total),
+    )
 }
