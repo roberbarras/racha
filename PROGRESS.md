@@ -58,7 +58,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 
 ---
 
-## Mejoras tras la 1.2.0 (v1.2.1) — 🔄 en CI
+## Mejoras tras la 1.2.0 (v1.2.1) — ✅ cerrado
 
 **Hecho** (a petición del usuario)
 - **Arranque en Linux medible**: `RACHA_LOG=debug` (o `--verbose`) saca todo el log a la terminal, con el tiempo de cada fase del arranque; los mensajes de las librerías (SLF4J) llegan al log en vez de perderse ([AJUSTES.md](docs/AJUSTES.md)).
@@ -66,6 +66,8 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 - **Lista de clases del reproductor (y del visor de recursos) por secciones**, con la duración de cada sección y, arriba, la del curso con lo visto y lo que queda.
 - **Colores del tema a elección** (Ajustes → General): acento, tono del fondo y paneles oscuros, con muestras o cualquier `#RRGGBB`; el resto de la paleta se deriva y el texto mantiene siempre un contraste legible ([AJUSTES.md](docs/AJUSTES.md#colores-del-tema)).
 - **Detalle del curso**: duración de cada sección junto a su título; junto al total, lo visto y lo que queda; las clases vistas con fondo verdoso en lugar del tick.
+- **CI**: los tests de Android en emulador dejan, si fallan, la causa en anotaciones públicas (error de Gradle, crashes de Android, errores del sistema y de la app, estado del WebView, imagen del runner). El 18-11 por la noche los emuladores de API 37 de GitHub tumbaban `system_server` al guardar la captura de una tarea, también con el código de la v1.2.0; horas después volvieron a funcionar con la configuración de siempre.
+- **Release v1.2.1** (con tu OK): el servidor usa 1.2.1 por defecto en `docker-compose.yml`.
 - **Portada desde cualquier imagen de la carpeta del curso** (`.jpg`, `.jpeg`, `.png`, al nivel de las secciones): ya no hace falta llamarla `poster`/`folder`/`cover`, que siguen mandando si hay varias. Sin imagen, lo de siempre ([ESCANEO.md](docs/ESCANEO.md)).
 
 **Verificación**
@@ -77,7 +79,7 @@ Fuente de verdad: [`docs/ESPECIFICACION.md`](docs/ESPECIFICACION.md). Decisiones
 | UI escritorio: detalle (claro y oscuro, móvil) y panel de clases por secciones (capturas) | ✅ |
 | Portadas: cualquier imagen junto a las secciones, las nombradas primero, las de dentro de una sección y las ocultas no cuentan; sustituye al fotograma al reescanear | ✅ |
 | Colores del tema: contraste garantizado con colores extremos en claro y oscuro; muestras, color escrito y restablecer; la app entera con colores propios (capturas) | ✅ |
-| CI | ⏳ |
+| CI: run 44431987929 (cliente, AppImage, servidor, Android en emulador y release APK); la sincronización de extremo a extremo falló al bajar dependencias dentro de Docker (red) y se repite en el commit de cierre | ✅ |
 
 ---
 

@@ -44,7 +44,7 @@ services:
     build:
       context: ./server
       args:
-        RACHA_VERSION: ${RACHA_VERSION:-1.2.0}
+        RACHA_VERSION: ${RACHA_VERSION:-1.2.1}
     restart: unless-stopped
     depends_on:
       db:
