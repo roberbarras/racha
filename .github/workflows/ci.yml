@@ -245,15 +245,10 @@ jobs:
       - name: Scanning, database, UI and player on a device
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          # Android 16: on the API 37 images (AOSP and google_apis, any runner, the v1.2.0 code too) system_server
-          # crashes since 2026-11-18 copying a task snapshot (TaskSnapshotConvertUtil.copyToSwBitmapDirect →
-          # ImageReader.getPlanes → lockImageFromBuffer), aborting the run. The release smoke still runs on API 37.
-          api-level: "36"
-          # The plain AOSP image, as the release smoke: the tests need nothing from Google.
-          target: default
+          api-level: "37.0"
+          target: google_apis
           arch: x86_64
-          ram-size: 4096M
-          heap-size: 576M
+          ram-size: 2048M
           # No disk-size: an enlarged data partition leaves apps without their data directories on this image.
           # The emulator's goldfish hardware decoders need a host GPU; software decoders are what CI can run.
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -feature -HardwareDecoder
