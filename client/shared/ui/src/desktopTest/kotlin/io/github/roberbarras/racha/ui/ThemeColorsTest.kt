@@ -81,8 +81,9 @@ class ThemeColorsTest {
         waitUntil(timeoutMillis = 15_000) { onAllNodesWithText("Background tone").fetchSemanticsNodes().isNotEmpty() }
         onNode(hasContentDescription("#DFEFE2")).performClick()
         onNode(hasContentDescription("#2A1B45")).performClick()
+        // Each choice is saved on its own: wait for both.
         waitUntil(timeoutMillis = 5_000) { runBlocking { deps.preferences.get(Settings.BackgroundColor) } == "#DFEFE2" }
-        assertEquals("#2A1B45", runBlocking { deps.preferences.get(Settings.RailColor) })
+        waitUntil(timeoutMillis = 5_000) { runBlocking { deps.preferences.get(Settings.RailColor) } == "#2A1B45" }
 
         // Any colour, typed: on the accent row (the first "Another colour").
         onAllNodesWithContentDescriptionFirst("Another colour").performClick()
@@ -92,9 +93,12 @@ class ThemeColorsTest {
         waitUntil(timeoutMillis = 5_000) { runBlocking { deps.preferences.get(Settings.AccentColor) } == "#0A84FF" }
 
         onNodeWithText("Restore Racha's colours").performClick()
-        waitUntil(timeoutMillis = 5_000) { runBlocking { deps.preferences.get(Settings.BackgroundColor) }.isEmpty() }
-        assertEquals("", runBlocking { deps.preferences.get(Settings.RailColor) })
-        assertEquals(Settings.AccentColor.default, runBlocking { deps.preferences.get(Settings.AccentColor) })
+        waitUntil(timeoutMillis = 5_000) {
+            runBlocking {
+                deps.preferences.get(Settings.BackgroundColor).isEmpty() && deps.preferences.get(Settings.RailColor).isEmpty() &&
+                    deps.preferences.get(Settings.AccentColor) == Settings.AccentColor.default
+            }
+        }
     }
 
     private fun androidx.compose.ui.test.ComposeUiTest.onAllNodesWithContentDescriptionFirst(text: String) =
